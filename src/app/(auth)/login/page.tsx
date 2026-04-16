@@ -33,9 +33,9 @@ export default function LoginPage() {
 
       if (!res.ok) throw new Error(data.message || 'Gagal login, periksa kembali data Anda.');
 
-      if (data.role === 'Mahasiswa') router.push('/dashboard');
-      else if (data.role === 'Dosen') router.push('/dosen/dashboard');
-      else if (data.role === 'Admin') router.push('/admin/dashboard');
+      if (data.role === 'Mahasiswa') window.location.href = '/dashboard';
+      else if (data.role === 'Dosen') window.location.href = '/dosen/dashboard';
+      else if (data.role === 'Admin') window.location.href = '/admin/dashboard';
 
     } catch (err: any) {
       setErrorMsg(err.message);

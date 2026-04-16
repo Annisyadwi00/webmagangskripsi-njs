@@ -1,89 +1,88 @@
 import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
 import Job from '@/models/Job';
 import { connectDB } from '@/lib/db';
 
-// FUNGSI GET: Mengambil daftar lowongan magang
 export async function GET() {
   try {
     await connectDB();
+    const cookieStore = await cookies(); 
+    const token = cookieStore.get('auth_token')?.value;
+    let isAdmin = false;
 
-    // Cek apakah tabel jobs masih kosong
-    const count = await Job.count();
-    
-    // Jika kosong, kita suntikkan data dummy awal (Seeding otomatis)
-    if (count === 0) {
-      await Job.bulkCreate([
-        {
-          title: 'Frontend Developer Intern',
-          company: 'PT Digital Teknologi Indonesia',
-          description: 'Membantu pengembangan antarmuka website menggunakan React.js dan Next.js. Membutuhkan pemahaman dasar HTML, CSS, dan JavaScript.',
-          location: 'Jakarta Selatan (Hybrid)',
-          type: 'Hybrid',
-          isKonversi: true,
-        },
-        {
-          title: 'Data Analyst Intern',
-          company: 'DataVision Analytics',
-          description: 'Membersihkan dan menganalisis dataset perusahaan untuk menghasilkan insight bisnis. Familiar dengan Python, SQL, dan Tableau.',
-          location: 'Bandung (Onsite)',
-          type: 'Onsite',
-          isKonversi: true,
-        },
-        {
-          title: 'UI/UX Design Intern',
-          company: 'Creative Studio Jkt',
-          description: 'Merancang wireframe, prototype, dan user interface menggunakan Figma. Berkolaborasi dengan tim developer.',
-          location: 'Remote',
-          type: 'Remote',
-          isKonversi: false,
-        }
-      ]);
+    if (token) {
+      try {
+        const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+        if (decoded.role === 'Admin') isAdmin = true;
+      } catch (e) {}
     }
 
-    // Ambil semua data lowongan
-    const jobs = await Job.findAll({
-      order: [['createdAt', 'DESC']]
-    });
-
+    const whereClause = isAdmin ? {} : { status: 'Aktif' };
+    const jobs = await Job.findAll({ where: whereClause, order: [['createdAt', 'DESC']] });
     return NextResponse.json({ data: jobs }, { status: 200 });
   } catch (error) {
-    console.error('Fetch Jobs Error:', error);
-    return NextResponse.json({ message: 'Terjadi kesalahan pada server.' }, { status: 500 });
+    return NextResponse.json({ message: 'Error server' }, { status: 500 });
   }
 }
 
-// FUNGSI POST: Menambahkan lowongan baru (Khusus Admin)
 export async function POST(request: Request) {
   try {
     await connectDB();
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get('auth_token')?.value;
+    let isAdmin = false;
 
-    if (!token) return NextResponse.json({ message: 'Akses ditolak!' }, { status: 401 });
-
-    const secretKey = process.env.JWT_SECRET || 'fallback_secret';
-    const decoded: any = jwt.verify(token, secretKey);
-
-    // Hanya Admin yang boleh memposting lowongan
-    if (decoded.role !== 'Admin') {
-      return NextResponse.json({ message: 'Hanya Admin yang dapat memposting lowongan!' }, { status: 403 });
+    if (token) {
+      try {
+        const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+        if (decoded.role === 'Admin') isAdmin = true;
+      } catch (e) {}
     }
 
     const body = await request.json();
-    const { title, company, description, location, type, isKonversi } = body;
-
     const newJob = await Job.create({
-      title, company, description, location, type, isKonversi
+      company: body.perusahaan,
+      title: body.posisi,
+      description: body.deskripsi,
+      kuota: body.kuota ? parseInt(body.kuota) : 1,
+      location: body.location || 'Menyesuaikan',
+      type: body.type || 'Onsite',
+      isKonversi: body.isKonversi === 'Ya',
+      isPaid: body.isPaid === 'Ya',
+      valid_until: body.valid_until || null,
+      email_perusahaan: body.email_perusahaan || null,
+      link_pendaftaran: body.link_pendaftaran || null,
+      status: isAdmin ? 'Aktif' : 'Pending'
     });
 
-    return NextResponse.json(
-      { message: 'Lowongan berhasil ditambahkan!', data: newJob },
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error('Post Job Error:', error);
-    return NextResponse.json({ message: 'Terjadi kesalahan pada server.' }, { status: 500 });
+    return NextResponse.json({ message: 'Lowongan berhasil disimpan!', data: newJob }, { status: 201 });
+  } catch (error: any) {
+    return NextResponse.json({ message: `Error: ${error.message}` }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    await connectDB();
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth_token')?.value;
+    if (!token) return NextResponse.json({ message: 'Akses ditolak!' }, { status: 401 });
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback');
+    if (decoded.role !== 'Admin') return NextResponse.json({ message: 'Hanya Admin!' }, { status: 403 });
+
+    const body = await request.json();
+    const { id, action } = body;
+
+    if (action === 'approve') {
+      await Job.update({ status: 'Aktif' }, { where: { id } });
+      return NextResponse.json({ message: 'Lowongan tayang!' }, { status: 200 });
+    } else if (action === 'reject' || action === 'delete') {
+      await Job.destroy({ where: { id } });
+      return NextResponse.json({ message: 'Lowongan dihapus!' }, { status: 200 });
+    }
+    return NextResponse.json({ message: 'Aksi tidak valid' }, { status: 400 });
+  } catch (error: any) {
+    return NextResponse.json({ message: `Error: ${error.message}` }, { status: 500 });
   }
 }

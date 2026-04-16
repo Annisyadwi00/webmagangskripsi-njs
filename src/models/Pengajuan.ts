@@ -3,25 +3,36 @@ import sequelize from '../lib/db';
 
 class Pengajuan extends Model {
   declare id: number;
-  declare mahasiswaId: number; // Relasi ke tabel User
+  declare mahasiswaId: number;
   declare nama_mahasiswa: string;
   declare perusahaan: string;
   declare posisi: string;
-  declare jenis_magang: 'Konversi' | 'Non-Konversi';
-  declare link_dokumen: string;
-  declare dosenPembimbingId: number | null; // Relasi ke tabel User (Dosen), bisa null di awal
-  declare status: 'Pending' | 'Disetujui' | 'Ditolak';
+  declare jenis_magang: string;
+  
+  declare link_ktm: string;
+  declare link_ktp: string;
+  declare link_cv: string;
+  
+  declare link_laporan_akhir: string | null;
+  declare evaluasi_dari_mahasiswa: string | null;
+  declare nilai_dari_dosen: string | null;
+  
+  declare dosenId: number | null;
+  declare nama_dosen: string | null;
+  declare status_dosen: string;
+  
+  declare status: string;
 }
 
 Pengajuan.init(
   {
     id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER.UNSIGNED, // Dikembalikan ke UNSIGNED
       autoIncrement: true,
       primaryKey: true,
     },
     mahasiswaId: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER.UNSIGNED, // Dikembalikan ke UNSIGNED agar cocok dengan id User
       allowNull: false,
     },
     nama_mahasiswa: {
@@ -37,19 +48,48 @@ Pengajuan.init(
       allowNull: false,
     },
     jenis_magang: {
-      type: DataTypes.ENUM('Konversi', 'Non-Konversi'),
-      allowNull: false,
-    },
-    link_dokumen: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    dosenPembimbingId: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true, // Kosong saat baru daftar, nanti diisi oleh Admin/Dosen
+    link_ktm: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    link_ktp: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    link_cv: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    link_laporan_akhir: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    evaluasi_dari_mahasiswa: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    nilai_dari_dosen: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    dosenId: {
+      type: DataTypes.INTEGER.UNSIGNED, // Dikembalikan ke UNSIGNED agar cocok dengan id Dosen (User)
+      allowNull: true,
+    },
+    nama_dosen: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    status_dosen: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'Menunggu',
     },
     status: {
-      type: DataTypes.ENUM('Pending', 'Disetujui', 'Ditolak'),
+      type: DataTypes.STRING,
       allowNull: false,
       defaultValue: 'Pending',
     },
@@ -61,6 +101,6 @@ Pengajuan.init(
   }
 );
 
-Pengajuan.sync({ alter: true });
+Pengajuan.sync({ force: true });
 
 export default Pengajuan;
