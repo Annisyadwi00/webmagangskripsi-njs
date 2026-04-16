@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+// FIX: Import 'Variants' dihapus agar TypeScript tidak protes
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Data dummy Dosen sesuai dengan PDF
 const dosenList = [
@@ -76,7 +77,7 @@ export default function PilihDosenPage() {
     dosen.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Animasi Framer Motion
+  // FIX: Definisi animasi dibiarkan polos agar dibaca otomatis tanpa error
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
