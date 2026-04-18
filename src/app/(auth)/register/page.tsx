@@ -10,14 +10,15 @@ export default function RegisterPage() {
   
   // ✅ KODE YANG BENAR (GABUNGAN)
 const [formData, setFormData] = useState({
-  name: '', 
-  email: '', 
-  phone: '', 
-  password: '',
-  role: 'Mahasiswa',
-  nim_nidn: '',
-  prodi: '' // <--- Cukup selipkan ini di paling bawah
-});
+    name: '', 
+    email: '', 
+    phone: '', 
+    password: '',
+    confirmPassword: '', // <--- Wajib ada agar tidak error "uncontrolled"
+    role: 'Mahasiswa',
+    nim_nidn: '',
+    prodi: 'S1 Informatika' // Default isi
+  });
   const [activeRole, setActiveRole] = useState('Mahasiswa');
 
 
@@ -43,8 +44,9 @@ const [formData, setFormData] = useState({
     setSuccessMsg('');
 
     const numberOnlyRegex = /^[0-9]+$/;
-    if (!numberOnlyRegex.test(formData.identifier) || !numberOnlyRegex.test(formData.phone)) {
-      setErrorMsg('NIM/ID dan Nomor Telepon hanya boleh berisi angka yang valid.');
+    // PERBAIKAN 1: Cek nim_nidn, bukan identifier lagi
+    if (!numberOnlyRegex.test(formData.nim_nidn) || !numberOnlyRegex.test(formData.phone)) {
+      setErrorMsg('NIM/NIDN dan Nomor Telepon hanya boleh berisi angka yang valid.');
       return;
     }
 
@@ -70,11 +72,12 @@ const [formData, setFormData] = useState({
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // PERBAIKAN 2: Kirim data yang sesuai dengan API Database kamu
         body: JSON.stringify({
           name: formData.name, 
-          identifier: formData.identifier, 
+          nim_nidn: formData.nim_nidn, // <--- Sudah diganti
+          prodi: formData.prodi,       // <--- Tambahan prodi
           email: formData.email,
-          phone: formData.phone, 
           password: formData.password, 
           role: activeRole
         }),
@@ -153,10 +156,15 @@ const [formData, setFormData] = useState({
               <div>
                 <label htmlFor="identifier" className="block text-sm font-bold text-gray-700 mb-1">NIM / NIDN / ID Staf</label>
               <input 
-                type="text" 
-                required 
-                value={formData.nim_nidn} // <--- Pastikan ini formData.nim_nidn
-                onChange={(e) => setFormData({...formData, nim_nidn: e.target.value})} // <--- Pastikan ini nim_nidn
+    type="text" /* <--- PASTIKAN INI "text", BUKAN "number" */
+    inputMode="numeric" /* <--- Memunculkan keyboard angka di HP */
+    required 
+    value={formData.nim_nidn} 
+    onChange={(e) => {
+      // Trik Ekstra: Otomatis menghapus huruf/simbol/spasi jika user iseng mengetiknya
+      const onlyNumbers = e.target.value.replace(/[^0-9]/g, '');
+      setFormData({...formData, nim_nidn: onlyNumbers});
+    }}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2" 
                 placeholder="Contoh: 2210631170001" />
               </div>
@@ -205,12 +213,15 @@ const [formData, setFormData] = useState({
                 <label htmlFor="confirmPassword" className="block text-sm font-bold text-gray-700 mb-1">Konfirmasi Kata Sandi</label>
                 <div className="relative">
                   <input 
-                    id="confirmPassword" 
-                    type={showConfirmPassword ? "text" : "password"} 
-                    required minLength={8} 
-                    value={formData.confirmPassword} onChange={handleChange} 
-                    className="block w-full pl-4 pr-12 py-3 border border-gray-300 rounded-xl sm:text-sm bg-gray-50 focus:bg-white text-gray-900 transition-colors outline-none focus:ring-2 focus:ring-[#1e3a8a]" 
-                  />
+  id="confirmPassword" 
+  type={showConfirmPassword ? 'text' : 'password'}
+  required 
+  minLength={8}
+  value={formData.confirmPassword} /* <--- PASTIKAN INI BENAR */
+  onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})} /* <--- PASTIKAN INI BENAR */
+  className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#1e3a8a]"
+  placeholder="Ulangi password Anda"
+/>
                   <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-[#1e3a8a]">
                     {showConfirmPassword ? <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg> : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>}
                   </button>

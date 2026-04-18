@@ -36,12 +36,11 @@ export async function GET() {
 }
 
 // ==========================================
-// 2. FUNGSI POST (Membuat Data Baru)
+// 2. FUNGSI POST (Submit LOA Mahasiswa)
 // ==========================================
 export async function POST(request: Request) {
   try {
     await connectDB();
-    // FIX: Tambahkan await di sini
     const cookieStore = await cookies(); 
     const token = cookieStore.get('auth_token')?.value;
 
@@ -51,33 +50,31 @@ export async function POST(request: Request) {
     if (decoded.role !== 'Mahasiswa') return NextResponse.json({ message: 'Hanya mahasiswa!' }, { status: 403 });
 
     const body = await request.json();
-    const { perusahaan, posisi, jenis_magang, link_ktm, link_ktp, link_cv } = body;
+    // Sesuaikan dengan data yang dikirim dari UI LOA Mahasiswa
+    const { nama_perusahaan, posisi, link_loa } = body; 
 
-    if (!perusahaan || !posisi || !jenis_magang || !link_ktm || !link_ktp || !link_cv) {
-      return NextResponse.json({ message: 'Semua data dan dokumen wajib diisi!' }, { status: 400 });
+    if (!nama_perusahaan || !posisi || !link_loa) {
+      return NextResponse.json({ message: 'Perusahaan, Posisi, dan Link LOA wajib diisi!' }, { status: 400 });
     }
 
     const existingPengajuan = await Pengajuan.findOne({
-      where: { mahasiswaId: decoded.id, status: ['Pending', 'Disetujui'] }
+      where: { mahasiswaId: decoded.id, status: ['Menunggu_Verifikasi', 'Pilih_Dosen', 'Aktif'] }
     });
 
     if (existingPengajuan) {
-      return NextResponse.json({ message: 'Anda sudah memiliki pengajuan magang aktif.' }, { status: 409 });
+      return NextResponse.json({ message: 'Anda sudah memiliki proses magang yang sedang berjalan.' }, { status: 409 });
     }
     
     const newPengajuan = await Pengajuan.create({
       mahasiswaId: decoded.id,
       nama_mahasiswa: decoded.name,
-      perusahaan,
-      posisi,
-      jenis_magang,
-      link_ktm,
-      link_ktp,
-      link_cv,
-      status: 'Pending',
+      perusahaan: nama_perusahaan,
+      posisi: posisi,
+      link_loa: link_loa,
+      status: 'Menunggu_Verifikasi', // Langsung masuk tahap 2
     });
 
-    return NextResponse.json({ message: 'Pendaftaran magang berhasil dikirim!', data: newPengajuan }, { status: 201 });
+    return NextResponse.json({ message: 'LOA berhasil dikirim!', data: newPengajuan }, { status: 201 });
   } catch (error: any) {
     console.error(error);
     return NextResponse.json({ message: `Error Server: ${error.message}` }, { status: 500 });
