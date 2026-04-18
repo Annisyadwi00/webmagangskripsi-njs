@@ -48,7 +48,9 @@ export async function POST(request: Request) {
       kuota: body.kuota ? parseInt(body.kuota) : 1,
       location: body.location || 'Menyesuaikan',
       type: body.type || 'Onsite',
-      isKonversi: body.isKonversi === 'Ya',
+      // FIX: Menyesuaikan dengan database baru
+      tipeKonversi: body.tipeKonversi || 'Full',
+      kategori: body.kategori || 'Umum',
       isPaid: body.isPaid === 'Ya',
       valid_until: body.valid_until || null,
       email_perusahaan: body.email_perusahaan || null,

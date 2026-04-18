@@ -168,10 +168,15 @@ export default function LowonganPage() {
                     </div>
 
                     <div className="mt-auto pt-4 border-t border-gray-100">
-                      {/* Tombol yang mengarah ke form pendaftaran dengan mengirim nama perusahaan & posisi via Query String */}
-                      <Link href={`/pendaftaran?perusahaan=${encodeURIComponent(job.company)}&posisi=${encodeURIComponent(job.title)}&jenis=${job.isKonversi ? 'Konversi' : 'Non-Konversi'}`} className="block w-full py-3 bg-[#1e3a8a] text-white text-center font-bold rounded-xl hover:bg-blue-900 transition-colors">
-                        Daftar Posisi Ini
-                      </Link>
+                      <a 
+  href={job.link_pendaftaran || "#"} 
+  target="_blank" 
+  rel="noopener noreferrer"
+  className="w-full mt-4 py-2.5 bg-[#1e3a8a] text-white text-sm font-bold rounded-xl shadow-md hover:bg-blue-900 transition-all flex items-center justify-center gap-2"
+>
+  Daftar ke Perusahaan
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+</a>
                     </div>
                   </motion.div>
                 ))}

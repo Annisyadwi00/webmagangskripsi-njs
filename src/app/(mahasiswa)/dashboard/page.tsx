@@ -1,321 +1,353 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function DashboardPage() {
-  const [pengajuanInfo, setPengajuanInfo] = useState<any>(null);
-  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
-  
-  const [logbooks, setLogbooks] = useState<any[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState(true);
-  
-  const [showAddLogbook, setShowAddLogbook] = useState(false);
-  const [formData, setFormData] = useState({ tanggal: '', jam_kerja: '', kegiatan: '', link_dokumen: '' });
+export default function StudentDashboard() {
+  const [activeTab, setActiveTab] = useState<'Status' | 'Logbook' | 'Profil'>('Status');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loaForm, setLoaForm] = useState({ link_loa: '', nama_perusahaan: '', posisi: '' });
+  const [logbookForm, setLogbookForm] = useState({ tanggal: '', kegiatan: '', link_bukti: '' });
+  
+  // Profil State (Digabung dengan Status Magang)
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [profile, setProfile] = useState({ 
+    nama: "Memuat...", 
+    nim: "Memuat...", 
+    email: "Memuat...", 
+    prodi: "S1 Informatika", 
+    fakultas: "Ilmu Komputer (Fasilkom)", 
+    tanggalLahir: "", 
+    noHp: "", 
+    fotoUrl: null as string | null,
+    // Data Magang
+    status: "Menunggu_Verifikasi", // Opsi: Belum_Upload, Menunggu_Verifikasi, Pilih_Dosen, Aktif, Selesai
+    perusahaan: "PT Digital Teknologi Indonesia",
+    posisi: "Web Developer Intern",
+    tipeKonversi: "Parsial",
+    matkulKonversi: ["Kerja Praktek (2 SKS)", "Pemrograman Web (3 SKS)", "UI/UX Design (3 SKS)"],
+    dosen: "Dr. Budi Santoso, M.Kom"
+  });
 
-  // STATE BARU: Untuk Laporan Akhir & Evaluasi
-  const [laporanData, setLaporanData] = useState({ link_laporan_akhir: '', evaluasi_dari_mahasiswa: '' });
-  const [isSubmittingLaporan, setIsSubmittingLaporan] = useState(false);
+  const [logbooks, setLogbooks] = useState([
+    { id: 1, tanggal: "2026-04-18", kegiatan: "Membuat desain UI untuk Dashboard Admin", link: "https://drive.google.com/...", status: "Divalidasi" },
+  ]);
 
+  // Mengambil Data Asli dari Database
   useEffect(() => {
-    const fetchPengajuanInfo = async () => {
+    const fetchRealUserData = async () => {
       try {
-        const res = await fetch('/api/pengajuan');
-        const json = await res.json();
+        const res = await fetch('/api/auth/me');
         if (res.ok) {
-          setPengajuanInfo(json.data);
-          // Jika sudah pernah isi laporan sebelumnya, tampilkan datanya
-          if(json.data) {
-            setLaporanData({
-              link_laporan_akhir: json.data.link_laporan_akhir || '',
-              evaluasi_dari_mahasiswa: json.data.evaluasi_dari_mahasiswa || ''
-            });
-          }
+          const json = await res.json();
+          const userData = json.data;
+          setProfile(prev => ({
+            ...prev,
+            nama: userData.name,
+            nim: userData.nim_nidn,
+            email: userData.email
+          }));
         }
       } catch (error) {
-        console.error('Gagal mengambil data pengajuan', error);
-      } finally {
-        setIsLoadingStatus(false);
+        console.error("Gagal mengambil profil asli", error);
       }
     };
-    fetchPengajuanInfo();
+    fetchRealUserData();
   }, []);
 
-  const fetchLogbooks = async () => {
-    try {
-      const res = await fetch('/api/logbook');
-      const json = await res.json();
-      if (res.ok) setLogbooks(json.data);
-    } catch (error) {
-      console.error('Gagal mengambil data logbook', error);
-    } finally {
-      setIsLoadingData(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLogbooks();
-  }, []);
-
-  const handleSubmitLogbook = async (e: React.FormEvent) => {
+  const handleLoaSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    try {
-      const res = await fetch('/api/logbook', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      
-      alert('Logbook berhasil ditambahkan!');
-      setShowAddLogbook(false); 
-      setFormData({ tanggal: '', jam_kerja: '', kegiatan: '', link_dokumen: '' }); 
-      fetchLogbooks();
-    } catch (error: any) {
-      alert(error.message || 'Terjadi kesalahan server.');
-    } finally {
+    setTimeout(() => {
+      alert("LOA berhasil dikirim! Status Anda sekarang 'Menunggu Verifikasi'.");
+      setProfile(prev => ({ ...prev, status: 'Menunggu_Verifikasi' }));
       setIsSubmitting(false);
-    }
+    }, 1000);
   };
 
-  // FUNGSI BARU: Submit Laporan & Evaluasi
-  const handleSubmitLaporan = async (e: React.FormEvent) => {
+  const handleLogbookSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmittingLaporan(true);
-    try {
-      const res = await fetch('/api/pengajuan', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id_pengajuan: pengajuanInfo.id,
-          link_laporan_akhir: laporanData.link_laporan_akhir,
-          evaluasi_dari_mahasiswa: laporanData.evaluasi_dari_mahasiswa
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      alert('Laporan & Evaluasi berhasil disimpan!');
-    } catch (error: any) {
-      alert(error.message);
-    } finally {
-      setIsSubmittingLaporan(false);
-    }
+    setIsSubmitting(true);
+    setTimeout(() => {
+      alert("Logbook harian berhasil dicatat!");
+      setLogbooks([{ id: Date.now(), ...logbookForm, status: "Menunggu Validasi" }, ...logbooks]);
+      setLogbookForm({ tanggal: '', kegiatan: '', link_bukti: '' });
+      setIsSubmitting(false);
+    }, 1000);
   };
 
-  const isRegistered = pengajuanInfo !== null;
-  const totalJamDisetujui = logbooks.filter(log => log.status === 'Disetujui').reduce((total, log) => total + log.jam_kerja, 0);
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsEditingProfile(false);
+    alert("Data profil berhasil diperbarui!");
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setProfile({ ...profile, fotoUrl: reader.result as string });
+      reader.readAsDataURL(file);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans">
       
       {/* SIDEBAR */}
-      <aside className="w-72 bg-gradient-to-b from-[#1e3a8a] to-[#0f1f4d] text-white flex flex-col hidden md:flex h-screen sticky top-0 shadow-xl z-20">
+      <aside className="w-72 bg-gradient-to-b from-[#1e3a8a] to-blue-900 text-white flex flex-col hidden md:flex h-screen sticky top-0 shadow-xl z-20">
         <div className="p-6 border-b border-white/10">
-          <h1 className="font-extrabold text-xl tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">SI Magang</h1>
-          <p className="text-xs text-blue-200/80 mt-1">Dashboard Mahasiswa</p>
+          <h1 className="font-extrabold text-xl tracking-wide">SI Magang</h1>
+          <p className="text-xs text-blue-300 mt-1">Portal Mahasiswa</p>
         </div>
-        <nav className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
-          <Link href="#dashboard-top" className="flex items-center gap-3 px-4 py-3 bg-white text-[#1e3a8a] rounded-xl font-bold">Dashboard</Link>
-          <Link href="#logbook-harian" className="flex items-center gap-3 px-4 py-3 text-blue-100 hover:bg-white/10 rounded-xl">Logbook Harian</Link>
-          <Link href="#laporan-akhir" className="flex items-center gap-3 px-4 py-3 text-blue-100 hover:bg-white/10 rounded-xl">Laporan Akhir</Link>
+        <nav className="flex-1 py-6 px-4 space-y-2">
+          <button onClick={() => setActiveTab('Status')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${activeTab === 'Status' ? 'bg-white text-[#1e3a8a] shadow-md' : 'text-slate-200 hover:bg-white/10'}`}>
+             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+             Status & LOA
+          </button>
+          <button onClick={() => setActiveTab('Logbook')} disabled={profile.status !== 'Aktif'} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${profile.status !== 'Aktif' ? 'opacity-50 cursor-not-allowed' : activeTab === 'Logbook' ? 'bg-white text-[#1e3a8a] shadow-md' : 'text-slate-200 hover:bg-white/10'}`}>
+             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253" /></svg>
+             Logbook Harian
+          </button>
+          <button onClick={() => setActiveTab('Profil')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${activeTab === 'Profil' ? 'bg-white text-[#1e3a8a] shadow-md' : 'text-slate-200 hover:bg-white/10'}`}>
+             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+             Profil Saya
+          </button>
         </nav>
-        <div className="p-4 border-t border-white/10 space-y-2 mt-auto bg-black/10">
-          <Link href="/" className="flex items-center gap-3 px-4 py-2 text-sm text-blue-200 hover:text-white hover:bg-white/10 rounded-xl">Kembali ke Home</Link>
+        <div className="p-4 border-t border-white/10 mt-auto">
+          <a href="/" className="flex items-center gap-3 px-4 py-2 text-sm text-slate-300 hover:text-white rounded-xl">Kembali ke Home</a>
         </div>
       </aside>
 
-      <main id="dashboard-top" className="flex-1 flex flex-col h-screen overflow-y-auto scroll-smooth">
-        <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200 px-8 py-5 flex justify-between items-center sticky top-0 z-30">
-          <h2 className="text-2xl font-extrabold text-[#1e3a8a]">Dashboard</h2>
+      {/* MAIN CONTENT */}
+      <main className="flex-1 flex flex-col h-screen overflow-y-auto">
+        <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200 px-8 py-5 flex justify-between items-center sticky top-0 z-10">
+          <div>
+            <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Portal Akademik Magang</h2>
+            <p className="text-sm text-gray-500 mt-1 font-medium">{profile.nama} • {profile.nim}</p>
+          </div>
+          {/* Badge Status Dinamis */}
+          <div className="flex items-center">
+            <span className={`px-4 py-1.5 font-bold rounded-full text-xs flex items-center gap-2 border 
+              ${profile.status === 'Aktif' ? 'bg-green-50 text-green-700 border-green-200' : 
+                profile.status === 'Menunggu_Verifikasi' ? 'bg-amber-50 text-amber-700 border-amber-200' : 
+                profile.status === 'Pilih_Dosen' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                'bg-gray-100 text-gray-600 border-gray-200'}`}>
+              {profile.status === 'Aktif' && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>}
+              {profile.status.replace('_', ' ')}
+            </span>
+          </div>
         </header>
 
-        <div className="p-8 space-y-8 max-w-7xl mx-auto w-full pb-20">
-          {isLoadingStatus ? (
-            <div className="text-center py-20 text-gray-500 font-medium animate-pulse">Memuat data dashboard...</div>
-          ) : isRegistered ? (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+        <div className="p-8 max-w-5xl mx-auto w-full">
+           <AnimatePresence mode="wait">
               
-              {/* STATUS CARD DINAMIS */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase">Perusahaan</p>
-                  <p className="font-bold text-gray-900 text-lg mt-1">{pengajuanInfo?.perusahaan || 'Memuat...'}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase">Total Jam Disetujui</p>
-                  <p className="font-black text-green-600 text-2xl mt-1">{totalJamDisetujui} Jam</p>
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase">Status Pengajuan</p>
-                  <span className={`inline-block mt-2 px-3 py-1 font-bold text-xs rounded-md ${
-                    pengajuanInfo?.status === 'Disetujui' ? 'bg-green-100 text-green-700' : 
-                    pengajuanInfo?.status === 'Pending' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'
-                  }`}>
-                    {pengajuanInfo?.status || 'Memuat...'}
-                  </span>
-                </div>
-                {/* Menampilkan Nilai Dosen Jika Ada */}
-                <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase">Nilai Akhir Dosen</p>
-                  {pengajuanInfo?.nilai_dari_dosen ? (
-                    <p className="font-black text-[#1e3a8a] text-3xl mt-1">{pengajuanInfo.nilai_dari_dosen}</p>
-                  ) : (
-                    <p className="font-medium text-gray-400 mt-2 text-sm italic">Belum dinilai</p>
-                  )}
-                </div>
-              </div>
-
-              {/* LOGBOOK HARIAN SECTION */}
-              <div id="logbook-harian" className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden scroll-mt-28">
-                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                  <h3 className="font-bold text-gray-800 text-lg">
-                    {showAddLogbook ? 'Upload Logbook Harian' : 'Logbook Harian Magang'}
-                  </h3>
-                  {!showAddLogbook && pengajuanInfo?.status === 'Disetujui' && (
-                    <button onClick={() => setShowAddLogbook(true)} className="bg-[#1e3a8a] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-blue-900 transition-all">
-                      + Tambah Logbook
-                    </button>
-                  )}
-                </div>
-
-                <AnimatePresence mode="wait">
-                  {showAddLogbook ? (
-                    <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-8">
-                      <form className="space-y-6 max-w-3xl" onSubmit={handleSubmitLogbook}>
-                        {/* INPUT TANGGAL & JAM KERJA */}
+              {/* ================= TAB STATUS & LOA ================= */}
+              {activeTab === 'Status' && (
+                <motion.div key="status" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
+                  
+                  {profile.status === 'Belum_Upload' && (
+                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                      <div className="p-8 border-b border-gray-100 bg-slate-50 flex items-center gap-4">
+                        <div className="p-3 bg-blue-100 text-blue-600 rounded-xl"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div>
+                        <div>
+                          <h3 className="text-xl font-black text-gray-900">Lapor Diterima Magang (Upload LOA)</h3>
+                          <p className="text-sm text-gray-500 mt-1">Unggah link Google Drive LOA Anda agar bisa diverifikasi oleh Admin/Prodi.</p>
+                        </div>
+                      </div>
+                      <form onSubmit={handleLoaSubmit} className="p-8 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">Tanggal</label>
-                            <input type="date" required value={formData.tanggal} onChange={(e) => setFormData({...formData, tanggal: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-[#1e3a8a]" />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">Jam Kerja</label>
-                            <input type="number" required min="1" max="12" placeholder="Contoh: 8" value={formData.jam_kerja} onChange={(e) => setFormData({...formData, jam_kerja: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-[#1e3a8a]" />
-                          </div>
+                          <div><label className="block text-sm font-bold text-gray-700 mb-2">Nama Perusahaan *</label><input type="text" required value={loaForm.nama_perusahaan} onChange={(e) => setLoaForm({...loaForm, nama_perusahaan: e.target.value})} className="w-full px-5 py-4 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white outline-none text-gray-900" placeholder="PT Contoh" /></div>
+                          <div><label className="block text-sm font-bold text-gray-700 mb-2">Posisi / Role *</label><input type="text" required value={loaForm.posisi} onChange={(e) => setLoaForm({...loaForm, posisi: e.target.value})} className="w-full px-5 py-4 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white outline-none text-gray-900" placeholder="Web Developer" /></div>
                         </div>
-                        {/* INPUT KEGIATAN */}
-                        <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-1">Ringkasan Aktivitas</label>
-                          <input type="text" required placeholder="Contoh: Implementasi fitur login" value={formData.kegiatan} onChange={(e) => setFormData({...formData, kegiatan: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-[#1e3a8a]" />
-                        </div>
-                        {/* INPUT LINK DOKUMEN */}
-                        <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-1">Link Google Drive (PDF Dokumen Pendukung)</label>
-                          <input type="url" required placeholder="https://drive.google.com/..." value={formData.link_dokumen} onChange={(e) => setFormData({...formData, link_dokumen: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-[#1e3a8a]" />
-                        </div>
-                        {/* BUTTON SUBMIT LOGBOOK */}
-                        <div className="flex gap-3 pt-4">
-                          <button type="button" onClick={() => setShowAddLogbook(false)} className="px-6 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Batal</button>
-                          <button type="submit" disabled={isSubmitting} className="px-6 py-2.5 bg-[#1e3a8a] text-white font-bold rounded-xl hover:bg-blue-900 transition-colors">
-                            {isSubmitting ? 'Menyimpan...' : 'Submit Logbook'}
-                          </button>
-                        </div>
+                        <div><label className="block text-sm font-bold text-gray-700 mb-2">Tautan (Link) Google Drive LOA *</label><input type="url" required value={loaForm.link_loa} onChange={(e) => setLoaForm({...loaForm, link_loa: e.target.value})} className="w-full px-5 py-4 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white outline-none text-gray-900" placeholder="https://drive.google.com/..." /></div>
+                        <button type="submit" disabled={isSubmitting} className="px-8 py-4 bg-[#1e3a8a] text-white font-bold rounded-xl shadow-md hover:bg-blue-900 transition-all">{isSubmitting ? 'Mengirim...' : 'Kirim Form Verifikasi'}</button>
                       </form>
-                    </motion.div>
-                  ) : (
-                    <motion.div key="table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                          <thead>
-                            <tr className="bg-gray-50/50 text-gray-500 text-xs uppercase font-bold border-b border-gray-100">
-                              <th className="p-5">Tanggal</th>
-                              <th className="p-5">Kegiatan</th>
-                              <th className="p-5 text-center">Jam</th>
-                              <th className="p-5">Status</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-100 text-sm">
-                            {isLoadingData ? (
-                              <tr><td colSpan={4} className="p-5 text-center text-gray-500">Memuat data...</td></tr>
-                            ) : logbooks.length === 0 ? (
-                              <tr><td colSpan={4} className="p-5 text-center text-gray-500">Belum ada logbook yang diisi.</td></tr>
-                            ) : (
-                              logbooks.map((log) => (
-                                <tr key={log.id} className="hover:bg-blue-50/30 transition-colors">
-                                  <td className="p-5 font-medium">{new Date(log.tanggal).toLocaleDateString('id-ID')}</td>
-                                  <td className="p-5 max-w-xs truncate text-gray-600">{log.kegiatan}</td>
-                                  <td className="p-5 text-center font-bold text-gray-700">{log.jam_kerja} jam</td>
-                                  <td className="p-5">
-                                    <span className={`inline-flex px-2.5 py-1 rounded-md text-[11px] font-bold uppercase ${
-                                      log.status === 'Disetujui' ? 'bg-green-50 text-green-700' : 
-                                      log.status === 'Ditolak' ? 'bg-red-50 text-red-700' : 'bg-orange-50 text-orange-700'
-                                    }`}>
-                                      {log.status}
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </motion.div>
+                    </div>
                   )}
-                </AnimatePresence>
-              </div>
 
-              {/* FITUR BARU: PENYELESAIAN MAGANG (Laporan & Evaluasi) */}
-              {pengajuanInfo?.status === 'Disetujui' && (
-                <div id="laporan-akhir" className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden scroll-mt-28">
-                  <div className="p-6 border-b border-gray-100 bg-gray-50/50">
-                    <h3 className="font-bold text-gray-800 text-lg">Penyelesaian Magang (Akhir Periode)</h3>
-                    <p className="text-sm text-gray-500 mt-1">Unggah laporan akhir dan berikan evaluasi untuk Dosen Pembimbingmu.</p>
-                  </div>
-                  <div className="p-8">
-                    <form onSubmit={handleSubmitLaporan} className="space-y-6 max-w-3xl">
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1">Link Folder Laporan Akhir (Google Drive)</label>
-                        <input type="url" required placeholder="https://drive.google.com/..." 
-                          value={laporanData.link_laporan_akhir} 
-                          onChange={(e) => setLaporanData({...laporanData, link_laporan_akhir: e.target.value})} 
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-[#1e3a8a] bg-gray-50 focus:bg-white transition-colors" 
-                        />
+                  {profile.status === 'Menunggu_Verifikasi' && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-3xl p-10 text-center shadow-sm">
+                      <div className="w-20 h-20 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-5">
+                        <svg className="w-10 h-10 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       </div>
+                      <h3 className="text-2xl font-black text-amber-900 mb-2">Sedang Dalam Tahap Verifikasi</h3>
+                      <p className="text-amber-700 mb-6 max-w-lg mx-auto font-medium">Dokumen LOA Anda di <strong>{profile.perusahaan}</strong> sedang ditinjau oleh Staff Prodi untuk menentukan mata kuliah apa saja yang bisa dikonversi.</p>
+                      <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-amber-200 text-amber-800 text-sm font-bold">
+                        Estimasi Verifikasi: Maks. 2x24 Jam
+                      </div>
+                    </div>
+                  )}
+
+                  {profile.status === 'Pilih_Dosen' && (
+                    <div className="space-y-6">
+                      <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-3xl p-8 text-white shadow-lg flex items-center justify-between">
+                        <div>
+                          <h3 className="text-sm font-bold text-green-100 tracking-wider uppercase mb-1">Verifikasi Berhasil</h3>
+                          <h2 className="text-3xl font-black mb-2">Selamat, LOA Disetujui! 🎉</h2>
+                          <p className="text-green-50 font-medium">Langkah selanjutnya: Silakan pilih Dosen Pembimbing untuk magang Anda.</p>
+                        </div>
+                        <Link href="/pilih-dosen" className="px-6 py-3 bg-white text-green-700 font-black rounded-xl shadow-md hover:scale-105 transition-transform">
+                          Pilih Dosen Sekarang
+                        </Link>
+                      </div>
+
+                      <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
+                        <h3 className="text-lg font-black text-gray-900 mb-4">Hasil Keputusan Konversi SKS</h3>
+                        <div className="flex gap-4 items-center mb-6">
+                          <span className="px-3 py-1.5 bg-blue-100 text-blue-800 font-bold rounded-lg text-sm">Tipe: {profile.tipeKonversi}</span>
+                        </div>
+                        <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Mata Kuliah Yang Dikonversi:</p>
+                          <ul className="space-y-2">
+                            {profile.matkulKonversi.map((matkul, idx) => (
+                              <li key={idx} className="flex items-center gap-3 text-gray-800 font-medium">
+                                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                                {matkul}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {profile.status === 'Aktif' && (
+                    <div className="bg-gradient-to-br from-[#1e3a8a] to-blue-600 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                      <h3 className="text-sm font-bold text-blue-200 tracking-wider uppercase mb-2">Penempatan Magang Aktif</h3>
+                      <h2 className="text-3xl font-black mb-1">{profile.perusahaan}</h2>
+                      <p className="text-lg font-medium text-blue-100 mb-8">{profile.posisi}</p>
                       
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1">Evaluasi untuk Dosen Pembimbing</label>
-                        <textarea required rows={4} placeholder="Berikan kesan, pesan, dan evaluasi terkait bimbingan selama magang..." 
-                          value={laporanData.evaluasi_dari_mahasiswa} 
-                          onChange={(e) => setLaporanData({...laporanData, evaluasi_dari_mahasiswa: e.target.value})} 
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-[#1e3a8a] bg-gray-50 focus:bg-white transition-colors" 
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/20">
+                          <p className="text-blue-200 text-xs font-bold uppercase mb-1">Dosen Pembimbing</p>
+                          <p className="font-bold text-lg">{profile.dosen}</p>
+                        </div>
+                        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/20">
+                          <p className="text-blue-200 text-xs font-bold uppercase mb-1">Sistem Konversi</p>
+                          <p className="font-bold text-lg">{profile.tipeKonversi} ({profile.matkulKonversi.length} Matkul)</p>
+                        </div>
                       </div>
+                    </div>
+                  )}
 
-                      <div className="pt-2">
-                        <button type="submit" disabled={isSubmittingLaporan} className="py-3.5 px-6 rounded-xl shadow-md font-bold text-white bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 transition-colors disabled:opacity-70">
-                          {isSubmittingLaporan ? 'Menyimpan Data...' : 'Kumpulkan Laporan & Evaluasi'}
-                        </button>
+                  {profile.status === 'Selesai' && (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-10 text-center shadow-sm">
+                      <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-5">
+                        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       </div>
-                    </form>
-                  </div>
-                </div>
+                      <h3 className="text-2xl font-black text-emerald-900 mb-2">Magang Telah Selesai!</h3>
+                      <p className="text-emerald-700 mb-6 max-w-lg mx-auto font-medium">Terima kasih telah menyelesaikan program magang. Silakan unggah Laporan Akhir dan Lembar Penilaian dari perusahaan.</p>
+                      <button className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-md hover:bg-emerald-700 transition-all">
+                        Upload Laporan Akhir
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
               )}
 
-            </motion.div>
-          ) : (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center p-12 md:p-20 bg-white rounded-3xl shadow-sm border border-gray-100 max-w-3xl mx-auto mt-10">
-              <div className="w-24 h-24 bg-blue-50 text-[#1e3a8a] rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-              </div>
-              <h2 className="text-3xl font-black text-gray-900 mb-4">Kamu Belum Terdaftar Magang</h2>
-              <p className="text-gray-500 mb-10 text-lg">Untuk memulai program magang, pastikan dokumen profilmu sudah lengkap, lalu temukan posisi yang cocok di Bursa Magang.</p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/profil" className="px-8 py-4 bg-white border-2 border-[#1e3a8a] text-[#1e3a8a] font-bold rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                  1. Lengkapi Profil
-                </Link>
-                <Link href="/lowongan" className="px-8 py-4 bg-[#1e3a8a] text-white font-bold rounded-xl shadow-md hover:bg-blue-900 transition-colors flex items-center justify-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                  2. Cari Lowongan
-                </Link>
-              </div>
-            </motion.div>
-          )}
+              {/* ================= TAB LOGBOOK ================= */}
+              {activeTab === 'Logbook' && (
+                <motion.div key="logbook" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-8">
+                  <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="p-8 border-b border-gray-100 bg-slate-50">
+                      <h3 className="text-xl font-black text-gray-900">Catat Logbook Harian</h3>
+                      <p className="text-sm text-gray-500 mt-1">Catat aktivitas harian Anda dan lampirkan link bukti Google Drive.</p>
+                    </div>
+                    <form onSubmit={handleLogbookSubmit} className="p-8 space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div><label className="block text-sm font-bold text-gray-700 mb-2">Tanggal *</label><input type="date" required value={logbookForm.tanggal} onChange={(e) => setLogbookForm({...logbookForm, tanggal: e.target.value})} className="w-full px-5 py-3.5 border rounded-xl bg-gray-50 outline-none text-gray-900" /></div>
+                        <div><label className="block text-sm font-bold text-gray-700 mb-2">Link Bukti (Opsional)</label><input type="url" value={logbookForm.link_bukti} onChange={(e) => setLogbookForm({...logbookForm, link_bukti: e.target.value})} className="w-full px-5 py-3.5 border rounded-xl bg-gray-50 outline-none text-gray-900" placeholder="https://drive.google.com/..." /></div>
+                      </div>
+                      <div><label className="block text-sm font-bold text-gray-700 mb-2">Detail Kegiatan *</label><textarea required rows={3} value={logbookForm.kegiatan} onChange={(e) => setLogbookForm({...logbookForm, kegiatan: e.target.value})} className="w-full px-5 py-4 border rounded-xl bg-gray-50 outline-none text-gray-900 resize-none"></textarea></div>
+                      <button type="submit" disabled={isSubmitting} className="px-8 py-3.5 bg-[#1e3a8a] text-white font-bold rounded-xl shadow-md hover:bg-blue-900 transition-all">{isSubmitting ? 'Menyimpan...' : 'Simpan Logbook'}</button>
+                    </form>
+                  </div>
+
+                  <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+                    <h3 className="text-xl font-black text-gray-900 mb-6">Riwayat Logbook Saya</h3>
+                    <div className="space-y-4">
+                      {logbooks.map((log) => (
+                        <div key={log.id} className="flex flex-col md:flex-row md:items-center justify-between p-5 rounded-2xl border border-gray-100 hover:border-blue-200 transition-colors gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-1">
+                              <span className="font-bold text-gray-900 bg-gray-100 px-3 py-1 rounded-lg text-sm">{log.tanggal}</span>
+                              <span className={`text-xs font-bold px-2.5 py-1 rounded-md border ${log.status === 'Divalidasi' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-orange-50 text-orange-700 border-orange-200'}`}>{log.status}</span>
+                            </div>
+                            <p className="text-gray-700 mt-2 text-sm leading-relaxed">{log.kegiatan}</p>
+                          </div>
+                          {log.link && (
+                            <a href={log.link} target="_blank" rel="noreferrer" className="shrink-0 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 font-bold rounded-lg hover:bg-blue-100 transition-colors text-sm flex items-center gap-2 w-fit">
+                              Lihat Bukti
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ================= TAB PROFIL ================= */}
+              {activeTab === 'Profil' && (
+                <motion.div key="profil" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
+                  <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm relative">
+                    <div className="absolute top-8 right-8">
+                      {!isEditingProfile ? (
+                        <button onClick={() => setIsEditingProfile(true)} className="px-5 py-2.5 bg-blue-50 text-[#1e3a8a] font-bold rounded-xl hover:bg-blue-100 transition-colors flex items-center gap-2 text-sm border border-blue-200">Edit Profil</button>
+                      ) : (
+                        <button onClick={() => setIsEditingProfile(false)} className="px-5 py-2.5 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-colors text-sm">Batal Edit</button>
+                      )}
+                    </div>
+
+                    {!isEditingProfile ? (
+                      <>
+                        <div className="flex items-center gap-6 mb-8 pb-6 border-b">
+                          <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-blue-50 shadow-md shrink-0 bg-blue-100 flex items-center justify-center">
+                            {profile.fotoUrl ? <img src={profile.fotoUrl} alt="Profil" className="w-full h-full object-cover" /> : <span className="text-4xl font-black text-[#1e3a8a]">{profile.nama.charAt(0)}</span>}
+                          </div>
+                          <div>
+                            <h3 className="text-2xl font-black text-gray-900">{profile.nama}</h3>
+                            <p className="text-gray-500 font-medium">{profile.prodi} — {profile.fakultas}</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <div><label className="text-xs font-black text-gray-400 uppercase tracking-widest">NIM</label><p className="text-lg font-bold text-gray-900 mt-1">{profile.nim}</p></div>
+                          <div><label className="text-xs font-black text-gray-400 uppercase tracking-widest">Email</label><p className="text-lg font-bold text-gray-900 mt-1">{profile.email}</p></div>
+                          <div><label className="text-xs font-black text-gray-400 uppercase tracking-widest">Tanggal Lahir</label><p className="text-lg font-bold text-gray-900 mt-1">{profile.tanggalLahir ? new Date(profile.tanggalLahir).toLocaleDateString('id-ID') : '-'}</p></div>
+                          <div><label className="text-xs font-black text-gray-400 uppercase tracking-widest">No HP</label><p className="text-lg font-bold text-gray-900 mt-1">{profile.noHp || '-'}</p></div>
+                        </div>
+                      </>
+                    ) : (
+                      <form onSubmit={handleSaveProfile}>
+                        <div className="flex items-center gap-6 mb-8 pb-6 border-b">
+                          <div className="relative group">
+                            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-blue-100 shadow-sm shrink-0 bg-gray-100 flex items-center justify-center">
+                              {profile.fotoUrl ? <img src={profile.fotoUrl} alt="Profil" className="w-full h-full object-cover" /> : <span className="text-4xl font-black text-gray-400">{profile.nama.charAt(0)}</span>}
+                            </div>
+                            <button type="button" onClick={() => fileInputRef.current?.click()} className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><span className="text-white text-xs font-bold text-center">Ubah<br/>Foto</span></button>
+                            <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handlePhotoChange} />
+                          </div>
+                          <div><h3 className="text-xl font-black text-gray-900 mb-1">Ubah Foto Profil</h3></div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                          <div><label className="block text-sm font-bold text-gray-700 mb-2">Nama Lengkap</label><input type="text" value={profile.nama} onChange={(e) => setProfile({...profile, nama: e.target.value})} required className="w-full px-4 py-3 border rounded-xl bg-white outline-none text-gray-900" /></div>
+                          <div><label className="block text-sm font-bold text-gray-700 mb-2">NIM (Tidak bisa diubah)</label><input type="text" value={profile.nim} disabled className="w-full px-4 py-3 border rounded-xl bg-gray-100 text-gray-500 outline-none" /></div>
+                          <div><label className="block text-sm font-bold text-gray-700 mb-2">Email</label><input type="email" value={profile.email} onChange={(e) => setProfile({...profile, email: e.target.value})} required className="w-full px-4 py-3 border rounded-xl bg-white outline-none text-gray-900" /></div>
+                          <div><label className="block text-sm font-bold text-gray-700 mb-2">Tanggal Lahir</label><input type="date" value={profile.tanggalLahir} onChange={(e) => setProfile({...profile, tanggalLahir: e.target.value})} required className="w-full px-4 py-3 border rounded-xl bg-white outline-none text-gray-900" /></div>
+                          <div><label className="block text-sm font-bold text-gray-700 mb-2">Nomor HP</label><input type="tel" value={profile.noHp} onChange={(e) => setProfile({...profile, noHp: e.target.value})} className="w-full px-4 py-3 border rounded-xl bg-white outline-none text-gray-900" /></div>
+                        </div>
+                        <div className="flex justify-end pt-4 border-t border-gray-100"><button type="submit" className="px-8 py-3 bg-[#1e3a8a] text-white font-bold rounded-xl shadow-md hover:bg-blue-900 transition-all">Simpan Perubahan</button></div>
+                      </form>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+           </AnimatePresence>
         </div>
       </main>
     </div>

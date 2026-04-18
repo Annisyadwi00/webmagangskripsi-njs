@@ -19,13 +19,13 @@ export async function POST(request: Request) {
 
     // 1. Cari user di database berdasarkan Email ATAU Identifier (NIM/NIDN)
     const user = await User.findOne({
-      where: {
-        [Op.or]: [
-          { email: identifierInput },
-          { identifier: identifierInput }
-        ]
-      }
-    });
+  where: {
+    [Op.or]: [
+      { email: identifierInput }, 
+      { nim_nidn: identifierInput } // <--- Ubah jadi nim_nidn
+    ]
+  }
+});
 
     if (!user) {
       return NextResponse.json({ message: 'Akun tidak ditemukan!' }, { status: 404 });

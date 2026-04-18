@@ -19,6 +19,8 @@ export default function Navbar({ user }: { user: any }) {
   }
 
   const handleLogout = async () => {
+  const isConfirm = window.confirm("Apakah Anda yakin ingin keluar dari sistem?");
+    if (!isConfirm) return;
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
     router.refresh();
@@ -49,9 +51,15 @@ export default function Navbar({ user }: { user: any }) {
 
               {user ? (
                 <div className="flex items-center gap-4">
-                  <div className="flex flex-col text-right">
-                    <span className="text-sm font-bold text-gray-900">{user.name}</span>
-                    <span className="text-xs font-medium text-[#1e3a8a]">{user.role}</span>
+                  <div className="flex items-center gap-3 px-3 py-1.5 bg-slate-50 rounded-full border border-gray-200">
+                    {/* Lingkaran Avatar Inisial */}
+                    <div className="w-8 h-8 rounded-full bg-[#1e3a8a] text-white flex items-center justify-center font-bold text-xs">
+                      {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <div className="flex flex-col text-left pr-2">
+                      <span className="text-sm font-bold text-gray-900 leading-tight truncate max-w-[120px]">{user.name}</span>
+                      <span className="text-[10px] font-black text-[#1e3a8a] uppercase tracking-wider">{user.role}</span>
+                    </div>
                   </div>
                   <Link href={user.role === 'Admin' ? '/admin/dashboard' : user.role === 'Dosen' ? '/dosen/dashboard' : '/dashboard'} className="px-5 py-2.5 bg-[#1e3a8a] text-white text-sm font-bold rounded-xl shadow-md hover:bg-blue-900 transition-all hover:-translate-y-0.5">
                     Dashboard

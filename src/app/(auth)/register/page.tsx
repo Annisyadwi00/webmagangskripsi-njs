@@ -8,11 +8,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function RegisterPage() {
   const router = useRouter();
   
-  // State untuk Peran dan Form
+  // ✅ KODE YANG BENAR (GABUNGAN)
+const [formData, setFormData] = useState({
+  name: '', 
+  email: '', 
+  phone: '', 
+  password: '',
+  role: 'Mahasiswa',
+  nim_nidn: '',
+  prodi: '' // <--- Cukup selipkan ini di paling bawah
+});
   const [activeRole, setActiveRole] = useState('Mahasiswa');
-  const [formData, setFormData] = useState({
-    name: '', identifier: '', email: '', phone: '', password: '', confirmPassword: ''
-  });
+
 
   // State untuk Visibilitas Input dan Status Proses
   const [showPassword, setShowPassword] = useState(false);
@@ -145,8 +152,27 @@ export default function RegisterPage() {
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
                 <label htmlFor="identifier" className="block text-sm font-bold text-gray-700 mb-1">NIM / NIDN / ID Staf</label>
-                <input id="identifier" type="text" required value={formData.identifier} onChange={handleChange} className="block w-full px-4 py-3 border border-gray-300 rounded-xl sm:text-sm bg-gray-50 focus:bg-white text-gray-900 transition-colors outline-none focus:ring-2 focus:ring-[#1e3a8a]" />
+              <input 
+                type="text" 
+                required 
+                value={formData.nim_nidn} // <--- Pastikan ini formData.nim_nidn
+                onChange={(e) => setFormData({...formData, nim_nidn: e.target.value})} // <--- Pastikan ini nim_nidn
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2" 
+                placeholder="Contoh: 2210631170001" />
               </div>
+              <div>
+  <label className="block text-sm font-bold text-gray-700 mb-1">Program Studi / Jurusan</label>
+  <select 
+    required 
+    value={formData.prodi} 
+    onChange={(e) => setFormData({...formData, prodi: e.target.value})} 
+    className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#1e3a8a]"
+  >
+    <option value="S1 Informatika">S1 Informatika</option>
+    <option value="S1 Sistem Informasi">S1 Sistem Informasi</option>
+    {/* Tambahkan jurusan lain di UNSIKA kalau ada */}
+  </select>
+</div>
               <div>
                 <label htmlFor="phone" className="block text-sm font-bold text-gray-700 mb-1">Kontak Telepon Aktif</label>
                 <input id="phone" type="tel" required value={formData.phone} onChange={handleChange} className="block w-full px-4 py-3 border border-gray-300 rounded-xl sm:text-sm bg-gray-50 focus:bg-white text-gray-900 transition-colors outline-none focus:ring-2 focus:ring-[#1e3a8a]" />
