@@ -1,42 +1,40 @@
 import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import { cookies } from 'next/headers';
 import Pengajuan from '@/models/Pengajuan';
 import { connectDB } from '@/lib/db';
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
 
 // ==========================================
-// 1. FUNGSI GET (Membaca Data)
+// 1. FUNGSI GET (Ambil Data Pengajuan)
 // ==========================================
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await connectDB();
-    const cookieStore = await cookies(); 
+    const cookieStore = await cookies();
     const token = cookieStore.get('auth_token')?.value;
-    if (!token) return NextResponse.json({ message: 'Akses ditolak!' }, { status: 401 });
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    
+    if (!token) return NextResponse.json({ message: 'Akses ditolak' }, { status: 401 });
 
-    if (decoded.role === 'Mahasiswa') {
-      const pengajuan = await Pengajuan.findOne({ where: { mahasiswaId: decoded.id }, order: [['createdAt', 'DESC']] });
-      return NextResponse.json({ data: pengajuan }, { status: 200 });
-    } 
-    // DOSEN: Hanya ambil mahasiswa yang memilih dia sebagai dospem
-    else if (decoded.role === 'Dosen') {
-      const bimbingan = await Pengajuan.findAll({ where: { dosenId: decoded.id }, order: [['createdAt', 'DESC']] });
-      return NextResponse.json({ data: bimbingan }, { status: 200 });
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    
+    if (decoded.role === 'Admin') {
+      // Jika Admin: Tarik SEMUA data pengajuan mahasiswa
+      const data = await Pengajuan.findAll({ order: [['createdAt', 'DESC']] });
+      return NextResponse.json({ data }, { status: 200 });
+    } else if (decoded.role === 'Mahasiswa') {
+      // Jika Mahasiswa: Tarik HANYA data pengajuan miliknya sendiri
+      const data = await Pengajuan.findOne({ where: { mahasiswaId: decoded.id }, order: [['createdAt', 'DESC']] });
+      return NextResponse.json({ data }, { status: 200 });
     }
-    // ADMIN: Lihat semua
-    else if (decoded.role === 'Admin') {
-      const semua = await Pengajuan.findAll({ order: [['createdAt', 'DESC']] });
-      return NextResponse.json({ data: semua }, { status: 200 });
-    }
-    return NextResponse.json({ message: 'Role tidak valid' }, { status: 403 });
-  } catch (error) {
-    return NextResponse.json({ message: 'Error server.' }, { status: 500 });
+    
+    return NextResponse.json({ data: [] }, { status: 200 });
+  } catch (error: any) {
+    return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
 
 // ==========================================
-// 2. FUNGSI POST (Submit LOA Mahasiswa)
+// 2. FUNGSI POST (Mahasiswa Upload LOA)
 // ==========================================
 export async function POST(request: Request) {
   try {
@@ -49,9 +47,7 @@ export async function POST(request: Request) {
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
     if (decoded.role !== 'Mahasiswa') return NextResponse.json({ message: 'Hanya mahasiswa!' }, { status: 403 });
 
-    const body = await request.json();
-    // Sesuaikan dengan data yang dikirim dari UI LOA Mahasiswa
-    const { nama_perusahaan, posisi, link_loa } = body; 
+    const { nama_perusahaan, posisi, link_loa } = await request.json();
 
     if (!nama_perusahaan || !posisi || !link_loa) {
       return NextResponse.json({ message: 'Perusahaan, Posisi, dan Link LOA wajib diisi!' }, { status: 400 });
@@ -71,18 +67,20 @@ export async function POST(request: Request) {
       perusahaan: nama_perusahaan,
       posisi: posisi,
       link_loa: link_loa,
-      status: 'Menunggu_Verifikasi', // Langsung masuk tahap 2
+      status: 'Menunggu_Verifikasi', 
     });
 
     return NextResponse.json({ message: 'LOA berhasil dikirim!', data: newPengajuan }, { status: 201 });
   } catch (error: any) {
-    console.error(error);
     return NextResponse.json({ message: `Error Server: ${error.message}` }, { status: 500 });
   }
 }
 
 // ==========================================
-// 3. FUNGSI PUT (Mengupdate Data / Laporan / Nilai)
+// 3. FUNGSI PUT (Admin Memverifikasi LOA)
+// ==========================================
+// ==========================================
+// 3. FUNGSI PUT (Update Status, Pilih Dosen, Nilai)
 // ==========================================
 export async function PUT(request: Request) {
   try {
@@ -94,25 +92,46 @@ export async function PUT(request: Request) {
     
     const body = await request.json();
     
+    // LOGIKA MAHASISWA (Pilih Dosen & Laporan)
     if (decoded.role === 'Mahasiswa') {
-      const { id_pengajuan, link_laporan_akhir, evaluasi_dari_mahasiswa } = body;
-      await Pengajuan.update({ link_laporan_akhir, evaluasi_dari_mahasiswa }, { where: { id: id_pengajuan, mahasiswaId: decoded.id } });
-      return NextResponse.json({ message: 'Laporan disimpan!' }, { status: 200 });
+      if (body.action === 'pilih_dosen') {
+        await Pengajuan.update(
+          { dosenId: body.dosenId, nama_dosen: body.nama_dosen, status: 'Aktif' }, 
+          { where: { mahasiswaId: decoded.id, status: 'Pilih_Dosen' } }
+        );
+        return NextResponse.json({ message: 'Berhasil memilih dosen pembimbing!' }, { status: 200 });
+      }
+      if (body.link_laporan_akhir) {
+        await Pengajuan.update({ link_laporan_akhir: body.link_laporan_akhir }, { where: { mahasiswaId: decoded.id } });
+        return NextResponse.json({ message: 'Laporan disimpan!' }, { status: 200 });
+      }
     } 
+    // LOGIKA ADMIN (Verifikasi LOA)
+    else if (decoded.role === 'Admin') {
+      if (body.action === 'setujui') {
+        await Pengajuan.update({
+          tipeKonversi: body.tipeKonversi,
+          matkulKonversi: JSON.stringify(body.matkulKonversi),
+          status: 'Pilih_Dosen'
+        }, { where: { id: body.id } });
+        return NextResponse.json({ message: 'Pengajuan disetujui!' }, { status: 200 });
+      }
+      if (body.action === 'tolak') {
+        await Pengajuan.destroy({ where: { id: body.id } });
+        return NextResponse.json({ message: 'Pengajuan ditolak.' }, { status: 200 });
+      }
+    }
+    // LOGIKA DOSEN (Nilai & Persetujuan)
     else if (decoded.role === 'Dosen') {
-      const { id_pengajuan, action, nilai_dari_dosen } = body;
-      
-      // Logika Dosen Terima/Tolak Bimbingan
-      if (action === 'terima') {
-        await Pengajuan.update({ status_dosen: 'Disetujui' }, { where: { id: id_pengajuan } });
+      if (body.action === 'terima') {
+        await Pengajuan.update({ status_dosen: 'Disetujui' }, { where: { id: body.id_pengajuan } });
         return NextResponse.json({ message: 'Bimbingan disetujui!' }, { status: 200 });
-      } else if (action === 'tolak') {
-        await Pengajuan.update({ status_dosen: 'Ditolak', dosenId: null, nama_dosen: null }, { where: { id: id_pengajuan } });
+      } else if (body.action === 'tolak') {
+        await Pengajuan.update({ status_dosen: 'Ditolak', dosenId: null, nama_dosen: null, status: 'Pilih_Dosen' }, { where: { id: body.id_pengajuan } });
         return NextResponse.json({ message: 'Bimbingan ditolak.' }, { status: 200 });
       } 
-      // Logika Dosen Ngasih Nilai
-      else if (nilai_dari_dosen) {
-        await Pengajuan.update({ nilai_dari_dosen }, { where: { id: id_pengajuan } });
+      if (body.nilai_dari_dosen) {
+        await Pengajuan.update({ nilai_dari_dosen: body.nilai_dari_dosen }, { where: { id: body.id_pengajuan } });
         return NextResponse.json({ message: 'Nilai diberikan!' }, { status: 200 });
       }
     }
