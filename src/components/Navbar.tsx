@@ -1,113 +1,84 @@
 "use client";
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function Navbar() {
+  const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
   
-  // State untuk menyimpan data user yang login
-  const [user, setUser] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // State untuk nyimpan info user
+  const [user, setUser] = useState<{name: string, role: string, photo: string} | null>(null);
 
-  // Mengecek apakah ada user yang sedang login
   useEffect(() => {
-    const checkUser = async () => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Cek apakah user sudah login
+  useEffect(() => {
+    const fetchUser = async () => {
       try {
         const res = await fetch('/api/auth/me');
         if (res.ok) {
-          const data = await res.json();
-          setUser(data.data);
-        } else {
-          setUser(null);
+          const data = (await res.json()).data;
+          setUser({ name: data.name, role: data.role, photo: data.photo });
         }
-      } catch (error) {
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
+      } catch (error) {}
     };
-    checkUser();
-  }, [pathname]); // Refresh tiap kali pindah halaman
-
-  // Sembunyikan Navbar di halaman Auth dan Dashboard
-  if (
-    pathname.startsWith('/dashboard') || 
-    pathname.startsWith('/admin') || 
-    pathname.startsWith('/dosen') || 
-    pathname === '/login' || 
-    pathname === '/register'
-  ) {
-    return null;
-  }
-
-  const handleLogout = async () => {
-    const isConfirm = window.confirm("Apakah Anda yakin ingin keluar dari sistem?");
-    if (!isConfirm) return;
-    
-    // FIX: URL Logout yang benar
-    await fetch('/api/logout', { method: 'POST' });
-    setUser(null);
-    router.push('/login');
-    router.refresh();
-  };
+    fetchUser();
+  }, [pathname]);
 
   return (
-    <>
-      <nav suppressHydrationWarning className="fixed w-full top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 shadow-sm transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-20 items-center">
-            
-            {/* Logo SI Magang */}
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="bg-gradient-to-br from-[#1e3a8a] to-blue-600 p-2.5 rounded-xl shadow-md shadow-blue-900/20 group-hover:scale-105 transition-transform">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-              </div>
-              <span className="font-black text-xl tracking-tight text-gray-900 group-hover:text-[#1e3a8a] transition-colors">SI Magang</span>
-            </Link>
-
-            {/* Menu Desktop */}
-            <div className="hidden md:flex items-center gap-8">
-              <Link href="/" className="text-sm font-bold text-gray-500 hover:text-[#1e3a8a] transition-colors">Beranda</Link>
-              <Link href="/lowongan" className="text-sm font-bold text-gray-500 hover:text-[#1e3a8a] transition-colors">Bursa Magang</Link>
-              
-              <div className="h-6 w-px bg-gray-200 mx-2"></div>
-
-              {isLoading ? (
-                <div className="h-10 w-32 bg-gray-100 animate-pulse rounded-xl"></div>
-              ) : user ? (
-                <AnimatePresence>
-                  <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-4">
-                    <div className="flex items-center gap-3 px-3 py-1.5 bg-gray-50 rounded-full border border-gray-200 shadow-sm">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#1e3a8a] to-blue-500 text-white flex items-center justify-center font-black text-xs shadow-inner">
-                        {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                      </div>
-                      <div className="flex flex-col text-left pr-3">
-                        <span className="text-sm font-bold text-gray-900 leading-tight truncate max-w-[120px]">{user.name}</span>
-                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-wider">{user.role}</span>
-                      </div>
-                    </div>
-                    <Link href={user.role === 'Admin' ? '/admin/dashboard' : user.role === 'Dosen' ? '/dosen/dashboard' : '/dashboard'} className="px-5 py-2.5 bg-[#1e3a8a] text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-900/20 hover:bg-blue-900 transition-all hover:-translate-y-0.5">
-                      Dashboard
-                    </Link>
-                    <button onClick={handleLogout} className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm" title="Keluar">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                    </button>
-                  </motion.div>
-                </AnimatePresence>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <Link href="/login" className="px-6 py-2.5 text-sm font-bold text-[#1e3a8a] bg-blue-50/50 hover:bg-blue-100 rounded-xl transition-colors">Masuk</Link>
-                  <Link href="/register" className="px-6 py-2.5 text-sm font-bold text-white bg-[#1e3a8a] rounded-xl shadow-lg shadow-blue-900/20 hover:bg-blue-900 transition-all hover:-translate-y-0.5">Daftar Sekarang</Link>
-                </div>
-              )}
-            </div>
+    <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-100 py-3' : 'bg-transparent py-5'}`}>
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 flex justify-between items-center">
+        
+        {/* KIRI: Logo */}
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="w-10 h-10 bg-gradient-to-br from-[#1e3a8a] to-blue-500 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-blue-500/30 transition-all group-hover:-translate-y-0.5">
+            <span className="text-white font-black text-xl">S</span>
           </div>
+          <span className={`font-extrabold text-xl tracking-tight ${isScrolled ? 'text-gray-900' : 'text-[#1e3a8a]'}`}>
+            SI Magang
+          </span>
+        </Link>
+
+        {/* TENGAH: Menu Publik (Biar nggak kosong) */}
+        <div className="hidden md:flex items-center gap-8">
+          <Link href="/lowongan" className={`text-sm font-bold transition-colors ${pathname === '/lowongan' ? 'text-[#1e3a8a]' : 'text-gray-500 hover:text-[#1e3a8a]'}`}>Bursa Magang</Link>
+          <Link href="/mitra" className={`text-sm font-bold transition-colors ${pathname === '/mitra' ? 'text-[#1e3a8a]' : 'text-gray-500 hover:text-[#1e3a8a]'}`}>Kemitraan Industri</Link>
+          <Link href="/#faq" className="text-sm font-bold text-gray-500 hover:text-[#1e3a8a] transition-colors">Bantuan/FAQ</Link>
         </div>
-      </nav>
-    </>
+
+        {/* KANAN: Akun / Login */}
+        <div className="flex items-center gap-4">
+          {user ? (
+            <div className="flex items-center gap-3">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-black text-gray-900 leading-none">{user.name.split(" ")[0]}</p>
+                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">{user.role}</p>
+              </div>
+              
+              {/* Klik foto lari ke dashboard masing-masing */}
+              <Link href={user.role === 'Admin' ? '/admin/dashboard' : user.role === 'Dosen' ? '/dosen/dashboard' : '/dashboard'} 
+                    className="w-10 h-10 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center text-white font-black hover:scale-110 transition-transform overflow-hidden group">
+                {user.photo ? (
+                  <img src={user.photo} alt="Profil" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-gray-500 group-hover:text-blue-600">{user.name.charAt(0).toUpperCase()}</span>
+                )}
+              </Link>
+            </div>
+          ) : (
+            <Link href="/login" className="px-6 py-2.5 bg-[#1e3a8a] text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 hover:bg-blue-900 transition-all hover:-translate-y-0.5">
+              Masuk
+            </Link>
+          )}
+        </div>
+        
+      </div>
+    </nav>
   );
 }

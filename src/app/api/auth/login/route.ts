@@ -1,74 +1,39 @@
 import { NextResponse } from 'next/server';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { Op } from 'sequelize';
+import { cookies } from 'next/headers';
 import User from '@/models/User';
 import { connectDB } from '@/lib/db';
 
 export async function POST(request: Request) {
   try {
     await connectDB();
-    const body = await request.json();
-    
-    // Di form UI kita, inputnya bernama "email", tapi user bisa isi Email atau NIM
-    const { email: identifierInput, password } = body; 
+    const { email, password } = await request.json();
 
-    if (!identifierInput || !password) {
-      return NextResponse.json({ message: 'Email/NIM dan password wajib diisi!' }, { status: 400 });
-    }
+    const user: any = await User.findOne({ where: { email } });
+    if (!user) return NextResponse.json({ message: 'Email tidak terdaftar!' }, { status: 404 });
 
-    // 1. Cari user di database berdasarkan Email ATAU Identifier (NIM/NIDN)
-    const user = await User.findOne({
-  where: {
-    [Op.or]: [
-      { email: identifierInput }, 
-      { nim_nidn: identifierInput } // <--- Ubah jadi nim_nidn
-    ]
-  }
-});
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return NextResponse.json({ message: 'Password salah!' }, { status: 401 });
 
-    if (!user) {
-      return NextResponse.json({ message: 'Akun tidak ditemukan!' }, { status: 404 });
-    }
-
-    // 2. Cek apakah password yang dimasukkan cocok dengan yang di database
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    
-    if (!isPasswordValid) {
-      return NextResponse.json({ message: 'Password salah!' }, { status: 401 });
-    }
-
-    // 3. Buat JWT Token (Kunci Akses)
-    const secretKey = process.env.JWT_SECRET || 'fallback_secret';
     const token = jwt.sign(
-      { 
-        id: user.id, 
-        role: user.role,
-        name: user.name 
-      }, 
-      secretKey, 
-      { expiresIn: '1d' } // Token berlaku 1 hari
+      { id: user.id, role: user.role, name: user.name, prodi: user.prodi },
+      process.env.JWT_SECRET || 'fallback_secret'
     );
 
-    // 4. Buat response sukses dan simpan token di Cookies browser
-    const response = NextResponse.json(
-      { message: 'Login berhasil!', role: user.role },
-      { status: 200 }
-    );
-
-    // UBAH CARA PENULISAN COOKIESNYA MENJADI SEPERTI INI:
-    response.cookies.set('auth_token', token, {
+    const cookieStore = await cookies();
+    
+    // REVISI: maxAge dihapus agar menjadi Session Cookie. 
+    // Otomatis terhapus dan minta login ulang saat browser ditutup.
+    cookieStore.set('auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       path: '/',
-      maxAge: 60 * 60 * 24, // 1 hari dalam detik
     });
 
-    return response;
-
-  } catch (error) {
-    console.error('Login Error:', error);
-    return NextResponse.json({ message: 'Terjadi kesalahan pada server.' }, { status: 500 });
+    return NextResponse.json({ message: 'Login berhasil', role: user.role }, { status: 200 });
+  } catch (error: any) {
+    return NextResponse.json({ message: `Error: ${error.message}` }, { status: 500 });
   }
 }
