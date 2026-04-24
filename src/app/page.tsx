@@ -30,6 +30,14 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
 
+  // MENGEMBALIKAN DATA FAQ SECARA FULL 100%
+  const faqs = [
+    { q: "Siapa saja yang bisa mendaftar program magang ini?", a: "Seluruh mahasiswa aktif Fakultas Ilmu Komputer UNSIKA yang telah memenuhi syarat SKS minimal dapat mendaftar melalui portal ini." },
+    { q: "Apakah saya bisa mengajukan tempat magang sendiri?", a: "Bisa. Anda dapat mencari tempat magang secara mandiri di luar daftar mitra, lalu mengunggah Letter of Acceptance (LOA) pada dashboard untuk diverifikasi oleh admin prodi." },
+    { q: "Berapa maksimal SKS yang bisa dikonversi?", a: "Maksimal konversi adalah 20 SKS, tergantung pada linearitas posisi magang dengan mata kuliah yang ada di kurikulum." },
+    { q: "Bagaimana cara memilih Dosen Pembimbing?", a: "Setelah LOA Anda disetujui oleh admin, menu 'Pilih Dosen' akan terbuka di dashboard Anda. Anda bisa memilih dosen yang kuota bimbingannya masih tersedia." },
+  ];
+
   const showToast = (msg: string, type: 'success' | 'error') => {
     setToast({ show: true, msg, type });
     setTimeout(() => setToast({ show: false, msg: '', type: 'success' }), 3000);
@@ -61,9 +69,9 @@ export default function Home() {
       </AnimatePresence>
 
       <main className="flex-grow">
-        {/* HERO SECTION */}
-        <section className="relative pt-32 pb-24 lg:pt-48 lg:pb-32 overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-blue-50 to-slate-50 z-0"></div>
+        {/* HERO SECTION - Ditambah padding-bottom ekstrim (pb-48) agar tidak menimpa statistik */}
+        <section className="relative pt-32 pb-48 lg:pt-48 lg:pb-56 overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-blue-50 to-white z-0"></div>
           <div className="absolute -top-[30%] -right-[10%] w-[70%] h-[70%] rounded-full bg-gradient-to-br from-blue-400/20 to-indigo-500/20 blur-3xl pointer-events-none"></div>
 
           <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10 text-center">
@@ -86,38 +94,44 @@ export default function Home() {
                 <Link href="/lowongan" className="w-full sm:w-auto px-8 py-4 bg-white text-gray-700 font-bold rounded-2xl shadow-sm border border-gray-200 hover:bg-gray-50 transition-all hover:-translate-y-1 text-lg flex items-center justify-center gap-2">Lihat Lowongan</Link>
               </motion.div>
 
-              <motion.div variants={fadeUp} className="mt-10 pt-8 border-t border-gray-200/60 max-w-lg mx-auto flex flex-col items-center">
-                <p className="text-sm font-bold text-gray-500 mb-3 uppercase tracking-widest">Untuk Perusahaan / Mitra Industri</p>
-                <Link href="/mitra" className="group flex items-center gap-3 px-6 py-3 bg-blue-50/80 text-[#1e3a8a] font-bold rounded-xl hover:bg-blue-100 transition-colors shadow-sm border border-blue-100/50">Masuk ke Portal Kemitraan</Link>
+              <motion.div variants={fadeUp} className="mt-12 pt-8 border-t border-gray-200/60 max-w-lg mx-auto flex flex-col items-center">
+                <p className="text-sm font-bold text-gray-500 mb-4 uppercase tracking-widest">Untuk Perusahaan / Mitra Industri</p>
+                <Link href="/mitra" className="group flex items-center gap-3 px-6 py-3 bg-blue-50/80 text-[#1e3a8a] font-bold rounded-xl hover:bg-blue-100 transition-colors shadow-sm border border-blue-100/50">
+                  Masuk ke Portal Kemitraan
+                </Link>
               </motion.div>
             </motion.div>
           </div>
         </section>
 
-        {/* REVISI: SECTION STATISTIK DIPINDAH KE SINI + ANIMASI */}
-        <section className="relative z-20 -mt-16 px-6 lg:px-8 pb-12">
+        {/* SECTION STATISTIK MENGAMBANG (DENGAN ANIMASI) */}
+        <section className="relative z-20 px-6 lg:px-8 -mt-32 mb-20">
           <div className="max-w-6xl mx-auto">
             <motion.div 
-              initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, ease: "easeOut" }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-6 bg-white/90 backdrop-blur-xl p-8 md:p-12 rounded-[32px] shadow-2xl shadow-blue-900/5 border border-white/40"
+              initial={{ opacity: 0, y: 40 }} 
+              whileInView={{ opacity: 1, y: 0 }} 
+              viewport={{ once: true }} 
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="grid grid-cols-2 md:grid-cols-4 gap-6 bg-[#0a1128] p-8 md:p-12 rounded-[40px] shadow-2xl text-white relative overflow-hidden"
             >
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
               {[
-                { label: "Mitra Perusahaan", val: "50+", color: "text-blue-600" },
-                { label: "Mahasiswa Magang", val: "200+", color: "text-emerald-600" },
-                { label: "Digitalisasi", val: "100%", color: "text-indigo-600" },
-                { label: "SKS Konversi", val: "20", color: "text-orange-600" }
+                { label: "Mitra Perusahaan", val: "50+", color: "text-blue-300" },
+                { label: "Mahasiswa Magang", val: "200+", color: "text-emerald-400" },
+                { label: "Digitalisasi Laporan", val: "100%", color: "text-indigo-300" },
+                { label: "SKS Maks Konversi", val: "20", color: "text-orange-400" }
               ].map((stat, i) => (
-                <motion.div key={i} initial={{ opacity: 0, scale: 0.5 }} whileInView={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.1, duration: 0.5 }} className="text-center">
+                <motion.div key={i} initial={{ opacity: 0, scale: 0.8 }} whileInView={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.15, duration: 0.5 }} className="text-center relative z-10">
                   <h4 className={`text-4xl md:text-5xl font-black mb-2 ${stat.color}`}>{stat.val}</h4>
-                  <p className="text-xs md:text-sm font-bold text-gray-500 uppercase tracking-widest">{stat.label}</p>
+                  <p className="text-xs md:text-sm font-bold text-gray-400 uppercase tracking-widest">{stat.label}</p>
                 </motion.div>
               ))}
             </motion.div>
           </div>
         </section>
 
-        {/* SECTION FITUR UNGGULAN */}
-        <section className="py-24 bg-white relative">
+        {/* SECTION FITUR UNGGULAN (TEKS DIKEMBALIKAN FULL) */}
+        <section className="py-10 pb-24 bg-white relative">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4">Fitur Unggulan SI Magang</h2>
@@ -125,47 +139,78 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <motion.div whileHover={{ y: -10 }} className="p-8 rounded-3xl bg-slate-50 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300">
+                <div className="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
                 <h3 className="text-xl font-black text-gray-900 mb-3">Konversi SKS Otomatis</h3>
-                <p className="text-gray-600 leading-relaxed">Sistem pintar untuk pengajuan konversi hingga 20 SKS yang terhubung langsung dengan Prodi.</p>
+                <p className="text-gray-600 leading-relaxed">Sistem pintar untuk pengajuan konversi hingga 20 SKS yang terhubung langsung dengan keputusan Prodi.</p>
               </motion.div>
               <motion.div whileHover={{ y: -10 }} className="p-8 rounded-3xl bg-slate-50 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300">
+                <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-6">
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253" /></svg>
+                </div>
                 <h3 className="text-xl font-black text-gray-900 mb-3">Logbook Digital Terpadu</h3>
-                <p className="text-gray-600 leading-relaxed">Tinggalkan kertas. Catat kegiatan harianmu dan dapatkan approval langsung dari Dosen.</p>
+                <p className="text-gray-600 leading-relaxed">Tinggalkan kertas. Catat kegiatan harianmu dan dapatkan approval langsung dari Dosen Pembimbing via sistem.</p>
               </motion.div>
               <motion.div whileHover={{ y: -10 }} className="p-8 rounded-3xl bg-slate-50 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300">
+                <div className="w-14 h-14 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center mb-6">
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                </div>
                 <h3 className="text-xl font-black text-gray-900 mb-3">Integrasi Dosen Pembimbing</h3>
-                <p className="text-gray-600 leading-relaxed">Pilih dosen yang sesuai dengan peminatan magangmu untuk memantau nilai real-time.</p>
+                <p className="text-gray-600 leading-relaxed">Pilih dosen yang sesuai dengan peminatan magangmu. Dosen dapat memantau dan memberikan nilai secara real-time.</p>
               </motion.div>
             </div>
           </div>
         </section>
 
-        {/* SECTION FAQ */}
-        <section className="py-24 bg-gray-50 relative border-t border-gray-100">
+        {/* SECTION FAQ (MAP DARI ARRAY FULL) */}
+        <section className="py-24 bg-gray-50 relative border-t border-gray-100" id="faq">
           <div className="max-w-4xl mx-auto px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-black text-gray-900 mb-4">Pertanyaan Seputar Magang</h2>
+              <span className="text-[#1e3a8a] font-bold tracking-wider uppercase text-sm mb-2 block">Pusat Bantuan</span>
+              <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4">Pertanyaan Seputar Magang</h2>
+              <p className="text-gray-500 font-medium">Masih bingung? Temukan jawaban dari pertanyaan yang sering diajukan di bawah ini.</p>
             </div>
             <div className="space-y-4">
-              <FaqItem question="Siapa saja yang bisa mendaftar program magang ini?" answer="Seluruh mahasiswa aktif Fasilkom UNSIKA yang memenuhi SKS minimal." />
-              <FaqItem question="Apakah bisa mengajukan tempat magang sendiri?" answer="Bisa. Upload LOA di dashboard untuk diverifikasi Admin." />
-              <FaqItem question="Berapa maksimal SKS dikonversi?" answer="Maksimal 20 SKS, tergantung relevansi pekerjaan dengan kurikulum." />
+              {faqs.map((faq, index) => (
+                <FaqItem key={index} question={faq.q} answer={faq.a} />
+              ))}
             </div>
           </div>
         </section>
 
         {/* SECTION PESAN & MASUKAN */}
         <section className="py-24 bg-white relative border-t border-gray-100">
-          <div className="max-w-4xl mx-auto px-6 lg:px-8">
-            <div className="bg-gradient-to-br from-slate-50 to-blue-50/30 rounded-3xl shadow-lg border border-gray-100 p-8 md:p-12 text-center">
-              <h2 className="text-3xl font-black text-gray-900 mb-4">Kirim Pesan & Masukan</h2>
-              <form onSubmit={handleFeedbackSubmit} className="space-y-6 mt-8 text-left">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <input type="text" required value={feedbackForm.nama} onChange={(e) => setFeedbackForm({...feedbackForm, nama: e.target.value})} className="w-full px-5 py-4 border rounded-2xl outline-none focus:ring-2 focus:ring-[#1e3a8a]" placeholder="Nama Anda" />
-                  <input type="email" required value={feedbackForm.email} onChange={(e) => setFeedbackForm({...feedbackForm, email: e.target.value})} className="w-full px-5 py-4 border rounded-2xl outline-none focus:ring-2 focus:ring-[#1e3a8a]" placeholder="Email" />
+          <div className="max-w-5xl mx-auto px-6 lg:px-8">
+            <div className="bg-gradient-to-br from-slate-50 to-blue-50/30 rounded-3xl shadow-lg border border-gray-100 p-8 md:p-12">
+              <div className="text-center mb-10">
+                <div className="w-16 h-16 bg-[#1e3a8a] text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-md shadow-blue-900/20">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
                 </div>
-                <textarea required rows={4} value={feedbackForm.pesan} onChange={(e) => setFeedbackForm({...feedbackForm, pesan: e.target.value})} className="w-full px-5 py-4 border rounded-2xl outline-none focus:ring-2 focus:ring-[#1e3a8a]" placeholder="Tuliskan pesan Anda di sini..."></textarea>
-                <button type="submit" disabled={isSubmitting} className="w-full px-10 py-4 bg-[#1e3a8a] text-white font-bold rounded-2xl shadow-lg hover:bg-blue-900 transition-all">{isSubmitting ? 'Mengirim...' : 'Kirim Pesan Sekarang'}</button>
+                <h2 className="text-3xl font-black text-gray-900 mb-4">Kirim Pesan & Masukan</h2>
+                <p className="text-gray-500 font-medium max-w-2xl mx-auto">Ada kendala teknis, pertanyaan, atau saran untuk pengembangan aplikasi SI Magang? Jangan ragu untuk meninggalkan pesan kepada tim Admin kami.</p>
+              </div>
+              
+              <form onSubmit={handleFeedbackSubmit} className="space-y-6 max-w-3xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Nama Lengkap</label>
+                    <input type="text" required value={feedbackForm.nama} onChange={(e) => setFeedbackForm({...feedbackForm, nama: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all shadow-sm" placeholder="Nama Anda" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Alamat Email</label>
+                    <input type="email" required value={feedbackForm.email} onChange={(e) => setFeedbackForm({...feedbackForm, email: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all shadow-sm" placeholder="email@unsika.ac.id" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Pesan / Masukan</label>
+                  <textarea required rows={4} value={feedbackForm.pesan} onChange={(e) => setFeedbackForm({...feedbackForm, pesan: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all shadow-sm" placeholder="Tuliskan pesan Anda di sini..."></textarea>
+                </div>
+                <div className="text-center pt-4">
+                  <button type="submit" disabled={isSubmitting} className="w-full md:w-auto px-10 py-4 bg-[#1e3a8a] text-white font-bold rounded-2xl shadow-lg shadow-blue-900/30 hover:bg-blue-900 transition-all hover:-translate-y-1 disabled:opacity-70 disabled:hover:translate-y-0">
+                    {isSubmitting ? 'Mengirim Pesan...' : 'Kirim Pesan Sekarang'}
+                  </button>
+                </div>
               </form>
             </div>
           </div>

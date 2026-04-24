@@ -18,7 +18,7 @@ export async function GET() {
       // Mahasiswa hanya melihat logbook miliknya sendiri
       logbooks = await Logbook.findAll({ where: { user_id: decoded.id }, order: [['tanggal', 'DESC']] });
     } else {
-      // Dosen/Admin melihat semua logbook (di frontend akan difilter sesuai mahasiswa bimbingannya)
+      // Dosen/Admin melihat semua logbook
       logbooks = await Logbook.findAll({ order: [['tanggal', 'DESC']] });
     }
 
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
     const newLogbook = await Logbook.create({
       user_id: decoded.id,
-      nama_mahasiswa: decoded.name, // Menyimpan nama mahasiswa untuk mempermudah dosen
+      nama_mahasiswa: decoded.name,
       tanggal: body.tanggal,
       kegiatan: body.kegiatan,
       link_bukti: body.link_bukti,
@@ -53,7 +53,6 @@ export async function POST(request: Request) {
   }
 }
 
-// ---> FITUR BARU: UNTUK DOSEN MENYETUJUI / REVISI LOGBOOK <---
 export async function PUT(request: Request) {
   try {
     await connectDB();
@@ -68,8 +67,12 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
     
+    // Update status dan simpan catatan dosen (jika ada)
     await Logbook.update(
-      { status: body.status }, // 'Disetujui' atau 'Revisi'
+      { 
+        status: body.status,
+        catatan_dosen: body.catatan_dosen || null 
+      }, 
       { where: { id: body.id } }
     );
 

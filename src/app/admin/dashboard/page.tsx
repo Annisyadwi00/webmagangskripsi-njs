@@ -15,7 +15,9 @@ export default function AdminDashboard() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'Aktif' | 'Pending' | 'Verifikasi' | 'Pesan' | 'Pengguna'>('Aktif');
+  
+  // ---> FITUR BARU: Tambah Tab 'Rekap' <---
+  const [activeTab, setActiveTab] = useState<'Aktif' | 'Pending' | 'Verifikasi' | 'Rekap' | 'Pesan' | 'Pengguna'>('Aktif');
   const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
 
   const [showModal, setShowModal] = useState(false);
@@ -140,6 +142,7 @@ export default function AdminDashboard() {
     await fetch('/api/feedback', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
     fetchData();
   };
+  
   const deleteMessage = async (id: number) => {
     if (!confirm('Hapus pesan ini secara permanen dari sistem?')) return;
     try {
@@ -149,8 +152,38 @@ export default function AdminDashboard() {
     } catch (error) { showToast('Gagal menghapus pesan', 'error'); }
   };
 
+  // ---> FITUR BARU: FUNGSI EXPORT KE CSV (EXCEL) <---
+  const handleExportCSV = () => {
+    const approvedPengajuan = pengajuans.filter(p => p.status === 'Disetujui');
+    if (approvedPengajuan.length === 0) {
+      return showToast('Belum ada data magang aktif untuk diekspor.', 'error');
+    }
+
+    const headers = ['Nama Mahasiswa', 'Perusahaan', 'Posisi Magang', 'Dosen Pembimbing', 'Sistem Konversi', 'Nilai Akhir'];
+    const rows = approvedPengajuan.map(p => [
+      `"${p.nama_mahasiswa || '-'}"`,
+      `"${p.perusahaan || '-'}"`,
+      `"${p.posisi || '-'}"`,
+      `"${p.dosen_pembimbing || 'Belum Memilih'}"`,
+      `"${p.tipeKonversi || '-'}"`,
+      `"${p.nilai_dari_dosen || 'Belum Dinilai'}"`
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Rekap_Nilai_Magang_${new Date().getFullYear()}.csv`;
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const displayedJobs = jobs.filter(job => job.status === activeTab);
   const pendingLOA = pengajuans.filter(p => p.status === 'Menunggu_Verifikasi');
+  const activeMagang = pengajuans.filter(p => p.status === 'Disetujui'); // Data untuk tab Rekap
   const filteredUsers = users.filter(u => {
     const matchesRole = userRoleFilter === 'Semua' || u.role === userRoleFilter;
     const searchLower = userSearchTerm.toLowerCase();
@@ -198,6 +231,11 @@ export default function AdminDashboard() {
             {pendingLOA.length > 0 && <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full animate-pulse">{pendingLOA.length}</span>}
           </button>
 
+          {/* ---> TAB BARU: REKAP DATA <--- */}
+          <button onClick={() => setActiveTab('Rekap')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-bold transition-all ${activeTab === 'Rekap' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/50 scale-105' : 'text-slate-300 hover:bg-white/5 hover:translate-x-1'}`}>
+            <div className="flex items-center gap-3"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> Rekap Data & Nilai</div>
+          </button>
+
           <button onClick={() => setActiveTab('Pesan')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-bold transition-all ${activeTab === 'Pesan' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/50 scale-105' : 'text-slate-300 hover:bg-white/5 hover:translate-x-1'}`}>
             <div className="flex items-center gap-3"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> Pesan & Masukan</div>
             {messages.filter(m => m.status === 'Unread').length > 0 && <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{messages.filter(m => m.status === 'Unread').length}</span>}
@@ -208,7 +246,6 @@ export default function AdminDashboard() {
           </button>
         </nav>
 
-        {/* FOOTER SIDEBAR DENGAN TOMBOL BACK & LOGOUT */}
         <div className="p-6 border-t border-white/10 mt-auto relative z-10 flex flex-col gap-3">
           <Link href="/" className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white/5 text-white hover:bg-white/10 rounded-xl font-bold transition-all shadow-sm backdrop-blur-sm border border-white/10 hover:-translate-y-0.5">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
@@ -226,12 +263,18 @@ export default function AdminDashboard() {
         <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200 px-10 py-6 flex justify-between items-center sticky top-0 z-10">
           <div>
             <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-              {activeTab === 'Aktif' ? 'Lowongan Tersedia' : activeTab === 'Pending' ? 'Validasi Antrean Mitra' : activeTab === 'Verifikasi' ? 'Verifikasi Pengajuan Magang' : activeTab === 'Pesan' ? 'Pesan Masuk' : 'Manajemen Pengguna'}
+              {activeTab === 'Aktif' ? 'Lowongan Tersedia' : 
+               activeTab === 'Pending' ? 'Validasi Antrean Mitra' : 
+               activeTab === 'Verifikasi' ? 'Verifikasi Pengajuan Magang' : 
+               activeTab === 'Rekap' ? 'Rekapitulasi & Ekspor Data' :
+               activeTab === 'Pesan' ? 'Pesan Masuk' : 'Manajemen Pengguna'}
             </h2>
           </div>
           <div className="flex gap-3">
             {activeTab === 'Aktif' && <button onClick={() => setShowModal(true)} className="px-5 py-2.5 bg-[#1e3a8a] text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 hover:bg-blue-900 transition-all hover:-translate-y-0.5">+ Tambah Lowongan</button>}
             {activeTab === 'Pengguna' && <button onClick={() => setShowUserModal(true)} className="px-5 py-2.5 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all hover:-translate-y-0.5">+ Tambah Pengguna</button>}
+            {/* Tombol Export Excel */}
+            {activeTab === 'Rekap' && <button onClick={handleExportCSV} className="px-5 py-2.5 bg-cyan-600 text-white font-bold rounded-xl shadow-lg shadow-cyan-600/20 hover:bg-cyan-700 transition-all hover:-translate-y-0.5 flex items-center gap-2"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> Unduh CSV (Excel)</button>}
           </div>
         </header>
 
@@ -266,6 +309,40 @@ export default function AdminDashboard() {
                                   <button onClick={() => handleOpenVerifModal(p)} className="px-4 py-2 bg-emerald-100 text-emerald-700 font-bold rounded-xl hover:bg-emerald-200 transition-all hover:-translate-y-0.5">Proses & Setujui</button>
                                   <button onClick={() => handleRejectLOA(p.id)} className="px-4 py-2 bg-white border border-red-200 text-red-600 font-bold rounded-xl hover:bg-red-50 transition-all hover:-translate-y-0.5">Tolak</button>
                                 </div>
+                              </td>
+                            </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </motion.div>
+                )}
+
+                {/* ---> TAB BARU: REKAP DATA <--- */}
+                {activeTab === 'Rekap' && (
+                  <motion.div key="rekap" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50 text-gray-500 text-xs uppercase font-bold border-b border-gray-100">
+                          <th className="p-5 pl-8">Nama Mahasiswa</th>
+                          <th className="p-5">Tempat Magang</th>
+                          <th className="p-5">Sistem Konversi</th>
+                          <th className="p-5">Dosen Pembimbing</th>
+                          <th className="p-5 pr-8 text-center">Nilai Akhir</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 text-sm">
+                        {activeMagang.length === 0 ? (
+                          <tr><td colSpan={5} className="p-16 text-center text-gray-400 font-bold">Belum ada mahasiswa yang berstatus magang aktif/selesai.</td></tr>
+                        ) : activeMagang.map((p) => (
+                            <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="p-5 pl-8 font-bold text-gray-900 text-base">{p.nama_mahasiswa}</td>
+                              <td className="p-5"><p className="font-bold text-[#1e3a8a]">{p.perusahaan}</p><p className="text-xs text-gray-500">{p.posisi}</p></td>
+                              <td className="p-5"><span className="px-2 py-1 bg-gray-100 rounded text-xs font-bold text-gray-600">{p.tipeKonversi}</span></td>
+                              <td className="p-5 font-medium text-gray-700">{p.dosen_pembimbing || <span className="text-red-500 text-xs italic">Belum Memilih</span>}</td>
+                              <td className="p-5 pr-8 text-center">
+                                <span className={`text-xl font-black ${p.nilai_dari_dosen ? 'text-green-600' : 'text-gray-300'}`}>
+                                  {p.nilai_dari_dosen || '-'}
+                                </span>
                               </td>
                             </tr>
                         ))}
@@ -379,9 +456,7 @@ export default function AdminDashboard() {
         </div>
       </main>
 
-      {/* ========================================================= */}
-      {/* MODAL LIHAT DETAIL LOWONGAN (UNTUK ADMIN) */}
-      {/* ========================================================= */}
+      {/* MODAL LIHAT DETAIL LOWONGAN */}
       <AnimatePresence>
         {showJobDetailModal && selectedJob && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
@@ -426,7 +501,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* ---> PERBAIKAN PEMANGGILAN NAMA KOLOM DESKRIPSI (DESCRIPTION) <--- */}
               <div className="mb-8">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Deskripsi Pekerjaan / Kualifikasi</p>
                 <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 text-gray-900 text-sm leading-relaxed whitespace-pre-wrap break-words max-h-64 overflow-y-auto custom-scrollbar">
