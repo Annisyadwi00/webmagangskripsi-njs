@@ -28,7 +28,7 @@ export default function DashboardMahasiswa() {
     setTimeout(() => setToast({ show: false, msg: '', type: 'success' }), 3000);
   };
 
- const fetchData = async () => {
+  const fetchData = async () => {
     setIsLoading(true);
     try {
       const resUser = await fetch('/api/auth/me');
@@ -43,7 +43,7 @@ export default function DashboardMahasiswa() {
       
       if (resPengajuan.ok) {
         const data = await resPengajuan.json();
-        // REVISI: Mengubah user_id menjadi mahasiswaId
+        // MENGGUNAKAN mahasiswaId SESUAI DENGAN MYSQL
         const userPengajuan = data.data.find((p: any) => p.mahasiswaId === userData.id);
         setPengajuan(userPengajuan || null);
       }
@@ -63,10 +63,33 @@ export default function DashboardMahasiswa() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/Pengajuan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(loaForm) });
-      if (!res.ok) throw new Error((await res.json()).message);
-      showToast('LOA Berhasil Diajukan!', 'success'); setShowLOAModal(false); fetchData();
-    } catch (err: any) { showToast(err.message, 'error'); } finally { setIsSubmitting(false); }
+      const res = await fetch('/api/Pengajuan', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(loaForm) 
+      });
+      
+      if (!res.ok) {
+        const errText = await res.text();
+        let errMsg = 'Terjadi kesalahan sistem';
+        try {
+          const errJson = JSON.parse(errText);
+          errMsg = errJson.message;
+        } catch (e) {
+          errMsg = "Server Error (500). Gagal memproses data di Database.";
+        }
+        throw new Error(errMsg);
+      }
+
+      showToast('LOA Berhasil Diajukan!', 'success'); 
+      setShowLOAModal(false); 
+      setLoaForm({ perusahaan: '', posisi: '', link_loa: '' });
+      fetchData();
+    } catch (err: any) { 
+      showToast(err.message, 'error'); 
+    } finally { 
+      setIsSubmitting(false); 
+    }
   };
 
   const handleBatalPengajuan = async () => {

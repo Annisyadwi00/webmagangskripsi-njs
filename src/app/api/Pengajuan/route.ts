@@ -4,9 +4,6 @@ import { connectDB } from '@/lib/db';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 
-// ==========================================
-// 1. FUNGSI GET (Ambil Data Pengajuan)
-// ==========================================
 export async function GET(request: Request) {
   try {
     await connectDB();
@@ -21,7 +18,6 @@ export async function GET(request: Request) {
     if (decoded.role === 'Admin' || decoded.role === 'Dosen') {
       data = await Pengajuan.findAll({ order: [['createdAt', 'DESC']] });
     } else if (decoded.role === 'Mahasiswa') {
-      // REVISI: Tetap gunakan findAll agar output selalu dalam bentuk Array
       data = await Pengajuan.findAll({ where: { mahasiswaId: decoded.id }, order: [['createdAt', 'DESC']] });
     } else {
       data = [];
@@ -33,9 +29,6 @@ export async function GET(request: Request) {
   }
 }
 
-// ==========================================
-// 2. FUNGSI POST (Mahasiswa Upload LOA)
-// ==========================================
 export async function POST(request: Request) {
   try {
     await connectDB();
@@ -47,7 +40,6 @@ export async function POST(request: Request) {
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
     if (decoded.role !== 'Mahasiswa') return NextResponse.json({ message: 'Hanya mahasiswa!' }, { status: 403 });
 
-    // REVISI: Tangkap 'perusahaan', bukan 'nama_perusahaan' agar sama dengan Frontend
     const { perusahaan, posisi, link_loa } = await request.json();
 
     if (!perusahaan || !posisi || !link_loa) {
@@ -65,7 +57,7 @@ export async function POST(request: Request) {
     const newPengajuan = await Pengajuan.create({
       mahasiswaId: decoded.id,
       nama_mahasiswa: decoded.name,
-      perusahaan: perusahaan, // REVISI
+      perusahaan: perusahaan, 
       posisi: posisi,
       link_loa: link_loa,
       status: 'Menunggu_Verifikasi', 
@@ -77,9 +69,6 @@ export async function POST(request: Request) {
   }
 }
 
-// ==========================================
-// 3. FUNGSI PUT (Update Status, Pilih Dosen, Nilai)
-// ==========================================
 export async function PUT(request: Request) {
   try {
     await connectDB();

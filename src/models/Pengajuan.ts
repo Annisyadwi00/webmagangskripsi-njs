@@ -3,13 +3,13 @@ import sequelize from '../lib/db';
 
 class Pengajuan extends Model {
   declare id: number;
-  declare mahasiswaId: number;
+  declare mahasiswaId: number; 
   declare nama_mahasiswa: string;
   declare perusahaan: string;
   declare posisi: string;
-  declare link_loa: string | null; // REVISI: Diubah jadi allow null agar tidak crash
+  declare link_loa: string | null; 
   declare tipeKonversi: string | null;
-  declare matkulKonversi: string | null;
+  declare matkulKonversi: string | null; 
   declare link_laporan_akhir: string | null;
   declare nilai_dari_dosen: string | null;
   declare dosenId: number | null;
@@ -20,11 +20,11 @@ class Pengajuan extends Model {
 Pengajuan.init(
   {
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
-    mahasiswaId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
+    mahasiswaId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false }, 
     nama_mahasiswa: { type: DataTypes.STRING, allowNull: false },
     perusahaan: { type: DataTypes.STRING, allowNull: false },
     posisi: { type: DataTypes.STRING, allowNull: false },
-    link_loa: { type: DataTypes.STRING, allowNull: true }, // REVISI
+    link_loa: { type: DataTypes.STRING, allowNull: true },
     tipeKonversi: { type: DataTypes.STRING, allowNull: true },
     matkulKonversi: { type: DataTypes.TEXT, allowNull: true },
     link_laporan_akhir: { type: DataTypes.STRING, allowNull: true },
@@ -36,5 +36,6 @@ Pengajuan.init(
   { sequelize, tableName: 'pengajuan', timestamps: true }
 );
 
-Pengajuan.sync({ alter: true });
+// FUNGSI SYNC DIHAPUS AGAR SERVER TIDAK CRASH ❌
+
 export default Pengajuan;
