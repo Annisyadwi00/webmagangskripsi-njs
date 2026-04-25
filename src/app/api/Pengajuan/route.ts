@@ -18,7 +18,8 @@ export async function GET(request: Request) {
     if (decoded.role === 'Admin' || decoded.role === 'Dosen') {
       data = await Pengajuan.findAll({ order: [['createdAt', 'DESC']] });
     } else if (decoded.role === 'Mahasiswa') {
-      data = await Pengajuan.findAll({ where: { mahasiswaId: decoded.id }, order: [['createdAt', 'DESC']] });
+      // MENGGUNAKAN user_id
+      data = await Pengajuan.findAll({ where: { user_id: decoded.id }, order: [['createdAt', 'DESC']] });
     } else {
       data = [];
     }
@@ -47,7 +48,8 @@ export async function POST(request: Request) {
     }
 
     const existingPengajuan = await Pengajuan.findOne({
-      where: { mahasiswaId: decoded.id, status: ['Menunggu_Verifikasi', 'Pilih_Dosen', 'Aktif'] }
+      // MENGGUNAKAN user_id
+      where: { user_id: decoded.id, status: ['Menunggu_Verifikasi', 'Pilih_Dosen', 'Aktif'] }
     });
 
     if (existingPengajuan) {
@@ -55,7 +57,7 @@ export async function POST(request: Request) {
     }
     
     const newPengajuan = await Pengajuan.create({
-      mahasiswaId: decoded.id,
+      user_id: decoded.id, // MENGGUNAKAN user_id
       nama_mahasiswa: decoded.name,
       perusahaan: perusahaan, 
       posisi: posisi,
@@ -65,7 +67,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ message: 'LOA berhasil dikirim!', data: newPengajuan }, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ message: `Error Server: ${error.message}` }, { status: 500 });
+    return NextResponse.json({ message: `Gagal simpan ke database: ${error.message}` }, { status: 500 });
   }
 }
 
@@ -83,12 +85,12 @@ export async function PUT(request: Request) {
       if (body.action === 'pilih_dosen') {
         await Pengajuan.update(
           { dosenId: body.dosenId, nama_dosen: body.nama_dosen, status: 'Aktif' }, 
-          { where: { mahasiswaId: decoded.id, status: 'Pilih_Dosen' } }
+          { where: { user_id: decoded.id, status: 'Pilih_Dosen' } } // MENGGUNAKAN user_id
         );
         return NextResponse.json({ message: 'Berhasil memilih dosen pembimbing!' }, { status: 200 });
       }
       if (body.link_laporan_akhir) {
-        await Pengajuan.update({ link_laporan_akhir: body.link_laporan_akhir }, { where: { mahasiswaId: decoded.id } });
+        await Pengajuan.update({ link_laporan_akhir: body.link_laporan_akhir }, { where: { user_id: decoded.id } }); // MENGGUNAKAN user_id
         return NextResponse.json({ message: 'Laporan disimpan!' }, { status: 200 });
       }
     } 
@@ -120,7 +122,7 @@ export async function PUT(request: Request) {
       }
     }
     return NextResponse.json({ message: 'Aksi tidak valid' }, { status: 400 });
-  } catch (error) {
-    return NextResponse.json({ message: 'Error server.' }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ message: `Error server: ${error.message}` }, { status: 500 });
   }
 }

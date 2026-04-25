@@ -25,7 +25,7 @@ export default function DashboardMahasiswa() {
 
   const showToast = (msg: string, type: 'success' | 'error') => {
     setToast({ show: true, msg, type });
-    setTimeout(() => setToast({ show: false, msg: '', type: 'success' }), 3000);
+    setTimeout(() => setToast({ show: false, msg: '', type: 'success' }), 4000);
   };
 
   const fetchData = async () => {
@@ -43,8 +43,8 @@ export default function DashboardMahasiswa() {
       
       if (resPengajuan.ok) {
         const data = await resPengajuan.json();
-        // MENGGUNAKAN mahasiswaId SESUAI DENGAN MYSQL
-        const userPengajuan = data.data.find((p: any) => p.mahasiswaId === userData.id);
+        // MENGGUNAKAN user_id SESUAI DENGAN MYSQL ASLI KAMU
+        const userPengajuan = data.data.find((p: any) => p.user_id === userData.id);
         setPengajuan(userPengajuan || null);
       }
       
@@ -76,7 +76,7 @@ export default function DashboardMahasiswa() {
           const errJson = JSON.parse(errText);
           errMsg = errJson.message;
         } catch (e) {
-          errMsg = "Server Error (500). Gagal memproses data di Database.";
+          errMsg = `Error (500): ${errText.substring(0, 50)}...`;
         }
         throw new Error(errMsg);
       }

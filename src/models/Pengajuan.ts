@@ -36,6 +36,7 @@ Pengajuan.init(
   { sequelize, tableName: 'pengajuan', timestamps: true }
 );
 
-// FUNGSI SYNC DIHAPUS AGAR SERVER TIDAK CRASH ❌
+// KITA NYALAKAN LAGI SINKRONISASINYA AGAR KOLOM BARU DITAMBAHKAN OTOMATIS
+Pengajuan.sync({ alter: true }).catch((err) => console.log("Pesan Sync:", err.message));
 
 export default Pengajuan;
