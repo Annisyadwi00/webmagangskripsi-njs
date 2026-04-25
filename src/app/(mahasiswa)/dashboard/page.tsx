@@ -20,7 +20,6 @@ export default function DashboardMahasiswa() {
   const [showLOAModal, setShowLOAModal] = useState(false);
   const [showLogbookModal, setShowLogbookModal] = useState(false);
   
-  // KEMBALI MENGGUNAKAN LINK GOOGLE DRIVE
   const [loaForm, setLoaForm] = useState({ perusahaan: '', posisi: '', link_loa: '' });
   const [logbookForm, setLogbookForm] = useState({ tanggal: '', kegiatan: '', link_bukti: '' });
 
@@ -29,7 +28,7 @@ export default function DashboardMahasiswa() {
     setTimeout(() => setToast({ show: false, msg: '', type: 'success' }), 3000);
   };
 
-  const fetchData = async () => {
+ const fetchData = async () => {
     setIsLoading(true);
     try {
       const resUser = await fetch('/api/auth/me');
@@ -44,7 +43,8 @@ export default function DashboardMahasiswa() {
       
       if (resPengajuan.ok) {
         const data = await resPengajuan.json();
-        const userPengajuan = data.data.find((p: any) => p.user_id === userData.id);
+        // REVISI: Mengubah user_id menjadi mahasiswaId
+        const userPengajuan = data.data.find((p: any) => p.mahasiswaId === userData.id);
         setPengajuan(userPengajuan || null);
       }
       
@@ -239,7 +239,7 @@ export default function DashboardMahasiswa() {
                </motion.div>
              )}
 
-             {/* TAB 2: LOGBOOK DENGAN FITUR CATATAN DOSEN */}
+             {/* TAB 2: LOGBOOK */}
              {activeTab === 'Logbook' && (
                <motion.div key="logbook" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
                   {logbooks.length === 0 ? (
@@ -266,7 +266,6 @@ export default function DashboardMahasiswa() {
                          <p className="text-gray-700 font-medium leading-relaxed whitespace-pre-wrap text-sm">{log.kegiatan}</p>
                        </div>
 
-                       {/* MUNCULKAN CATATAN REVISI DARI DOSEN JIKA ADA */}
                        {log.status === 'Revisi' && log.catatan_dosen && (
                          <div className="bg-red-50 rounded-xl p-5 border border-red-200 mb-4 flex items-start gap-3">
                             <span className="text-xl">⚠️</span>
@@ -299,9 +298,18 @@ export default function DashboardMahasiswa() {
               <p className="text-gray-500 mb-6 text-sm border-b pb-6">Pastikan nama perusahaan dan surat penerimaan asli ada di dalam link Google Drive Anda.</p>
               
               <form onSubmit={handleSubmitLOA} className="space-y-5">
-                <div><label className="block text-sm font-bold text-gray-700 mb-2">Nama Perusahaan *</label><input type="text" required value={loaForm.perusahaan} onChange={(e) => setLoaForm({...loaForm, perusahaan: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" /></div>
-                <div><label className="block text-sm font-bold text-gray-700 mb-2">Posisi Magang *</label><input type="text" required value={loaForm.posisi} onChange={(e) => setLoaForm({...loaForm, posisi: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" /></div>
-                <div><label className="block text-sm font-bold text-gray-700 mb-2">Link Dokumen LOA (Google Drive) *</label><input type="url" required value={loaForm.link_loa} onChange={(e) => setLoaForm({...loaForm, link_loa: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" placeholder="Pastikan hak akses link bersifat publik (Anyone with link)" /></div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Nama Perusahaan *</label>
+                  <input type="text" required value={loaForm.perusahaan} onChange={(e) => setLoaForm({...loaForm, perusahaan: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Posisi Magang *</label>
+                  <input type="text" required value={loaForm.posisi} onChange={(e) => setLoaForm({...loaForm, posisi: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Link Dokumen LOA (Google Drive) *</label>
+                  <input type="url" required value={loaForm.link_loa} onChange={(e) => setLoaForm({...loaForm, link_loa: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" placeholder="Pastikan hak akses link bersifat publik (Anyone with link)" />
+                </div>
                 
                 <div className="flex gap-4 pt-4 mt-2 border-t border-gray-100">
                   <button type="button" onClick={() => setShowLOAModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Batal</button>
@@ -313,7 +321,7 @@ export default function DashboardMahasiswa() {
         )}
       </AnimatePresence>
 
-      {/* MODAL INPUT LINK LOGBOOK */}
+      {/* MODAL ISI LOGBOOK */}
       <AnimatePresence>
         {showLogbookModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -323,9 +331,18 @@ export default function DashboardMahasiswa() {
               <p className="text-gray-500 mb-6 text-sm border-b pb-6">Isi sesuai dengan tugas yang dikerjakan hari ini beserta link buktinya.</p>
               
               <form onSubmit={handleSubmitLogbook} className="space-y-5">
-                <div><label className="block text-sm font-bold text-gray-700 mb-2">Tanggal Kegiatan *</label><input type="date" required value={logbookForm.tanggal} onChange={(e) => setLogbookForm({...logbookForm, tanggal: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" /></div>
-                <div><label className="block text-sm font-bold text-gray-700 mb-2">Deskripsi Kegiatan *</label><textarea required rows={4} value={logbookForm.kegiatan} onChange={(e) => setLogbookForm({...logbookForm, kegiatan: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" placeholder="Ceritakan apa saja yang Anda kerjakan hari ini..."></textarea></div>
-                <div><label className="block text-sm font-bold text-gray-700 mb-2">Link Bukti (Foto/Dokumen Google Drive) *</label><input type="url" required value={logbookForm.link_bukti} onChange={(e) => setLogbookForm({...logbookForm, link_bukti: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" placeholder="Link folder atau file dokumentasi kegiatan" /></div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Tanggal Kegiatan *</label>
+                  <input type="date" required value={logbookForm.tanggal} onChange={(e) => setLogbookForm({...logbookForm, tanggal: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Deskripsi Kegiatan *</label>
+                  <textarea required rows={4} value={logbookForm.kegiatan} onChange={(e) => setLogbookForm({...logbookForm, kegiatan: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" placeholder="Ceritakan apa saja yang Anda kerjakan hari ini..."></textarea>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Link Bukti (Foto/Dokumen Google Drive) *</label>
+                  <input type="url" required value={logbookForm.link_bukti} onChange={(e) => setLogbookForm({...logbookForm, link_bukti: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" placeholder="Link folder atau file dokumentasi kegiatan" />
+                </div>
                 
                 <div className="flex gap-4 pt-4 mt-2 border-t border-gray-100">
                   <button type="button" onClick={() => setShowLogbookModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Batal</button>

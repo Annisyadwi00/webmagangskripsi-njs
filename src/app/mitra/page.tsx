@@ -3,15 +3,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 
 export default function MitraPage() {
   const [showJobModal, setShowJobModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
   
-  // ---> DITAMBAHKAN: state valid_until (Deadline) <---
   const [jobForm, setJobForm] = useState({
     perusahaan: '', email_perusahaan: '', posisi: '', kategori: '💻 Frontend Developer',
     type: 'Onsite', tipeKonversi: 'Full', isPaid: 'Tidak', link_pendaftaran: '', deskripsi: '', valid_until: ''
@@ -51,9 +48,7 @@ export default function MitraPage() {
   const staggerContainer = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.2 } } };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans selection:bg-[#1e3a8a] selection:text-white flex flex-col">
-      <Navbar />
-
+    <div className="font-sans selection:bg-[#1e3a8a] selection:text-white flex flex-col">
       <AnimatePresence>
         {toast.show && (
           <motion.div initial={{ opacity: 0, y: -50, x: '-50%' }} animate={{ opacity: 1, y: 20, x: '-50%' }} exit={{ opacity: 0, y: -50, x: '-50%' }} className="fixed top-0 left-1/2 z-[60] mt-20">
@@ -149,7 +144,6 @@ export default function MitraPage() {
         </section>
 
       </main>
-      <Footer />
 
       {/* MODAL FORM PENGAJUAN LOWONGAN UNTUK MITRA */}
       <AnimatePresence>
@@ -223,7 +217,6 @@ export default function MitraPage() {
                   </div>
                 </div>
 
-                {/* ---> DITAMBAHKAN: ROW TANGGAL DEADLINE & LINK PENDAFTARAN <--- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">Tautan/Link Pendaftaran Eksternal (Wajib) *</label>

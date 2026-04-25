@@ -16,11 +16,15 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // ---> FITUR BARU: Tambah Tab 'Rekap' <---
   const [activeTab, setActiveTab] = useState<'Aktif' | 'Pending' | 'Verifikasi' | 'Rekap' | 'Pesan' | 'Pengguna'>('Aktif');
   const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
 
   const [showModal, setShowModal] = useState(false);
+  
+  // ---> FITUR BARU: STATE UNTUK EDIT <---
+  const [isEditingJob, setIsEditingJob] = useState(false);
+  const [editJobId, setEditJobId] = useState<number | null>(null);
+
   const [formData, setFormData] = useState({
     perusahaan: '', posisi: '', deskripsi: '', kuota: '', email_perusahaan: '', link_pendaftaran: '',
     location: '', type: 'Onsite', tipeKonversi: 'Full', kategori: '💻 Frontend Developer', isPaid: 'Tidak', valid_until: ''
@@ -68,6 +72,76 @@ export default function AdminDashboard() {
     router.push('/login');
   };
 
+  // ============ BAGIAN PENGELOLAAN LOWONGAN ============ //
+  const handleSubmitJob = async (e: React.FormEvent) => {
+    e.preventDefault(); 
+    setIsSubmitting(true);
+    try {
+      if (isEditingJob && editJobId) {
+        // PROSES EDIT
+        const res = await fetch('/api/lowongan', { 
+          method: 'PUT', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ ...formData, id: editJobId, action: 'edit' }) 
+        });
+        if (!res.ok) throw new Error((await res.json()).message);
+        showToast('Lowongan berhasil diperbarui!', 'success');
+      } else {
+        // PROSES TAMBAH BARU
+        const res = await fetch('/api/lowongan', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ ...formData, status: 'Aktif' }) // Admin tambah langsung Aktif
+        });
+        if (!res.ok) throw new Error((await res.json()).message);
+        showToast('Berhasil menambah lowongan!', 'success');
+      }
+      setShowModal(false); 
+      setIsEditingJob(false);
+      setEditJobId(null);
+      fetchData();
+    } catch (err: any) { 
+      showToast(err.message, 'error'); 
+    } finally { 
+      setIsSubmitting(false); 
+    }
+  };
+
+  // Fungsi untuk mengisi form saat tombol Edit diklik
+  const handleEditClick = (job: any) => {
+    setFormData({
+      perusahaan: job.company || '',
+      posisi: job.title || '',
+      deskripsi: job.description || job.deskripsi || '',
+      kuota: '',
+      email_perusahaan: '',
+      link_pendaftaran: job.link_pendaftaran || '',
+      location: job.location || '',
+      type: job.type || 'Onsite',
+      tipeKonversi: job.tipeKonversi || 'Full',
+      kategori: job.kategori || '💻 Frontend Developer',
+      isPaid: job.isPaid || 'Tidak',
+      valid_until: job.valid_until ? new Date(job.valid_until).toISOString().split('T')[0] : ''
+    });
+    setIsEditingJob(true);
+    setEditJobId(job.id);
+    setShowModal(true);
+  };
+
+  const handleJobAction = async (id: number, action: 'approve' | 'reject' | 'delete') => {
+    if (!confirm(`Yakin ingin memproses lowongan ini?`)) return;
+    await fetch('/api/lowongan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, action }) });
+    showToast('Aksi berhasil diproses.', 'success');
+    if (showJobDetailModal) setShowJobDetailModal(false); 
+    fetchData();
+  };
+
+  const handleViewJobDetail = (job: any) => {
+    setSelectedJob(job);
+    setShowJobDetailModal(true);
+  };
+  // ====================================================== //
+
   const handleOpenVerifModal = (pengajuan: any) => {
     setVerifForm({ id: pengajuan.id, nama_mahasiswa: pengajuan.nama_mahasiswa, perusahaan: pengajuan.perusahaan, tipeKonversi: 'Full', matkulInput: '' });
     setShowVerifModal(true);
@@ -96,28 +170,6 @@ export default function AdminDashboard() {
       showToast('Pengajuan ditolak.', 'success');
       fetchData();
     } catch (err) { showToast('Terjadi kesalahan', 'error'); }
-  };
-
-  const handleAddJob = async (e: React.FormEvent) => {
-    e.preventDefault(); setIsSubmitting(true);
-    try {
-      await fetch('/api/lowongan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
-      showToast('Berhasil menambah lowongan!', 'success');
-      setShowModal(false); fetchData();
-    } catch (err: any) { showToast(err.message, 'error'); } finally { setIsSubmitting(false); }
-  };
-
-  const handleJobAction = async (id: number, action: 'approve' | 'reject' | 'delete') => {
-    if (!confirm(`Yakin ingin memproses lowongan ini?`)) return;
-    await fetch('/api/lowongan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, action }) });
-    showToast('Aksi berhasil diproses.', 'success');
-    if (showJobDetailModal) setShowJobDetailModal(false); 
-    fetchData();
-  };
-
-  const handleViewJobDetail = (job: any) => {
-    setSelectedJob(job);
-    setShowJobDetailModal(true);
   };
 
   const handleAddUser = async (e: React.FormEvent) => {
@@ -152,7 +204,6 @@ export default function AdminDashboard() {
     } catch (error) { showToast('Gagal menghapus pesan', 'error'); }
   };
 
-  // ---> FITUR BARU: FUNGSI EXPORT KE CSV (EXCEL) <---
   const handleExportCSV = () => {
     const approvedPengajuan = pengajuans.filter(p => p.status === 'Disetujui');
     if (approvedPengajuan.length === 0) {
@@ -183,7 +234,7 @@ export default function AdminDashboard() {
 
   const displayedJobs = jobs.filter(job => job.status === activeTab);
   const pendingLOA = pengajuans.filter(p => p.status === 'Menunggu_Verifikasi');
-  const activeMagang = pengajuans.filter(p => p.status === 'Disetujui'); // Data untuk tab Rekap
+  const activeMagang = pengajuans.filter(p => p.status === 'Disetujui');
   const filteredUsers = users.filter(u => {
     const matchesRole = userRoleFilter === 'Semua' || u.role === userRoleFilter;
     const searchLower = userSearchTerm.toLowerCase();
@@ -231,7 +282,6 @@ export default function AdminDashboard() {
             {pendingLOA.length > 0 && <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full animate-pulse">{pendingLOA.length}</span>}
           </button>
 
-          {/* ---> TAB BARU: REKAP DATA <--- */}
           <button onClick={() => setActiveTab('Rekap')} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-bold transition-all ${activeTab === 'Rekap' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/50 scale-105' : 'text-slate-300 hover:bg-white/5 hover:translate-x-1'}`}>
             <div className="flex items-center gap-3"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> Rekap Data & Nilai</div>
           </button>
@@ -248,12 +298,10 @@ export default function AdminDashboard() {
 
         <div className="p-6 border-t border-white/10 mt-auto relative z-10 flex flex-col gap-3">
           <Link href="/" className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white/5 text-white hover:bg-white/10 rounded-xl font-bold transition-all shadow-sm backdrop-blur-sm border border-white/10 hover:-translate-y-0.5">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-            Kembali ke Beranda
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg> Kembali ke Beranda
           </Link>
           <button onClick={handleLogout} className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-red-500/20 text-red-100 hover:bg-red-500 hover:text-white rounded-xl font-bold transition-all border border-red-500/20 hover:-translate-y-0.5">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-            Logout Akun
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg> Logout Akun
           </button>
         </div>
       </aside>
@@ -271,9 +319,22 @@ export default function AdminDashboard() {
             </h2>
           </div>
           <div className="flex gap-3">
-            {activeTab === 'Aktif' && <button onClick={() => setShowModal(true)} className="px-5 py-2.5 bg-[#1e3a8a] text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 hover:bg-blue-900 transition-all hover:-translate-y-0.5">+ Tambah Lowongan</button>}
+            {/* Tombol Tambah Lowongan mereset Form agar kosong */}
+            {activeTab === 'Aktif' && (
+              <button onClick={() => {
+                setIsEditingJob(false);
+                setEditJobId(null);
+                setFormData({
+                  perusahaan: '', posisi: '', deskripsi: '', kuota: '', email_perusahaan: '', link_pendaftaran: '',
+                  location: '', type: 'Onsite', tipeKonversi: 'Full', kategori: '💻 Frontend Developer', isPaid: 'Tidak', valid_until: ''
+                });
+                setShowModal(true);
+              }} className="px-5 py-2.5 bg-[#1e3a8a] text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 hover:bg-blue-900 transition-all hover:-translate-y-0.5">
+                + Tambah Lowongan
+              </button>
+            )}
+            
             {activeTab === 'Pengguna' && <button onClick={() => setShowUserModal(true)} className="px-5 py-2.5 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all hover:-translate-y-0.5">+ Tambah Pengguna</button>}
-            {/* Tombol Export Excel */}
             {activeTab === 'Rekap' && <button onClick={handleExportCSV} className="px-5 py-2.5 bg-cyan-600 text-white font-bold rounded-xl shadow-lg shadow-cyan-600/20 hover:bg-cyan-700 transition-all hover:-translate-y-0.5 flex items-center gap-2"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> Unduh CSV (Excel)</button>}
           </div>
         </header>
@@ -317,7 +378,7 @@ export default function AdminDashboard() {
                   </motion.div>
                 )}
 
-                {/* ---> TAB BARU: REKAP DATA <--- */}
+                {/* TAB REKAP DATA */}
                 {activeTab === 'Rekap' && (
                   <motion.div key="rekap" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
@@ -417,7 +478,9 @@ export default function AdminDashboard() {
                                 </div>
                               ) : (
                                 <div className="flex gap-2 justify-center">
-                                  <button onClick={() => handleViewJobDetail(job)} className="px-3 py-1.5 bg-blue-50 text-blue-600 font-bold rounded-xl hover:bg-blue-100 transition-all text-xs">Lihat Detail</button>
+                                  <button onClick={() => handleViewJobDetail(job)} className="px-3 py-1.5 bg-blue-50 text-blue-600 font-bold rounded-xl hover:bg-blue-100 transition-all text-xs">Lihat</button>
+                                  {/* ---> TOMBOL EDIT BARU DITAMBAHKAN DI SINI <--- */}
+                                  <button onClick={() => handleEditClick(job)} className="px-3 py-1.5 bg-amber-50 text-amber-600 font-bold rounded-xl hover:bg-amber-100 transition-all text-xs">Edit</button>
                                   <button onClick={() => handleJobAction(job.id, 'delete')} className="px-3 py-1.5 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-all text-xs">Hapus</button>
                                 </div>
                               )}
@@ -621,14 +684,16 @@ export default function AdminDashboard() {
         )}
       </AnimatePresence>
 
-      {/* MODAL TAMBAH LOWONGAN MANUAL (ADMIN) */}
+      {/* MODAL FORM LOWONGAN (UNTUK TAMBAH MAUPUN EDIT) */}
       <AnimatePresence>
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowModal(false)} />
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white w-full max-w-4xl rounded-3xl shadow-2xl p-8 z-10 max-h-full overflow-y-auto custom-scrollbar">
-              <h3 className="text-2xl font-black text-gray-900 mb-6 border-b pb-4">Tambah Lowongan Baru</h3>
-              <form onSubmit={handleAddJob} className="space-y-5">
+              <h3 className="text-2xl font-black text-gray-900 mb-6 border-b pb-4">
+                {isEditingJob ? 'Edit Lowongan Tayang' : 'Tambah Lowongan Baru'}
+              </h3>
+              <form onSubmit={handleSubmitJob} className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div><label className="block text-sm font-bold text-gray-700 mb-1">Nama Perusahaan *</label><input type="text" required value={formData.perusahaan} onChange={(e) => setFormData({...formData, perusahaan: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors" /></div>
                   <div><label className="block text-sm font-bold text-gray-700 mb-1">Posisi Magang *</label><input type="text" required value={formData.posisi} onChange={(e) => setFormData({...formData, posisi: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors" /></div>
@@ -637,21 +702,46 @@ export default function AdminDashboard() {
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">Kategori IT *</label>
                     <select required value={formData.kategori} onChange={(e) => setFormData({...formData, kategori: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors">
-                      <option value="💻 Frontend Developer">💻 Frontend Developer</option><option value="⚙️ Backend Developer">⚙️ Backend Developer</option><option value="🎨 UI/UX Designer">🎨 UI/UX Designer</option><option value="📊 Data Analyst / Science">📊 Data Analyst / Science</option>
+                      <option value="💻 Frontend Developer">💻 Frontend Developer</option><option value="⚙️ Backend Developer">⚙️ Backend Developer</option><option value="🎨 UI/UX Designer">🎨 UI/UX Designer</option><option value="📊 Data Analyst / Science">📊 Data Analyst / Science</option><option value="📱 Mobile App Developer">📱 Mobile App Developer</option><option value="🔒 Keamanan Sistem / Cyber">🔒 Keamanan Sistem / Cyber</option><option value="☁️ Cloud / DevOps">☁️ Cloud / DevOps</option><option value="🛠️ Lainnya (IT Support, QA)">🛠️ Lainnya (IT Support, QA)</option>
                     </select>
                   </div>
                   <div><label className="block text-sm font-bold text-gray-700 mb-1">Link Pendaftaran *</label><input type="url" required value={formData.link_pendaftaran} onChange={(e) => setFormData({...formData, link_pendaftaran: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors" /></div>
                 </div>
                 
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Sistem Konversi Kampus</label>
+                    <select value={formData.tipeKonversi} onChange={(e) => setFormData({...formData, tipeKonversi: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none cursor-pointer">
+                      <option value="Full">✅ Konversi SKS Penuh</option>
+                      <option value="Parsial">⚠️ Parsial (Beberapa Matkul)</option>
+                      <option value="Tidak">❌ Tidak Ada Konversi</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Sistem Kerja</label>
+                    <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none cursor-pointer">
+                      <option value="Onsite">WFO (Onsite)</option><option value="Hybrid">Hybrid</option><option value="Remote">WFH (Remote)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Status Gaji</label>
+                    <select value={formData.isPaid} onChange={(e) => setFormData({...formData, isPaid: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none cursor-pointer">
+                      <option value="Tidak">Tidak Ada (Unpaid)</option><option value="Ya">Ada (Paid)</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Batas Waktu (Deadline) *</label>
                   <input type="date" required value={formData.valid_until} onChange={(e) => setFormData({...formData, valid_until: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors" />
                 </div>
 
-                <div><label className="block text-sm font-bold text-gray-700 mb-1">Deskripsi Pekerjaan *</label><textarea required rows={4} value={formData.deskripsi} onChange={(e) => setFormData({...formData, deskripsi: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors"></textarea></div>
+                <div><label className="block text-sm font-bold text-gray-700 mb-1">Deskripsi Pekerjaan *</label><textarea required rows={4} value={formData.deskripsi} onChange={(e) => setFormData({...formData, deskripsi: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors custom-scrollbar"></textarea></div>
                 <div className="flex gap-4 pt-4 border-t border-gray-100 mt-2">
                   <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3.5 px-4 rounded-xl font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors">Batal</button>
-                  <button type="submit" disabled={isSubmitting} className="flex-1 py-3.5 px-4 rounded-xl shadow-lg font-bold text-white bg-[#1e3a8a] hover:bg-blue-900 transition-all">{isSubmitting ? 'Menyimpan...' : 'Simpan Lowongan'}</button>
+                  <button type="submit" disabled={isSubmitting} className="flex-1 py-3.5 px-4 rounded-xl shadow-lg font-bold text-white bg-[#1e3a8a] hover:bg-blue-900 transition-all">
+                    {isSubmitting ? 'Menyimpan...' : (isEditingJob ? 'Simpan Perubahan' : 'Simpan Lowongan')}
+                  </button>
                 </div>
               </form>
             </motion.div>
