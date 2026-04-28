@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import Pengajuan from '@/models/Pengajuan';
+import User from '@/models/User'; // PENTING: Untuk mencari nama mahasiswa
 import { connectDB } from '@/lib/db';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
@@ -18,7 +19,6 @@ export async function GET(request: Request) {
     if (decoded.role === 'Admin' || decoded.role === 'Dosen') {
       data = await Pengajuan.findAll({ order: [['createdAt', 'DESC']] });
     } else if (decoded.role === 'Mahasiswa') {
-      // MENGGUNAKAN user_id
       data = await Pengajuan.findAll({ where: { user_id: decoded.id }, order: [['createdAt', 'DESC']] });
     } else {
       data = [];
@@ -48,17 +48,20 @@ export async function POST(request: Request) {
     }
 
     const existingPengajuan = await Pengajuan.findOne({
-      // MENGGUNAKAN user_id
-      where: { user_id: decoded.id, status: ['Menunggu_Verifikasi', 'Pilih_Dosen', 'Aktif'] }
+      where: { user_id: decoded.id, status: ['Menunggu_Verifikasi', 'Pilih_Dosen', 'Aktif'] } // PAKAI user_id
     });
 
     if (existingPengajuan) {
       return NextResponse.json({ message: 'Anda sudah memiliki proses magang yang sedang berjalan.' }, { status: 409 });
     }
     
+    // MENCARI NAMA MAHASISWA AGAR TIDAK ERROR
+    const userData = await User.findByPk(decoded.id);
+    const namaMahasiswa = userData ? userData.name : 'Mahasiswa';
+
     const newPengajuan = await Pengajuan.create({
-      user_id: decoded.id, // MENGGUNAKAN user_id
-      nama_mahasiswa: decoded.name,
+      user_id: decoded.id, // PAKAI user_id
+      nama_mahasiswa: namaMahasiswa,
       perusahaan: perusahaan, 
       posisi: posisi,
       link_loa: link_loa,
@@ -67,6 +70,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ message: 'LOA berhasil dikirim!', data: newPengajuan }, { status: 201 });
   } catch (error: any) {
+    console.error("API POST Error:", error);
     return NextResponse.json({ message: `Gagal simpan ke database: ${error.message}` }, { status: 500 });
   }
 }
@@ -85,12 +89,12 @@ export async function PUT(request: Request) {
       if (body.action === 'pilih_dosen') {
         await Pengajuan.update(
           { dosenId: body.dosenId, nama_dosen: body.nama_dosen, status: 'Aktif' }, 
-          { where: { user_id: decoded.id, status: 'Pilih_Dosen' } } // MENGGUNAKAN user_id
+          { where: { user_id: decoded.id, status: 'Pilih_Dosen' } } // PAKAI user_id
         );
         return NextResponse.json({ message: 'Berhasil memilih dosen pembimbing!' }, { status: 200 });
       }
       if (body.link_laporan_akhir) {
-        await Pengajuan.update({ link_laporan_akhir: body.link_laporan_akhir }, { where: { user_id: decoded.id } }); // MENGGUNAKAN user_id
+        await Pengajuan.update({ link_laporan_akhir: body.link_laporan_akhir }, { where: { user_id: decoded.id } }); // PAKAI user_id
         return NextResponse.json({ message: 'Laporan disimpan!' }, { status: 200 });
       }
     } 

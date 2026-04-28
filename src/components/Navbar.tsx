@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
-export default function Navbar() {
+export default function Navbar({ user: propUser }: { user?: any }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
   
-  const [user, setUser] = useState<{name: string, role: string, photo: string} | null>(null);
+  const [user, setUser] = useState<{name: string, role: string, photo: string} | null>(propUser || null);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -17,27 +17,38 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-          const data = (await res.json()).data;
-          setUser({ name: data.name, role: data.role, photo: data.photo });
-        }
-      } catch (error) {}
-    };
-    fetchUser();
-  }, [pathname]);
+    if (!propUser) {
+      const fetchUser = async () => {
+        try {
+          const res = await fetch('/api/auth/me');
+          if (res.ok) {
+            const data = (await res.json()).data;
+            setUser({ name: data.name, role: data.role, photo: data.photo });
+          }
+        } catch (error) {}
+      };
+      fetchUser();
+    }
+  }, [pathname, propUser]);
 
-  // Sembunyikan Navbar di halaman Dashboard & Settings
-  if (pathname && (pathname.includes('/dashboard') || pathname.includes('/settings'))) {
+  // ---> PENGECEKAN SUPER KETAT <---
+  // Navbar 100% disembunyikan jika URL mengandung kata-kata di bawah ini
+  const hideNavbar = pathname && (
+    pathname.toLowerCase().includes('/login') || 
+    pathname.toLowerCase().includes('/register') || 
+    pathname.toLowerCase().includes('/dashboard') || 
+    pathname.toLowerCase().includes('/admin') || 
+    pathname.toLowerCase().includes('/dosen') ||
+    pathname.toLowerCase().includes('/pilih-dosen') ||
+    pathname.toLowerCase().includes('/settings')
+  );
+
+  if (hideNavbar) {
     return null;
   }
 
-  // ---> FITUR BARU: Deteksi Halaman Background Gelap <---
   const isDarkHero = pathname === '/lowongan' || pathname === '/mitra';
 
-  // Fungsi untuk mengubah warna teks menu secara dinamis
   const getLinkClass = (path: string) => {
     const isActive = pathname === path;
     if (isScrolled) {
@@ -53,7 +64,6 @@ export default function Navbar() {
 
   const logoTextColor = isScrolled ? 'text-gray-900' : (isDarkHero ? 'text-white drop-shadow-md' : 'text-[#1e3a8a]');
   
-  // Tombol login juga diubah agar kontrasnya bagus
   const loginBtnClass = isScrolled || !isDarkHero 
     ? 'bg-[#1e3a8a] text-white shadow-blue-900/20 hover:bg-blue-900' 
     : 'bg-white text-[#1e3a8a] shadow-black/10 hover:bg-blue-50';
@@ -62,7 +72,6 @@ export default function Navbar() {
     <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100 py-3' : 'bg-transparent py-5'}`}>
       <div className="max-w-7xl mx-auto px-6 lg:px-8 flex justify-between items-center relative">
         
-        {/* KIRI: Logo */}
         <Link href="/" className="flex items-center gap-3 group shrink-0">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all group-hover:-translate-y-0.5 ${isScrolled || !isDarkHero ? 'bg-gradient-to-br from-[#1e3a8a] to-blue-500 group-hover:shadow-blue-500/30' : 'bg-white text-[#1e3a8a]'}`}>
             <span className={`font-black text-xl ${isScrolled || !isDarkHero ? 'text-white' : 'text-[#1e3a8a]'}`}>S</span>
@@ -72,14 +81,12 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* TENGAH ABSOLUTE: Menu Navigasi */}
         <div className="hidden lg:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
           <Link href="/lowongan" className={`text-sm font-bold transition-all hover:-translate-y-0.5 ${getLinkClass('/lowongan')}`}>Bursa Magang</Link>
           <Link href="/mitra" className={`text-sm font-bold transition-all hover:-translate-y-0.5 ${getLinkClass('/mitra')}`}>Kemitraan Industri</Link>
           <Link href="/#faq" className={`text-sm font-bold transition-all hover:-translate-y-0.5 ${getLinkClass('/#faq')}`}>Pusat Bantuan</Link>
         </div>
 
-        {/* KANAN: Akun / Login */}
         <div className="flex items-center shrink-0">
           {user ? (
             <div className={`flex items-center gap-4 px-2 py-1.5 rounded-full border backdrop-blur-sm shadow-sm hover:shadow-md transition-all ${isScrolled ? 'bg-white/60 border-gray-200/60' : (isDarkHero ? 'bg-black/20 border-white/10' : 'bg-white/60 border-gray-200/60')}`}>

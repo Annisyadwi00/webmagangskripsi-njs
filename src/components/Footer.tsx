@@ -6,15 +6,19 @@ import { usePathname } from 'next/navigation';
 export default function Footer() {
   const pathname = usePathname();
 
-  // Sembunyikan Footer di halaman Auth dan Dashboard 
-  if (
-    pathname.startsWith('/dashboard') || 
-    pathname.startsWith('/admin') || 
-    pathname.startsWith('/dosen') || 
-    pathname === '/login' || 
-    pathname === '/register' ||
-    pathname.startsWith('/pilih-dosen')
-  ) {
+  // ---> PENGECEKAN SUPER KETAT <---
+  // Footer 100% disembunyikan jika URL mengandung kata-kata di bawah ini
+  const hideFooter = pathname && (
+    pathname.toLowerCase().includes('/login') || 
+    pathname.toLowerCase().includes('/register') || 
+    pathname.toLowerCase().includes('/dashboard') || 
+    pathname.toLowerCase().includes('/admin') || 
+    pathname.toLowerCase().includes('/dosen') ||
+    pathname.toLowerCase().includes('/pilih-dosen') ||
+    pathname.toLowerCase().includes('/settings')
+  );
+
+  if (hideFooter) {
     return null;
   }
 

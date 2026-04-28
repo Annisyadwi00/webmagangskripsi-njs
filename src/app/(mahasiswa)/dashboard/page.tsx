@@ -43,7 +43,7 @@ export default function DashboardMahasiswa() {
       
       if (resPengajuan.ok) {
         const data = await resPengajuan.json();
-        // MENGGUNAKAN user_id SESUAI DENGAN MYSQL ASLI KAMU
+        // MENGGUNAKAN user_id SESUAI DATABASE
         const userPengajuan = data.data.find((p: any) => p.user_id === userData.id);
         setPengajuan(userPengajuan || null);
       }
@@ -76,7 +76,7 @@ export default function DashboardMahasiswa() {
           const errJson = JSON.parse(errText);
           errMsg = errJson.message;
         } catch (e) {
-          errMsg = `Error (500): ${errText.substring(0, 50)}...`;
+          errMsg = `Error (500): Server gagal memproses data`;
         }
         throw new Error(errMsg);
       }

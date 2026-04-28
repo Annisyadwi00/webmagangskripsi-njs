@@ -3,7 +3,7 @@ import sequelize from '../lib/db';
 
 class Pengajuan extends Model {
   declare id: number;
-  declare mahasiswaId: number; 
+  declare user_id: number; 
   declare nama_mahasiswa: string;
   declare perusahaan: string;
   declare posisi: string;
@@ -20,7 +20,7 @@ class Pengajuan extends Model {
 Pengajuan.init(
   {
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
-    mahasiswaId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false }, 
+    user_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false }, 
     nama_mahasiswa: { type: DataTypes.STRING, allowNull: false },
     perusahaan: { type: DataTypes.STRING, allowNull: false },
     posisi: { type: DataTypes.STRING, allowNull: false },
@@ -36,7 +36,6 @@ Pengajuan.init(
   { sequelize, tableName: 'pengajuan', timestamps: true }
 );
 
-// KITA NYALAKAN LAGI SINKRONISASINYA AGAR KOLOM BARU DITAMBAHKAN OTOMATIS
-Pengajuan.sync({ alter: true }).catch((err) => console.log("Pesan Sync:", err.message));
+// FUNGSI SYNC SENGAJA DIHAPUS AGAR SERVER TIDAK CRASH LAGI
 
 export default Pengajuan;
