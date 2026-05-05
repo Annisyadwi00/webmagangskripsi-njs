@@ -63,10 +63,16 @@ export default function DashboardMahasiswa() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      const payload = {
+        perusahaan: loaForm.perusahaan,
+        posisi: loaForm.posisi,
+        link_loa: loaForm.link_loa,
+        nama_mahasiswa: user?.name // INI YANG BARU: Kirim nama langsung dari state
+      };
       const res = await fetch('/api/Pengajuan', { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify(loaForm) 
+        body: JSON.stringify(payload) 
       });
       
       if (!res.ok) {
