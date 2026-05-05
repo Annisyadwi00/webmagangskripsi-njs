@@ -37,7 +37,7 @@ export default function DashboardMahasiswa() {
       setUser({ name: userData.name, nim: userData.nim_nidn, prodi: userData.prodi, role: userData.role, id: userData.id });
 
       const [resPengajuan, resLogbook] = await Promise.all([
-        fetch('/api/Pengajuan'),
+        fetch('/api/pengajuan'),
         fetch('/api/logbook')
       ]);
       
@@ -56,6 +56,53 @@ export default function DashboardMahasiswa() {
       setIsLoading(false);
     }
   };
+  {/* Tampilkan notif jika pengajuan ditolak */}
+{pengajuan && pengajuan.status === 'Ditolak' ? (
+  <div className="bg-red-50 rounded-[32px] p-10 border border-red-200 text-center">
+    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">❌</div>
+    <h4 className="text-xl font-black text-red-700 mb-2">Pengajuan Ditolak</h4>
+    <p className="text-red-600 mb-6 max-w-lg mx-auto">
+      Maaf, pengajuan LOA kamu tidak disetujui oleh Admin. 
+      Silakan hubungi Admin untuk informasi lebih lanjut, 
+      lalu ajukan ulang dengan dokumen yang sesuai.
+    </p>
+    <div className="flex gap-4 justify-center">
+      <button 
+        onClick={async () => {
+          await fetch('/api/pengajuan', { 
+            method: 'PUT', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ action: 'hapus_ditolak', id: pengajuan.id }) 
+          });
+          fetchData();
+        }} 
+        className="px-6 py-3 bg-red-100 text-red-700 font-bold rounded-xl hover:bg-red-200 transition-all"
+      >
+        Hapus Notifikasi
+      </button>
+      <button 
+        onClick={() => setShowLOAModal(true)} 
+        className="px-8 py-3 bg-[#1e3a8a] text-white font-bold rounded-2xl shadow-lg hover:-translate-y-1 transition-all"
+      >
+        Ajukan Ulang LOA
+      </button>
+    </div>
+  </div>
+
+) : !pengajuan ? (
+  // Blok existing "Belum Mengajukan Magang" yang sudah ada
+  <div className="bg-blue-50/50 rounded-[32px] p-10 border border-blue-100 text-center">
+    <h4 className="text-xl font-black text-gray-900 mb-2">Belum Mengajukan Magang</h4>
+    <p className="text-gray-600 mb-6 max-w-lg mx-auto">Jika Anda sudah mendapatkan tempat magang dan Letter of Acceptance (LOA), silakan cantumkan link dokumen di sini.</p>
+    <button onClick={() => setShowLOAModal(true)} className="px-8 py-4 bg-[#1e3a8a] text-white font-bold rounded-2xl shadow-lg hover:-translate-y-1 transition-all">Input Link LOA</button>
+  </div>
+
+) : (
+  // Blok existing card pengajuan aktif yang sudah ada
+  <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm relative overflow-hidden">
+    {/* ... isi card yang sudah ada ... */}
+  </div>
+)}
 
   useEffect(() => { fetchData(); }, [router]);
 
@@ -69,7 +116,7 @@ export default function DashboardMahasiswa() {
         link_loa: loaForm.link_loa,
         nama_mahasiswa: user?.name // INI YANG BARU: Kirim nama langsung dari state
       };
-      const res = await fetch('/api/Pengajuan', { 
+      const res = await fetch('/api/pengajuan', { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify(payload) 
@@ -101,7 +148,7 @@ export default function DashboardMahasiswa() {
   const handleBatalPengajuan = async () => {
     if (!confirm('Yakin ingin membatalkan pengajuan magang ini? Data akan dihapus permanen.')) return;
     try {
-      await fetch('/api/Pengajuan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'tolak', id: pengajuan.id }) });
+      await fetch('/api/pengajuan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'tolak', id: pengajuan.id }) });
       showToast('Pengajuan Dibatalkan', 'success'); fetchData();
     } catch (error) { showToast('Gagal membatalkan pengajuan', 'error'); }
   };

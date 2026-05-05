@@ -50,7 +50,7 @@ export default function AdminDashboard() {
     setIsLoading(true);
     try {
       const [resJobs, resMsg, resUsers, resPengajuan] = await Promise.all([
-        fetch('/api/lowongan'), fetch('/api/feedback'), fetch('/api/users'), fetch('/api/Pengajuan')
+        fetch('/api/lowongan'), fetch('/api/feedback'), fetch('/api/users'), fetch('/api/pengajuan')
       ]);
       
       if (resJobs.ok) setJobs((await resJobs.json()).data || []);
@@ -152,7 +152,7 @@ export default function AdminDashboard() {
     setIsSubmitting(true);
     try {
       const matkulArray = verifForm.tipeKonversi === 'Tidak' ? [] : verifForm.matkulInput.split(',').map(m => m.trim()).filter(m => m);
-      const res = await fetch('/api/Pengajuan', {
+      const res = await fetch('/api/pengajuan', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'setujui', id: verifForm.id, tipeKonversi: verifForm.tipeKonversi, matkulKonversi: matkulArray })
       });
@@ -166,7 +166,7 @@ export default function AdminDashboard() {
   const handleRejectLOA = async (id: number) => {
     if (!confirm('Tolak dan hapus pengajuan LOA ini?')) return;
     try {
-      await fetch('/api/Pengajuan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'tolak', id }) });
+      await fetch('/api/pengajuan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'tolak', id }) });
       showToast('Pengajuan ditolak.', 'success');
       fetchData();
     } catch (err) { showToast('Terjadi kesalahan', 'error'); }

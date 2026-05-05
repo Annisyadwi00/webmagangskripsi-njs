@@ -95,19 +95,30 @@ export async function PUT(request: Request) {
       }
     } 
     else if (decoded.role === 'Admin') {
-      if (body.action === 'setujui') {
-        await Pengajuan.update({
-          tipeKonversi: body.tipeKonversi,
-          matkulKonversi: JSON.stringify(body.matkulKonversi),
-          status: 'Pilih_Dosen'
-        }, { where: { id: body.id } });
-        return NextResponse.json({ message: 'Pengajuan disetujui!' }, { status: 200 });
-      }
-      if (body.action === 'tolak') {
-        await Pengajuan.destroy({ where: { id: body.id } });
-        return NextResponse.json({ message: 'Pengajuan ditolak.' }, { status: 200 });
-      }
-    }
+  if (body.action === 'setujui') {
+    await Pengajuan.update({
+      tipeKonversi: body.tipeKonversi,
+      matkulKonversi: JSON.stringify(body.matkulKonversi),
+      status: 'Pilih_Dosen'
+    }, { where: { id: body.id } });
+    return NextResponse.json({ message: 'Pengajuan disetujui!' }, { status: 200 });
+  }
+
+  // ✅ Pisah jadi if sendiri, TIDAK bersarang
+  if (body.action === 'tolak') {
+    await Pengajuan.update(
+      { status: 'Ditolak' },
+      { where: { id: body.id } }
+    );
+    return NextResponse.json({ message: 'Pengajuan ditolak.' }, { status: 200 });
+  }
+
+  // ✅ Ini juga if sendiri, sejajar dengan yang lain
+  if (body.action === 'hapus_ditolak') {
+    await Pengajuan.destroy({ where: { id: body.id, status: 'Ditolak' } });
+    return NextResponse.json({ message: 'Notifikasi dihapus.' }, { status: 200 });
+  }
+}
     else if (decoded.role === 'Dosen') {
       if (body.action === 'terima') {
         await Pengajuan.update({ status_dosen: 'Disetujui' }, { where: { id: body.id_pengajuan } });
