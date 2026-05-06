@@ -29,6 +29,19 @@ export default function DosenDashboard() {
     setToast({ show: true, msg, type });
     setTimeout(() => setToast({ show: false, msg: '', type: 'success' }), 3000);
   };
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Cek tema saat halaman dosen dimuat
+    if (document.documentElement.classList.contains('dark')) {
+      setIsDarkMode(true);
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    document.documentElement.classList.toggle('dark');
+    setIsDarkMode(!isDarkMode);
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -343,7 +356,7 @@ export default function DosenDashboard() {
                   <button type="button" onClick={() => setShowRevisiModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Batal</button>
                   <button type="submit" disabled={isSubmitting} className="flex-1 py-4 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-lg shadow-red-600/30 transition-all hover:-translate-y-1">
                     {isSubmitting ? 'Mengirim...' : 'Kirim Catatan Revisi'}
-                  </button>
+                  </button>    
                 </div>
               </form>
             </motion.div>

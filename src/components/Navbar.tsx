@@ -6,16 +6,30 @@ import { usePathname } from 'next/navigation';
 
 export default function Navbar({ user: propUser }: { user?: any }) {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const pathname = usePathname();
-  
   const [user, setUser] = useState<{name: string, role: string, photo: string} | null>(propUser || null);
 
+  // Efek untuk memantau Dark Mode
+  useEffect(() => {
+    if (document.documentElement.classList.contains('dark')) {
+      setIsDarkMode(true);
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    document.documentElement.classList.toggle('dark');
+    setIsDarkMode(!isDarkMode);
+  };
+
+  // Efek untuk mendeteksi Scroll
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Efek untuk mengambil data User
   useEffect(() => {
     if (!propUser) {
       const fetchUser = async () => {
@@ -72,6 +86,7 @@ export default function Navbar({ user: propUser }: { user?: any }) {
     <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100 py-3' : 'bg-transparent py-5'}`}>
       <div className="max-w-7xl mx-auto px-6 lg:px-8 flex justify-between items-center relative">
         
+        {/* KIRI: Logo */}
         <Link href="/" className="flex items-center gap-3 group shrink-0">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all group-hover:-translate-y-0.5 ${isScrolled || !isDarkHero ? 'bg-gradient-to-br from-[#1e3a8a] to-blue-500 group-hover:shadow-blue-500/30' : 'bg-white text-[#1e3a8a]'}`}>
             <span className={`font-black text-xl ${isScrolled || !isDarkHero ? 'text-white' : 'text-[#1e3a8a]'}`}>S</span>
@@ -81,13 +96,23 @@ export default function Navbar({ user: propUser }: { user?: any }) {
           </span>
         </Link>
 
+        {/* TENGAH: Menu Navigasi */}
         <div className="hidden lg:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
           <Link href="/lowongan" className={`text-sm font-bold transition-all hover:-translate-y-0.5 ${getLinkClass('/lowongan')}`}>Bursa Magang</Link>
           <Link href="/mitra" className={`text-sm font-bold transition-all hover:-translate-y-0.5 ${getLinkClass('/mitra')}`}>Kemitraan Industri</Link>
           <Link href="/#faq" className={`text-sm font-bold transition-all hover:-translate-y-0.5 ${getLinkClass('/#faq')}`}>Pusat Bantuan</Link>
         </div>
+        
+        {/* KANAN: Tombol Dark Mode & Profil/Login */}
+        <div className="flex items-center shrink-0 gap-3 md:gap-4">
+          <button 
+            onClick={toggleDarkMode} 
+            className="p-2 md:p-2.5 flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-yellow-400 rounded-full border border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700 transition-all text-sm md:text-base"
+            aria-label="Toggle Dark Mode"
+          >
+            {isDarkMode ? '☀️' : '🌙'}
+          </button>
 
-        <div className="flex items-center shrink-0">
           {user ? (
             <div className={`flex items-center gap-4 px-2 py-1.5 rounded-full border backdrop-blur-sm shadow-sm hover:shadow-md transition-all ${isScrolled ? 'bg-white/60 border-gray-200/60' : (isDarkHero ? 'bg-black/20 border-white/10' : 'bg-white/60 border-gray-200/60')}`}>
               <div className="text-right hidden md:block pl-3">
