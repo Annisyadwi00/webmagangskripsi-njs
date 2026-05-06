@@ -24,7 +24,7 @@ export default function PilihDosenPage() {
         if (resDosen.ok) setDosenList((await resDosen.json()).data);
 
         // 2. Ambil data Pengajuan Magang milik user ini
-        const resMagang = await fetch('/api/Pengajuan');
+        const resMagang = await fetch('/api/pengajuan');
         if (resMagang.ok) {
           const magang = (await resMagang.json()).data;
           if (magang) setMagangInfo({ perusahaan: magang.perusahaan, posisi: magang.posisi });
@@ -47,7 +47,7 @@ export default function PilihDosenPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('/api/Pengajuan', {
+      const res = await fetch('/api/pengajuan', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

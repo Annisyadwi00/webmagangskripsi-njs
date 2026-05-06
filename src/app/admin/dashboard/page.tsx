@@ -16,6 +16,10 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectId, setRejectId] = useState<number | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+
   const [activeTab, setActiveTab] = useState<'Aktif' | 'Pending' | 'Verifikasi' | 'Rekap' | 'Pesan' | 'Pengguna'>('Aktif');
   const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
 
@@ -163,13 +167,36 @@ export default function AdminDashboard() {
     } catch (err: any) { showToast(err.message, 'error'); } finally { setIsSubmitting(false); }
   };
 
-  const handleRejectLOA = async (id: number) => {
-    if (!confirm('Tolak dan hapus pengajuan LOA ini?')) return;
+  const handleRejectLOA = (id: number) => {
+    setRejectId(id);
+    setRejectReason(''); // Kosongkan form alasan sebelumnya
+    setShowRejectModal(true); // Tampilkan modal
+  };
+
+  // Fungsi ini yang akan dijalankan saat tombol "Tolak Pengajuan" di dalam modal diklik
+  const submitRejectLOA = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rejectId || !rejectReason.trim()) return;
+    
+    setIsSubmitting(true);
     try {
-      await fetch('/api/pengajuan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'tolak', id }) });
-      showToast('Pengajuan ditolak.', 'success');
-      fetchData();
-    } catch (err) { showToast('Terjadi kesalahan', 'error'); }
+      const res = await fetch('/api/pengajuan', { 
+        method: 'PUT', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ action: 'tolak', id: rejectId, alasan: rejectReason })
+      });
+      if (res.ok) {
+        showToast('Pengajuan berhasil ditolak', 'success');
+        setShowRejectModal(false); // Tutup modal setelah sukses
+        fetchData(); // Refresh data tabel
+      } else {
+        throw new Error('Gagal memproses');
+      }
+    } catch (error) {
+      showToast('Gagal menolak pengajuan', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleAddUser = async (e: React.FormEvent) => {
@@ -755,6 +782,47 @@ export default function AdminDashboard() {
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
       `}</style>
+      {/* MODAL ALASAN PENOLAKAN LOA */}
+      <AnimatePresence>
+        {showRejectModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowRejectModal(false)}></div>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl p-8 z-10">
+              
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-black text-2xl">!</div>
+                <div>
+                  <h3 className="text-2xl font-black text-gray-900">Tolak Pengajuan LOA</h3>
+                </div>
+              </div>
+              
+              <p className="text-gray-500 mb-6 text-sm border-b pb-6">Berikan alasan yang jelas mengapa pengajuan magang ini ditolak agar mahasiswa dapat segera memperbaikinya.</p>
+              
+              <form onSubmit={submitRejectLOA} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Alasan Penolakan *</label>
+                  <textarea 
+                    required 
+                    rows={4} 
+                    value={rejectReason} 
+                    onChange={(e) => setRejectReason(e.target.value)} 
+                    className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 focus:bg-white outline-none focus:ring-2 focus:ring-red-500 transition-all" 
+                    placeholder="Contoh: Format dokumen LOA tidak resmi, atau posisi magang tidak relevan dengan prodi Informatika..."
+                  ></textarea>
+                </div>
+                
+                <div className="flex gap-4 pt-4 mt-2 border-t border-gray-100">
+                  <button type="button" onClick={() => setShowRejectModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Batal</button>
+                  <button type="submit" disabled={isSubmitting} className="flex-1 py-4 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-lg shadow-red-500/20 transition-all">
+                    {isSubmitting ? 'Memproses...' : 'Tolak & Kirim Alasan'}
+                  </button>
+                </div>
+              </form>
+
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

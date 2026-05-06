@@ -34,7 +34,7 @@ export default function DosenDashboard() {
     setIsLoading(true);
     try {
       const [resBimbingan, resLogbook] = await Promise.all([
-        fetch('/api/Pengajuan'),
+        fetch('/api/pengajuan'),
         fetch('/api/logbook')
       ]);
       if (resBimbingan.ok) setBimbinganList((await resBimbingan.json()).data || []);
@@ -52,7 +52,7 @@ export default function DosenDashboard() {
     if (!confirm(`Yakin ingin ${action.toUpperCase()} bimbingan dari ${nama}?`)) return;
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/Pengajuan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, id_pengajuan }) });
+      const res = await fetch('/api/pengajuan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, id_pengajuan }) });
       if (!res.ok) throw new Error((await res.json()).message);
       showToast(`Berhasil ${action} mahasiswa.`, "success"); fetchData();
     } catch (err: any) { showToast(err.message, "error"); } finally { setIsSubmitting(false); }
@@ -61,7 +61,7 @@ export default function DosenDashboard() {
   const handleSubmitNilai = async (e: React.FormEvent) => {
     e.preventDefault(); setIsSubmitting(true);
     try {
-      const res = await fetch('/api/Pengajuan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id_pengajuan: nilaiForm.id_pengajuan, nilai_dari_dosen: nilaiForm.nilai }) });
+      const res = await fetch('/api/pengajuan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id_pengajuan: nilaiForm.id_pengajuan, nilai_dari_dosen: nilaiForm.nilai }) });
       if (!res.ok) throw new Error((await res.json()).message);
       showToast(`Nilai tersimpan!`, "success"); setShowNilaiModal(false); fetchData();
     } catch (err: any) { showToast(err.message, "error"); } finally { setIsSubmitting(false); }

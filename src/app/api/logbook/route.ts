@@ -1,83 +1,92 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
 import Logbook from '@/models/Logbook';
 import { connectDB } from '@/lib/db';
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await connectDB();
     const cookieStore = await cookies();
     const token = cookieStore.get('auth_token')?.value;
-    if (!token) return NextResponse.json({ message: 'Tidak ada token' }, { status: 401 });
+    
+    if (!token) return NextResponse.json({ message: 'Akses ditolak' }, { status: 401 });
 
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
     
-    let logbooks;
-    if (decoded.role === 'Mahasiswa') {
-      // Mahasiswa hanya melihat logbook miliknya sendiri
-      logbooks = await Logbook.findAll({ where: { user_id: decoded.id }, order: [['tanggal', 'DESC']] });
+    let data;
+    if (decoded.role === 'Admin' || decoded.role === 'Dosen') {
+      data = await Logbook.findAll({ order: [['tanggal', 'DESC']] });
+    } else if (decoded.role === 'Mahasiswa') {
+      data = await Logbook.findAll({ where: { mahasiswaId: decoded.id }, order: [['tanggal', 'DESC']] });
     } else {
-      // Dosen/Admin melihat semua logbook
-      logbooks = await Logbook.findAll({ order: [['tanggal', 'DESC']] });
+      data = [];
     }
 
-    return NextResponse.json({ data: logbooks }, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ message: 'Error mengambil logbook' }, { status: 500 });
+    return NextResponse.json({ data }, { status: 200 });
+  } catch (error: any) {
+    return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
     await connectDB();
-    const cookieStore = await cookies();
+    const cookieStore = await cookies(); 
     const token = cookieStore.get('auth_token')?.value;
-    if (!token) return NextResponse.json({ message: 'Tidak ada token' }, { status: 401 });
+
+    if (!token) return NextResponse.json({ message: 'Akses ditolak!' }, { status: 401 });
 
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-    const body = await request.json();
+    if (decoded.role !== 'Mahasiswa') return NextResponse.json({ message: 'Hanya mahasiswa!' }, { status: 403 });
+
+    const { judul, tanggal, kegiatan, link_bukti } = await request.json();
+
+    if (!judul || !tanggal || !kegiatan || !link_bukti) {
+      return NextResponse.json({ message: 'Semua data wajib diisi!' }, { status: 400 });
+    }
 
     const newLogbook = await Logbook.create({
-      user_id: decoded.id,
-      nama_mahasiswa: decoded.name,
-      tanggal: body.tanggal,
-      kegiatan: body.kegiatan,
-      link_bukti: body.link_bukti,
-      status: 'Menunggu Validasi'
+      mahasiswaId: decoded.id, 
+      judul: judul, 
+      tanggal: tanggal,
+      kegiatan: kegiatan,
+      link_dokumen: link_bukti, 
+      status: 'Pending', 
     });
 
-    return NextResponse.json({ message: 'Logbook berhasil ditambahkan', data: newLogbook }, { status: 201 });
+    return NextResponse.json({ message: 'Logbook berhasil disimpan!', data: newLogbook }, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    console.error("API POST Error:", error);
+    return NextResponse.json({ message: `Gagal simpan ke database: ${error.message}` }, { status: 500 });
   }
 }
 
 export async function PUT(request: Request) {
   try {
     await connectDB();
-    const cookieStore = await cookies();
+    const cookieStore = await cookies(); 
     const token = cookieStore.get('auth_token')?.value;
-    if (!token) return NextResponse.json({ message: 'Tidak ada token' }, { status: 401 });
-
+    
+    if (!token) return NextResponse.json({ message: 'Akses ditolak!' }, { status: 401 });
+    
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-    if (decoded.role !== 'Dosen' && decoded.role !== 'Admin') {
-      return NextResponse.json({ message: 'Akses ditolak' }, { status: 403 });
+    
+    if (decoded.role !== 'Dosen') {
+      return NextResponse.json({ message: 'Hanya dosen yang bisa mereview logbook!' }, { status: 403 });
     }
 
     const body = await request.json();
     
-    // Update status dan simpan catatan dosen (jika ada)
-    await Logbook.update(
-      { 
-        status: body.status,
-        catatan_dosen: body.catatan_dosen || null 
-      }, 
-      { where: { id: body.id } }
-    );
+    await Logbook.update({ 
+      status: body.status, 
+      feedback: body.catatan_dosen || null 
+    }, { 
+      where: { id: body.id } 
+    });
 
-    return NextResponse.json({ message: `Logbook berhasil di-${body.status}` }, { status: 200 });
+    return NextResponse.json({ message: 'Status logbook diperbarui!' }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return NextResponse.json({ message: `Error server: ${error.message}` }, { status: 500 });
   }
 }

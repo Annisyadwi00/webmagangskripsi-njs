@@ -21,7 +21,7 @@ export default function DashboardMahasiswa() {
   const [showLogbookModal, setShowLogbookModal] = useState(false);
   
   const [loaForm, setLoaForm] = useState({ perusahaan: '', posisi: '', link_loa: '' });
-  const [logbookForm, setLogbookForm] = useState({ tanggal: '', kegiatan: '', link_bukti: '' });
+  const [logbookForm, setLogbookForm] = useState({ judul: 'Logbook Harian', tanggal: '', kegiatan: '', link_bukti: '' });
 
   const showToast = (msg: string, type: 'success' | 'error') => {
     setToast({ show: true, msg, type });
@@ -43,7 +43,6 @@ export default function DashboardMahasiswa() {
       
       if (resPengajuan.ok) {
         const data = await resPengajuan.json();
-        // MENGGUNAKAN user_id SESUAI DATABASE
         const userPengajuan = data.data.find((p: any) => p.user_id === userData.id);
         setPengajuan(userPengajuan || null);
       }
@@ -56,53 +55,6 @@ export default function DashboardMahasiswa() {
       setIsLoading(false);
     }
   };
-  {/* Tampilkan notif jika pengajuan ditolak */}
-{pengajuan && pengajuan.status === 'Ditolak' ? (
-  <div className="bg-red-50 rounded-[32px] p-10 border border-red-200 text-center">
-    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">❌</div>
-    <h4 className="text-xl font-black text-red-700 mb-2">Pengajuan Ditolak</h4>
-    <p className="text-red-600 mb-6 max-w-lg mx-auto">
-      Maaf, pengajuan LOA kamu tidak disetujui oleh Admin. 
-      Silakan hubungi Admin untuk informasi lebih lanjut, 
-      lalu ajukan ulang dengan dokumen yang sesuai.
-    </p>
-    <div className="flex gap-4 justify-center">
-      <button 
-        onClick={async () => {
-          await fetch('/api/pengajuan', { 
-            method: 'PUT', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ action: 'hapus_ditolak', id: pengajuan.id }) 
-          });
-          fetchData();
-        }} 
-        className="px-6 py-3 bg-red-100 text-red-700 font-bold rounded-xl hover:bg-red-200 transition-all"
-      >
-        Hapus Notifikasi
-      </button>
-      <button 
-        onClick={() => setShowLOAModal(true)} 
-        className="px-8 py-3 bg-[#1e3a8a] text-white font-bold rounded-2xl shadow-lg hover:-translate-y-1 transition-all"
-      >
-        Ajukan Ulang LOA
-      </button>
-    </div>
-  </div>
-
-) : !pengajuan ? (
-  // Blok existing "Belum Mengajukan Magang" yang sudah ada
-  <div className="bg-blue-50/50 rounded-[32px] p-10 border border-blue-100 text-center">
-    <h4 className="text-xl font-black text-gray-900 mb-2">Belum Mengajukan Magang</h4>
-    <p className="text-gray-600 mb-6 max-w-lg mx-auto">Jika Anda sudah mendapatkan tempat magang dan Letter of Acceptance (LOA), silakan cantumkan link dokumen di sini.</p>
-    <button onClick={() => setShowLOAModal(true)} className="px-8 py-4 bg-[#1e3a8a] text-white font-bold rounded-2xl shadow-lg hover:-translate-y-1 transition-all">Input Link LOA</button>
-  </div>
-
-) : (
-  // Blok existing card pengajuan aktif yang sudah ada
-  <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm relative overflow-hidden">
-    {/* ... isi card yang sudah ada ... */}
-  </div>
-)}
 
   useEffect(() => { fetchData(); }, [router]);
 
@@ -114,7 +66,7 @@ export default function DashboardMahasiswa() {
         perusahaan: loaForm.perusahaan,
         posisi: loaForm.posisi,
         link_loa: loaForm.link_loa,
-        nama_mahasiswa: user?.name // INI YANG BARU: Kirim nama langsung dari state
+        nama_mahasiswa: user?.name
       };
       const res = await fetch('/api/pengajuan', { 
         method: 'POST', 
@@ -146,10 +98,11 @@ export default function DashboardMahasiswa() {
   };
 
   const handleBatalPengajuan = async () => {
-    if (!confirm('Yakin ingin membatalkan pengajuan magang ini? Data akan dihapus permanen.')) return;
+    if (!confirm('Yakin ingin menghapus pengajuan magang ini? Anda harus menginput ulang dari awal.')) return;
     try {
-      await fetch('/api/pengajuan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'tolak', id: pengajuan.id }) });
-      showToast('Pengajuan Dibatalkan', 'success'); fetchData();
+      // Ubah dari action 'tolak' menjadi 'batal' untuk Mahasiswa
+      await fetch('/api/pengajuan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'batal' }) });
+      showToast('Pengajuan Dihapus', 'success'); fetchData();
     } catch (error) { showToast('Gagal membatalkan pengajuan', 'error'); }
   };
 
@@ -157,10 +110,33 @@ export default function DashboardMahasiswa() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/logbook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(logbookForm) });
-      if (!res.ok) throw new Error((await res.json()).message);
-      showToast('Logbook berhasil ditambahkan!', 'success'); setShowLogbookModal(false); setLogbookForm({ tanggal: '', kegiatan: '', link_bukti: '' }); fetchData();
-    } catch (err: any) { showToast(err.message, 'error'); } finally { setIsSubmitting(false); }
+      const payload = {
+        judul: logbookForm.judul,
+        tanggal: logbookForm.tanggal,
+        kegiatan: logbookForm.kegiatan,
+        link_bukti: logbookForm.link_bukti
+      };
+
+      const res = await fetch('/api/logbook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || 'Gagal menyimpan logbook');
+      }
+
+      showToast('Logbook berhasil ditambahkan!', 'success'); 
+      setShowLogbookModal(false);
+      setLogbookForm({ tanggal: '', kegiatan: '', link_bukti: '' }); 
+      fetchData();
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -171,7 +147,7 @@ export default function DashboardMahasiswa() {
 
   const statusProgress = [
     { label: 'Upload LOA', done: !!pengajuan, active: !pengajuan },
-    { label: 'Verifikasi Admin', done: pengajuan && pengajuan.status !== 'Menunggu_Verifikasi', active: pengajuan && pengajuan.status === 'Menunggu_Verifikasi' },
+    { label: 'Verifikasi Admin', done: pengajuan && (pengajuan.status !== 'Menunggu_Verifikasi' && pengajuan.status !== 'Ditolak'), active: pengajuan && pengajuan.status === 'Menunggu_Verifikasi' },
     { label: 'Pilih Dosen', done: pengajuan && pengajuan.status_dosen && pengajuan.status_dosen !== 'Menunggu', active: pengajuan && pengajuan.status === 'Disetujui' && pengajuan.status_dosen === 'Menunggu' },
     { label: 'Magang Aktif', done: pengajuan && pengajuan.status_dosen === 'Disetujui', active: false }
   ];
@@ -266,6 +242,16 @@ export default function DashboardMahasiswa() {
                       <p className="text-gray-600 mb-6 max-w-lg mx-auto">Jika Anda sudah mendapatkan tempat magang dan Letter of Acceptance (LOA), silakan cantumkan link dokumen di sini.</p>
                       <button onClick={() => setShowLOAModal(true)} className="px-8 py-4 bg-[#1e3a8a] text-white font-bold rounded-2xl shadow-lg hover:-translate-y-1 transition-all">Input Link LOA</button>
                     </div>
+                 ) : pengajuan.status === 'Ditolak' ? (
+                    <div className="bg-red-50 rounded-[32px] p-10 border border-red-200 text-center">
+                      <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl font-black">X</div>
+                      <h4 className="text-xl font-black text-red-900 mb-2">Pengajuan LOA Ditolak</h4>
+                      <p className="text-red-700 mb-6 max-w-lg mx-auto font-medium">
+                        Maaf, pengajuan magang Anda di <b>{pengajuan.perusahaan}</b> ditolak oleh Admin Fakultas dengan alasan:<br/>
+                        <span className="block mt-4 p-4 bg-red-100 rounded-xl italic font-bold">"{pengajuan.alasan_penolakan || 'Tidak ada alasan spesifik yang diberikan'}"</span>
+                      </p>
+                      <button onClick={handleBatalPengajuan} className="px-8 py-4 bg-red-600 text-white font-bold rounded-2xl shadow-lg hover:bg-red-700 hover:-translate-y-1 transition-all">Hapus & Ajukan Ulang LOA</button>
+                    </div>
                  ) : (
                     <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm relative overflow-hidden">
                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -z-10"></div>
@@ -288,17 +274,20 @@ export default function DashboardMahasiswa() {
                          </div>
                          <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                            <p className="text-xs font-bold text-gray-500 mb-1">Dosen Pembimbing</p>
-                           <p className="font-black text-gray-900">{pengajuan.dosen_pembimbing || 'Belum Ada'}</p>
+                           {/* Perbaikan nama variabel menjadi nama_dosen */}
+                           <p className="font-black text-gray-900">{pengajuan.nama_dosen || 'Belum Ada'}</p>
                          </div>
                        </div>
 
-                       {pengajuan.status === 'Disetujui' && pengajuan.status_dosen === 'Menunggu' && (
+                       {/* Peringatan menunggu dosen ACC (Status Aktif & Menunggu) */}
+                       {pengajuan.status === 'Aktif' && pengajuan.status_dosen === 'Menunggu' && (
                           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-6">
                             <p className="text-amber-800 font-bold text-sm">Menunggu Konfirmasi Dosen. Harap hubungi dosen terkait agar segera di-ACC.</p>
                           </div>
                        )}
 
-                       {pengajuan.status === 'Disetujui' && !pengajuan.dosen_pembimbing && (
+                       {/* TAMPILKAN TOMBOL PILIH DOSEN JIKA STATUS = Pilih_Dosen */}
+                       {pengajuan.status === 'Pilih_Dosen' && (
                          <div className="pt-6 border-t border-gray-100 text-center">
                            <p className="text-gray-600 mb-4 font-medium">LOA disetujui! Langkah selanjutnya adalah memilih Dosen Pembimbing.</p>
                            <Link href="/pilih-dosen" className="px-8 py-4 bg-[#1e3a8a] text-white font-bold rounded-2xl shadow-lg inline-block hover:-translate-y-1 transition-all">Pilih Dosen Sekarang</Link>
@@ -317,44 +306,54 @@ export default function DashboardMahasiswa() {
 
              {/* TAB 2: LOGBOOK */}
              {activeTab === 'Logbook' && (
-               <motion.div key="logbook" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
+               <motion.div key="logbook" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-5">
                   {logbooks.length === 0 ? (
                     <div className="bg-white rounded-[32px] p-16 text-center border border-gray-100 shadow-sm">
                        <h3 className="text-xl font-black text-gray-900 mb-2">Belum ada Logbook</h3>
                        <p className="text-gray-500 font-medium">Klik tombol "+ Isi Logbook" di pojok kanan atas untuk mulai melapor kegiatan.</p>
                     </div>
                   ) : logbooks.map((log) => (
-                    <div key={log.id} className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm relative overflow-hidden">
-                       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
-                         <div className="flex items-center gap-3">
-                           <div className="w-12 h-12 bg-blue-50 text-[#1e3a8a] rounded-xl flex items-center justify-center font-black">{log.tanggal.split('-')[2]}</div>
+                    
+                    // DESAIN KARTU LOGBOOK BARU YANG LEBIH RAPI & PROFESIONAL
+                    <div key={log.id} className="bg-white rounded-2xl p-6 md:p-8 border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                       {/* Aksen Garis Warna Berdasarkan Status */}
+                       <div className={`absolute left-0 top-0 bottom-0 w-2 ${log.status === 'Disetujui' ? 'bg-emerald-500' : log.status === 'Ditolak' ? 'bg-red-500' : 'bg-amber-400'}`}></div>
+
+                       <div className="pl-4">
+                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
                            <div>
-                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Tanggal Laporan</p>
-                             <p className="font-black text-gray-900">{new Date(log.tanggal).toLocaleDateString('id-ID', { weekday: 'long', month: 'long', year: 'numeric' })}</p>
+                             <div className="flex items-center gap-3 mb-1">
+                               <h4 className="text-xl font-black text-gray-900">{log.judul || 'Logbook'}</h4>
+                               <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg border ${log.status === 'Disetujui' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : log.status === 'Ditolak' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                                 {log.status === 'Pending' ? 'Menunggu Dosen' : log.status}
+                               </span>
+                             </div>
+                             <p className="text-sm font-bold text-gray-500 flex items-center gap-2">
+                               📅 {new Date(log.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                             </p>
                            </div>
                          </div>
-                         <span className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg border w-fit ${log.status === 'Disetujui' ? 'bg-green-50 text-green-700 border-green-200' : log.status === 'Revisi' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                           {log.status || 'Menunggu'}
-                         </span>
-                       </div>
 
-                       <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 mb-4">
-                         <p className="text-gray-700 font-medium leading-relaxed whitespace-pre-wrap text-sm">{log.kegiatan}</p>
-                       </div>
-
-                       {log.status === 'Revisi' && log.catatan_dosen && (
-                         <div className="bg-red-50 rounded-xl p-5 border border-red-200 mb-4 flex items-start gap-3">
-                            <span className="text-xl">⚠️</span>
-                            <div>
-                              <p className="text-xs font-bold text-red-700 uppercase tracking-widest mb-1">Catatan Revisi dari Dosen:</p>
-                              <p className="text-red-900 text-sm font-medium italic">"{log.catatan_dosen}"</p>
-                            </div>
+                         <div className="bg-slate-50/80 rounded-xl p-5 border border-slate-100 mb-5">
+                           <p className="text-slate-700 font-medium leading-relaxed whitespace-pre-wrap text-sm">{log.kegiatan}</p>
                          </div>
-                       )}
 
-                       {log.link_bukti && (
-                         <a href={log.link_bukti} target="_blank" rel="noreferrer" className="text-sm font-bold text-blue-600 hover:underline">Lampiran Dokumen Bukti ↗</a>
-                       )}
+                         {log.status === 'Ditolak' && log.feedback && (
+                           <div className="bg-red-50 rounded-xl p-4 border border-red-100 mb-5 flex items-start gap-3">
+                              <span className="text-lg">⚠️</span>
+                              <div>
+                                <p className="text-xs font-bold text-red-700 uppercase tracking-widest mb-1">Catatan Revisi Dosen:</p>
+                                <p className="text-red-900 text-sm font-medium italic">"{log.feedback}"</p>
+                              </div>
+                           </div>
+                         )}
+
+                         {log.link_dokumen && (
+                           <a href={log.link_dokumen} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-[#1e3a8a] bg-blue-50/50 hover:bg-blue-100 px-4 py-2.5 rounded-xl transition-all">
+                             📎 Buka Lampiran Dokumen Bukti
+                           </a>
+                         )}
+                       </div>
                     </div>
                   ))}
                </motion.div>
@@ -364,32 +363,46 @@ export default function DashboardMahasiswa() {
         </div>
       </main>
 
-      {/* MODAL INPUT LINK LOA */}
+      {/* MODAL INPUT LINK LOA (Tetap sama seperti sebelumnya) ... */}
+      
+      {/* MODAL ISI LOGBOOK BARU */}
       <AnimatePresence>
-        {showLOAModal && (
+        {showLogbookModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowLOAModal(false)}></div>
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowLogbookModal(false)}></div>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl p-8 z-10">
-              <h3 className="text-2xl font-black text-gray-900 mb-2">Input Link LOA</h3>
-              <p className="text-gray-500 mb-6 text-sm border-b pb-6">Pastikan nama perusahaan dan surat penerimaan asli ada di dalam link Google Drive Anda.</p>
+              <h3 className="text-2xl font-black text-gray-900 mb-2">Isi Logbook</h3>
+              <p className="text-gray-500 mb-6 text-sm border-b pb-6">Laporkan progres dan rincian pekerjaan Anda secara berkala.</p>
               
-              <form onSubmit={handleSubmitLOA} className="space-y-5">
+              <form onSubmit={handleSubmitLogbook} className="space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* INPUT JENIS JUDUL BARU */}
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Tipe Logbook *</label>
+                    <select required value={logbookForm.judul} onChange={(e) => setLogbookForm({...logbookForm, judul: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all appearance-none">
+                      <option value="Logbook Harian">Logbook Harian</option>
+                      <option value="Logbook Mingguan">Logbook Mingguan</option>
+                      <option value="Logbook Bulanan">Logbook Bulanan</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Tanggal *</label>
+                    <input type="date" required value={logbookForm.tanggal} onChange={(e) => setLogbookForm({...logbookForm, tanggal: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" />
+                  </div>
+                </div>
+                
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Nama Perusahaan *</label>
-                  <input type="text" required value={loaForm.perusahaan} onChange={(e) => setLoaForm({...loaForm, perusahaan: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" />
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Deskripsi Pekerjaan *</label>
+                  <textarea required rows={4} value={logbookForm.kegiatan} onChange={(e) => setLogbookForm({...logbookForm, kegiatan: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" placeholder="Ceritakan apa saja yang Anda kerjakan..."></textarea>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Posisi Magang *</label>
-                  <input type="text" required value={loaForm.posisi} onChange={(e) => setLoaForm({...loaForm, posisi: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Link Dokumen LOA (Google Drive) *</label>
-                  <input type="url" required value={loaForm.link_loa} onChange={(e) => setLoaForm({...loaForm, link_loa: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" placeholder="Pastikan hak akses link bersifat publik (Anyone with link)" />
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Link Bukti (Foto/Dokumen Google Drive) *</label>
+                  <input type="url" required value={logbookForm.link_bukti} onChange={(e) => setLogbookForm({...logbookForm, link_bukti: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" placeholder="Link folder atau file dokumentasi kegiatan" />
                 </div>
                 
                 <div className="flex gap-4 pt-4 mt-2 border-t border-gray-100">
-                  <button type="button" onClick={() => setShowLOAModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Batal</button>
-                  <button type="submit" disabled={isSubmitting} className="flex-1 py-4 bg-[#1e3a8a] text-white font-bold rounded-xl hover:bg-blue-900 shadow-lg transition-all">{isSubmitting ? 'Mengirim...' : 'Kirim Pengajuan'}</button>
+                  <button type="button" onClick={() => setShowLogbookModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Batal</button>
+                  <button type="submit" disabled={isSubmitting} className="flex-1 py-4 bg-[#1e3a8a] text-white font-bold rounded-xl hover:bg-blue-900 shadow-lg transition-all">{isSubmitting ? 'Menyimpan...' : 'Kirim Logbook'}</button>
                 </div>
               </form>
             </motion.div>

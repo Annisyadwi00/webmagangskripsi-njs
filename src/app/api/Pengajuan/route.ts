@@ -9,9 +9,7 @@ export async function GET(request: Request) {
     await connectDB();
     const cookieStore = await cookies();
     const token = cookieStore.get('auth_token')?.value;
-    
     if (!token) return NextResponse.json({ message: 'Akses ditolak' }, { status: 401 });
-
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
     
     let data;
@@ -22,7 +20,6 @@ export async function GET(request: Request) {
     } else {
       data = [];
     }
-
     return NextResponse.json({ data }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
@@ -34,13 +31,11 @@ export async function POST(request: Request) {
     await connectDB();
     const cookieStore = await cookies(); 
     const token = cookieStore.get('auth_token')?.value;
-
     if (!token) return NextResponse.json({ message: 'Akses ditolak!' }, { status: 401 });
 
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
     if (decoded.role !== 'Mahasiswa') return NextResponse.json({ message: 'Hanya mahasiswa!' }, { status: 403 });
 
-    // MENERIMA NAMA MAHASISWA LANGSUNG DARI FRONTEND
     const { perusahaan, posisi, link_loa, nama_mahasiswa } = await request.json();
 
     if (!perusahaan || !posisi || !link_loa) {
@@ -57,7 +52,7 @@ export async function POST(request: Request) {
 
     const newPengajuan = await Pengajuan.create({
       user_id: decoded.id, 
-      nama_mahasiswa: nama_mahasiswa || 'Mahasiswa', // Langsung masuk tanpa query database
+      nama_mahasiswa: nama_mahasiswa || 'Mahasiswa',
       perusahaan: perusahaan, 
       posisi: posisi,
       link_loa: link_loa,
@@ -66,7 +61,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ message: 'LOA berhasil dikirim!', data: newPengajuan }, { status: 201 });
   } catch (error: any) {
-    console.error("API POST Error:", error);
     return NextResponse.json({ message: `Gagal simpan ke database: ${error.message}` }, { status: 500 });
   }
 }
@@ -78,47 +72,34 @@ export async function PUT(request: Request) {
     const token = cookieStore.get('auth_token')?.value;
     if (!token) return NextResponse.json({ message: 'Akses ditolak!' }, { status: 401 });
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-    
     const body = await request.json();
     
     if (decoded.role === 'Mahasiswa') {
       if (body.action === 'pilih_dosen') {
-        await Pengajuan.update(
-          { dosenId: body.dosenId, nama_dosen: body.nama_dosen, status: 'Aktif' }, 
-          { where: { user_id: decoded.id, status: 'Pilih_Dosen' } } 
-        );
-        return NextResponse.json({ message: 'Berhasil memilih dosen pembimbing!' }, { status: 200 });
+        await Pengajuan.update({ dosenId: body.dosenId, nama_dosen: body.nama_dosen, status: 'Aktif' }, { where: { user_id: decoded.id, status: 'Pilih_Dosen' } });
+        return NextResponse.json({ message: 'Berhasil memilih dosen!' }, { status: 200 });
       }
       if (body.link_laporan_akhir) {
         await Pengajuan.update({ link_laporan_akhir: body.link_laporan_akhir }, { where: { user_id: decoded.id } }); 
         return NextResponse.json({ message: 'Laporan disimpan!' }, { status: 200 });
       }
+      // ---> FIX BUG: Mahasiswa sekarang bisa menghapus pengajuannya jika ditolak/ingin batal <---
+      if (body.action === 'batal') {
+        await Pengajuan.destroy({ where: { user_id: decoded.id } });
+        return NextResponse.json({ message: 'Pengajuan dibatalkan.' }, { status: 200 });
+      }
     } 
     else if (decoded.role === 'Admin') {
-  if (body.action === 'setujui') {
-    await Pengajuan.update({
-      tipeKonversi: body.tipeKonversi,
-      matkulKonversi: JSON.stringify(body.matkulKonversi),
-      status: 'Pilih_Dosen'
-    }, { where: { id: body.id } });
-    return NextResponse.json({ message: 'Pengajuan disetujui!' }, { status: 200 });
-  }
-
-  // ✅ Pisah jadi if sendiri, TIDAK bersarang
-  if (body.action === 'tolak') {
-    await Pengajuan.update(
-      { status: 'Ditolak' },
-      { where: { id: body.id } }
-    );
-    return NextResponse.json({ message: 'Pengajuan ditolak.' }, { status: 200 });
-  }
-
-  // ✅ Ini juga if sendiri, sejajar dengan yang lain
-  if (body.action === 'hapus_ditolak') {
-    await Pengajuan.destroy({ where: { id: body.id, status: 'Ditolak' } });
-    return NextResponse.json({ message: 'Notifikasi dihapus.' }, { status: 200 });
-  }
-}
+      if (body.action === 'setujui') {
+        await Pengajuan.update({ tipeKonversi: body.tipeKonversi, matkulKonversi: JSON.stringify(body.matkulKonversi), status: 'Pilih_Dosen' }, { where: { id: body.id } });
+        return NextResponse.json({ message: 'Pengajuan disetujui!' }, { status: 200 });
+      }
+      // ---> ADMIN UPDATE STATUS & ALASAN, BUKAN HAPUS DATA <---
+      if (body.action === 'tolak') {
+        await Pengajuan.update({ status: 'Ditolak', alasan_penolakan: body.alasan }, { where: { id: body.id } });
+        return NextResponse.json({ message: 'Pengajuan ditolak.' }, { status: 200 });
+      }
+    }
     else if (decoded.role === 'Dosen') {
       if (body.action === 'terima') {
         await Pengajuan.update({ status_dosen: 'Disetujui' }, { where: { id: body.id_pengajuan } });

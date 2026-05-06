@@ -15,7 +15,8 @@ class Pengajuan extends Model {
   declare dosenId: number | null;
   declare nama_dosen: string | null;
   declare status: string; 
-  declare status_dosen: string | null; // Kolom yang kelupaan dimasukkan
+  declare status_dosen: string | null;
+  declare alasan_penolakan: string | null; // <-- KOLOM BARU
 }
 
 Pengajuan.init(
@@ -33,12 +34,12 @@ Pengajuan.init(
     dosenId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     nama_dosen: { type: DataTypes.STRING, allowNull: true },
     status: { type: DataTypes.STRING, allowNull: false, defaultValue: 'Menunggu_Verifikasi' },
-    status_dosen: { type: DataTypes.STRING, allowNull: true, defaultValue: 'Menunggu' }, // Ditambahkan di sini
+    status_dosen: { type: DataTypes.STRING, allowNull: true, defaultValue: 'Menunggu' },
+    alasan_penolakan: { type: DataTypes.TEXT, allowNull: true }, // <-- KOLOM BARU
   },
   { sequelize, tableName: 'pengajuan', timestamps: true }
 );
 
-// Kita nyalakan sementara supaya MySQL kamu otomatis memasukkan status_dosen
 Pengajuan.sync({ alter: true }).catch((err) => console.log("Pesan Sync:", err.message));
 
 export default Pengajuan;
