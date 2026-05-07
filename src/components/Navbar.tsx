@@ -30,18 +30,27 @@ export default function Navbar({ user: propUser }: { user?: any }) {
   }, []);
 
   // Efek untuk mengambil data User
+  // Efek untuk mengambil data User
   useEffect(() => {
     if (!propUser) {
       const fetchUser = async () => {
         try {
-          const res = await fetch('/api/auth/me');
+          // Tambahkan cache: 'no-store' agar selalu meminta data terbaru, bukan sisa cache
+          const res = await fetch('/api/auth/me', { cache: 'no-store' });
           if (res.ok) {
             const data = (await res.json()).data;
             setUser({ name: data.name, role: data.role, photo: data.photo });
+          } else {
+            // WAJIB ADA: Jika token tidak ada / sudah logout, paksa hapus tampilan user
+            setUser(null);
           }
-        } catch (error) {}
+        } catch (error) {
+          setUser(null);
+        }
       };
       fetchUser();
+    } else {
+      setUser(propUser);
     }
   }, [pathname, propUser]);
 
@@ -100,7 +109,7 @@ export default function Navbar({ user: propUser }: { user?: any }) {
         <div className="hidden lg:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
           <Link href="/lowongan" className={`text-sm font-bold transition-all hover:-translate-y-0.5 ${getLinkClass('/lowongan')}`}>Bursa Magang</Link>
           <Link href="/mitra" className={`text-sm font-bold transition-all hover:-translate-y-0.5 ${getLinkClass('/mitra')}`}>Kemitraan Industri</Link>
-          <Link href="/#faq" className={`text-sm font-bold transition-all hover:-translate-y-0.5 ${getLinkClass('/#faq')}`}>Pusat Bantuan</Link>
+          <Link href="/#faq" className={`text-sm font-bold transition-all hover:-translate-y-0.5 ${getLinkClass('/#faq')}`}>FAQ</Link>
         </div>
         
         {/* KANAN: Tombol Dark Mode & Profil/Login */}

@@ -7,6 +7,10 @@ import jwt from 'jsonwebtoken';
 export async function GET(request: Request) {
   try {
     await connectDB();
+    
+    // ---> MANTRA SAKTI: Paksa sinkronisasi kolom baru ke MySQL <---
+    await Logbook.sync({ alter: true });
+    
     const cookieStore = await cookies();
     const token = cookieStore.get('auth_token')?.value;
     
@@ -78,14 +82,16 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
     
+    // UPDATE DATA: Menyimpan status, catatan dari dosen, dan juga NILAI ANGKA
     await Logbook.update({ 
       status: body.status, 
-      feedback: body.catatan_dosen || null 
+      catatan_dosen: body.catatan_dosen || null,
+      nilai: body.nilai || null
     }, { 
       where: { id: body.id } 
     });
 
-    return NextResponse.json({ message: 'Status logbook diperbarui!' }, { status: 200 });
+    return NextResponse.json({ message: 'Status dan nilai logbook diperbarui!' }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: `Error server: ${error.message}` }, { status: 500 });
   }

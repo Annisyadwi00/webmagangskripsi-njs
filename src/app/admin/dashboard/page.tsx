@@ -73,7 +73,7 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     if (!confirm("Yakin ingin keluar?")) return;
     await fetch('/api/logout', { method: 'POST' });
-    router.push('/login');
+    window.location.href = '/';
   };
 
   // ============ BAGIAN PENGELOLAAN LOWONGAN ============ //

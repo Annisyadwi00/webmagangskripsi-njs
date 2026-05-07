@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 export async function POST() {
-  cookies().delete('auth_token');
-  return NextResponse.json({ message: 'Berhasil logout' }, { status: 200 });
+  const response = NextResponse.json({ message: 'Berhasil logout' }, { status: 200 });
+  
+  // Menghapus cookie secara paksa dari jalur response (Dijamin 100% musnah)
+  response.cookies.set({
+    name: 'auth_token',
+    value: '',
+    maxAge: 0,
+    path: '/',
+  });
+  
+  return response;
 }

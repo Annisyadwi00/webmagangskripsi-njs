@@ -72,7 +72,7 @@ export default function LandingPage() {
       {/* 2. AREA FAQ (KEMBALI FULL 5 PERTANYAAN) */}
       <section id="faq" className="w-full max-w-4xl mx-auto px-6 py-16 z-10">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-4">FAQ (Pusat Bantuan)</h2>
+          <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-4">FAQ (Frequently Asked Questions)</h2>
           <p className="text-gray-500 dark:text-gray-400 font-medium">Pertanyaan yang sering ditanyakan seputar pendaftaran magang.</p>
         </div>
         

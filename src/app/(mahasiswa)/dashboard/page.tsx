@@ -15,6 +15,10 @@ export default function DashboardMahasiswa() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
+  // Filter logbook berdasarkan status
+  const logbookPending = logbooks.filter(l => l.status === 'Pending' || l.status === 'Menunggu Validasi');
+  const logbookDiterima = logbooks.filter(l => l.status === 'Disetujui');
+  const logbookDitolak = logbooks.filter(l => l.status === 'Ditolak' || l.status === 'Revisi');
 
   // Mobile & Dark Mode State
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -104,7 +108,7 @@ export default function DashboardMahasiswa() {
   const handleLogout = async () => {
     if (!confirm("Yakin ingin keluar?")) return;
     await fetch('/api/logout', { method: 'POST' });
-    router.push('/login');
+    window.location.href = '/';
   };
 
   const statusProgress = [
@@ -154,7 +158,7 @@ export default function DashboardMahasiswa() {
           </button>
           
           <button onClick={() => {setActiveTab('Logbook'); setIsMobileMenuOpen(false);}} disabled={!(pengajuan?.status_dosen === 'Disetujui')} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${activeTab === 'Logbook' ? 'bg-white text-[#1e3a8a] shadow-lg scale-105' : 'text-blue-100 hover:bg-white/10 hover:translate-x-1'}`}>
-             Logbook Harian
+             Logbook
           </button>
           
           <Link href="/lowongan" className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl font-bold transition-all text-blue-100 hover:bg-white/10 hover:translate-x-1">Bursa Magang</Link>
@@ -414,8 +418,18 @@ export default function DashboardMahasiswa() {
                   <button type="submit" disabled={isSubmitting} className="flex-1 py-3 md:py-4 bg-[#1e3a8a] text-white font-bold rounded-xl hover:bg-blue-900 shadow-lg transition-all text-sm md:text-base">{isSubmitting ? 'Menyimpan...' : 'Kirim Logbook'}</button>
                 </div>
               </form>
+              {/* --- TEMPEL KODE RIWAYAT LOGBOOK DI SINI --- */}
+      <div className="mt-12 space-y-8">
+        <h3 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-3">
+          <span className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center text-sm">📋</span>
+          Riwayat Laporan Logbook
+        </h3>
+        {/* ... dan seterusnya sampai penutup div riwayat ... */}
+      </div>
+      {/* <--- Ini adalah penutup activeTab === 'Logbook' yang asli */}
             </motion.div>
           </div>
+          
         )}
       </AnimatePresence>
 
@@ -424,7 +438,6 @@ export default function DashboardMahasiswa() {
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
         .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
         .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
       `}</style>
