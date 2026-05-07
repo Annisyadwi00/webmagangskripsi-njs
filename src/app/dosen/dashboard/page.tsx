@@ -32,12 +32,32 @@ export default function DosenDashboard() {
   });
 
   // ---> FITUR BARU: Modal Catatan Revisi Logbook <---
-  const [showRevisiModal, setShowRevisiModal] = useState(false);
-  const [revisiForm, setRevisiForm] = useState({ id_logbook: 0, nama_mahasiswa: '', kegiatan: '', catatan_dosen: '', nilai: '' });
+  // ---> MODAL REVIEW LOGBOOK (NILAI, STATUS, CATATAN) <---
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ id_logbook: 0, nama_mahasiswa: '', kegiatan: '', catatan_dosen: '', nilai: '', status: 'Disetujui' });
 
-  const showToast = (msg: string, type: 'success' | 'error') => {
-    setToast({ show: true, msg, type });
-    setTimeout(() => setToast({ show: false, msg: '', type: 'success' }), 3000);
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/logbook', { 
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ 
+          id: reviewForm.id_logbook, 
+          status: reviewForm.status, 
+          catatan_dosen: reviewForm.catatan_dosen,
+          nilai: reviewForm.nilai ? Number(reviewForm.nilai) : null
+        }) 
+      });
+      if (!res.ok) throw new Error("Gagal mengirim review logbook");
+      showToast(`Review dan Nilai berhasil disimpan!`, "success");
+      setShowReviewModal(false);
+      fetchData(); 
+    } catch (err: any) { 
+      showToast(err.message, "error"); 
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -222,7 +242,7 @@ const pendingLogbooks = logbooks.filter(l => l.status === 'Pending' || l.status 
           <h2 className="text-2xl font-black text-gray-900 dark:text-white">
             {activeTab === 'Permintaan' ? 'Validasi Permintaan Bimbingan' : 
              activeTab === 'Aktif' ? 'Daftar Mahasiswa Bimbingan' : 
-             activeTab === 'Logbook' ? 'Validasi Laporan Harian (Logbook)' : 
+             activeTab === 'Logbook' ? 'Validasi Laporan Logbook' : 
              'Evaluasi & Penilaian Akhir'}
           </h2>
           
@@ -313,6 +333,11 @@ const pendingLogbooks = logbooks.filter(l => l.status === 'Pending' || l.status 
                                   <button onClick={() => { setRevisiForm({ id_logbook: log.id, nama_mahasiswa: log.nama_mahasiswa, kegiatan: log.kegiatan, catatan_dosen: '' }); setShowRevisiModal(true); }} className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 font-bold rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors text-xs">❌ Minta Revisi</button>
                                 </div>
                               </td>
+                          <div className="flex flex-col gap-2">
+                                  <button onClick={() => { setReviewForm({ id_logbook: log.id, nama_mahasiswa: log.nama_mahasiswa, kegiatan: log.kegiatan, catatan_dosen: '', nilai: '', status: 'Disetujui' }); setShowReviewModal(true); }} className="w-full px-3 py-2 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 font-bold rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/60 transition-colors text-xs shadow-sm">
+                                    📝 Beri Review & Nilai
+                                  </button>
+                                </div>
                             </tr>
                         ))}
                       </tbody>
@@ -340,7 +365,6 @@ const pendingLogbooks = logbooks.filter(l => l.status === 'Pending' || l.status 
                     ))}
                  </motion.div>
                )}
-
              </AnimatePresence>
            )}
         </div>
@@ -405,46 +429,49 @@ const pendingLogbooks = logbooks.filter(l => l.status === 'Pending' || l.status 
       </AnimatePresence>
 
       {/* ---> FITUR BARU: MODAL CATATAN REVISI LOGBOOK <--- */}
+      {/* ---> MODAL REVIEW LOGBOOK (NILAI, STATUS & CATATAN) <--- */}
       <AnimatePresence>
-        {showRevisiModal && (
+        {showReviewModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowRevisiModal(false)}></div>
-            <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="relative bg-white dark:bg-slate-800 w-full max-w-lg rounded-3xl shadow-2xl p-8 z-10 transition-colors">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowReviewModal(false)}></div>
+            <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="relative bg-white dark:bg-slate-800 w-full max-w-lg rounded-3xl shadow-2xl p-8 z-10 transition-colors max-h-[90vh] overflow-y-auto custom-scrollbar">
               
-              <div className="w-14 h-14 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mb-5">
-                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-              </div>
+              <button onClick={() => setShowReviewModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
 
-              <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Permintaan Revisi Logbook</h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm border-b dark:border-slate-700 pb-6">Berikan pesan agar <strong className="text-gray-900 dark:text-white">{revisiForm.nama_mahasiswa}</strong> tahu apa yang harus diperbaiki dari laporannya.</p>
+              <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Review Logbook</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm border-b dark:border-slate-700 pb-4">Berikan persetujuan, nilai, dan catatan untuk <strong className="text-gray-900 dark:text-white">{reviewForm.nama_mahasiswa}</strong>.</p>
               
               <div className="mb-6 bg-gray-50 dark:bg-slate-700/50 p-4 rounded-xl border border-gray-100 dark:border-slate-600 transition-colors">
-                <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">Logbook yang Direvisi:</p>
-                <p className="text-sm text-gray-700 dark:text-gray-300 italic line-clamp-2">"{revisiForm.kegiatan}"</p>
+                <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase mb-1">Kegiatan yang Direview:</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 italic line-clamp-2">"{reviewForm.kegiatan}"</p>
               </div>
 
-              <form onSubmit={handleSubmitRevisi}>
-                {/* INPUT NILAI LOGBOOK */}
-                <div className="mb-4">
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Nilai Logbook (0-100) *</label>
-                  <input 
-                    required 
-                    type="number" 
-                    min="0" 
-                    max="100" 
-                    value={revisiForm.nilai} 
-                    onChange={(e) => setRevisiForm({...revisiForm, nilai: e.target.value})} 
-                    className="w-full px-4 py-2 border border-gray-200 dark:border-slate-600 rounded-xl bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500" 
-                    placeholder="Contoh: 85" 
-                  />
+              <form onSubmit={handleSubmitReview} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Persetujuan *</label>
+                    <select required value={reviewForm.status} onChange={(e) => setReviewForm({...reviewForm, status: e.target.value})} className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm cursor-pointer font-bold">
+                      <option value="Disetujui">✅ Disetujui</option>
+                      <option value="Revisi">❌ Minta Revisi</option>
+                      <option value="Ditolak">⛔ Ditolak</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Nilai (1-100)</label>
+                    <input type="number" min="0" max="100" value={reviewForm.nilai} onChange={(e) => setReviewForm({...reviewForm, nilai: e.target.value})} className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm font-bold" placeholder="Contoh: 85" />
+                  </div>
                 </div>
 
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Catatan Dosen (Opsional)</label>
-                {/* ... textarea catatan dosen tetap biarkan ... */}
-                <div className="flex gap-4 pt-6 mt-4">
-                  <button type="button" onClick={() => setShowRevisiModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">Batal</button>
-                  <button type="submit" disabled={isSubmitting} className="flex-1 py-4 bg-red-600 dark:bg-red-500 text-white font-bold rounded-xl hover:bg-red-700 dark:hover:bg-red-600 shadow-lg shadow-red-600/30 transition-all hover:-translate-y-1">
-                    {isSubmitting ? 'Mengirim...' : 'Kirim Catatan Revisi'}
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Catatan / Pesan Dosen</label>
+                  <textarea rows={3} value={reviewForm.catatan_dosen} onChange={(e) => setReviewForm({...reviewForm, catatan_dosen: e.target.value})} className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm" placeholder="Berikan evaluasi atau detail revisi (opsional)..."></textarea>
+                </div>
+                
+                <div className="flex gap-4 pt-4 mt-2">
+                  <button type="submit" disabled={isSubmitting} className="w-full py-4 bg-indigo-600 dark:bg-indigo-500 text-white font-black rounded-xl hover:bg-indigo-700 dark:bg-indigo-600 shadow-lg shadow-indigo-600/30 transition-all hover:-translate-y-1">
+                    {isSubmitting ? 'Menyimpan...' : 'Simpan Review & Nilai'}
                   </button>    
                 </div>
               </form>
