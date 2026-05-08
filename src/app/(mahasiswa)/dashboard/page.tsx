@@ -9,6 +9,7 @@ export default function DashboardMahasiswa() {
   const router = useRouter();
   
   const [activeTab, setActiveTab] = useState<'Magang' | 'Logbook'>('Magang');
+  const [filterLogbook, setFilterLogbook] = useState<'Semua' | 'Disetujui' | 'Revisi' | 'Pending'>('Semua');
   const [user, setUser] = useState<{name: string, nim: string, prodi: string, role: string, id: number} | null>(null);
   const [pengajuan, setPengajuan] = useState<any>(null);
   const [logbooks, setLogbooks] = useState<any[]>([]);
@@ -35,7 +36,18 @@ export default function DashboardMahasiswa() {
     // Cek apakah mode malam sudah aktif sebelumnya
     if (document.documentElement.classList.contains('dark')) setIsDarkMode(true);
   }, []);
+// Logika Filter Logbook berdasarkan Status & Tipe
+  const logbookFiltered = logbooks.filter(l => {
+    if (filterLogbook === 'Semua') return true;
+    if (filterLogbook === 'Disetujui') return l.status === 'Disetujui';
+    if (filterLogbook === 'Revisi') return l.status === 'Revisi' || l.status === 'Ditolak';
+    if (filterLogbook === 'Pending') return l.status === 'Pending' || l.status === 'Menunggu Validasi';
+    return true;
+  });
 
+  // Logika Cek apakah boleh upload Laporan Akhir
+  // Syarat: Minimal sudah ada logbook, dan SEMUA logbook harus 'Disetujui'
+  const isLaporanAkhirReady = logbooks.length > 0 && logbooks.every(l => l.status === 'Disetujui');
   const toggleDarkMode = () => {
     document.documentElement.classList.toggle('dark');
     setIsDarkMode(!isDarkMode);
@@ -289,61 +301,137 @@ export default function DashboardMahasiswa() {
                  )}
                </motion.div>
              )}
-
-             {/* TAB 2: LOGBOOK */}
-             {activeTab === 'Logbook' && (
-               <motion.div key="logbook" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4 md:space-y-5">
-                  {logbooks.length === 0 ? (
-                    <div className="bg-white dark:bg-slate-800 rounded-[32px] p-10 md:p-16 text-center border border-gray-100 dark:border-slate-700 shadow-sm transition-colors">
-                       <h3 className="text-lg md:text-xl font-black text-gray-900 dark:text-white mb-2">Belum ada Logbook</h3>
-                       <p className="text-gray-500 dark:text-gray-400 font-medium text-sm md:text-base">Klik tombol "+ Logbook" di pojok kanan atas untuk mulai melapor kegiatan.</p>
+{/* --- BAGIAN RIWAYAT LOGBOOK MAHASISWA --- */}
+                <div className="mt-0 space-y-0">
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 dark:border-slate-800 pb-6">
+                    <div>
+                      <h3 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-3">
+                        <span className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-none">📋</span>
+                        Riwayat Laporan
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">Pantau status validasi, nilai, dan pesan dari dosen pembimbingmu di sini.</p>
                     </div>
-                  ) : logbooks.map((log) => (
-                    <div key={log.id} className="bg-white dark:bg-slate-800 rounded-2xl p-5 md:p-8 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
-                       <div className={`absolute left-0 top-0 bottom-0 w-2 ${log.status === 'Disetujui' ? 'bg-emerald-500' : log.status === 'Ditolak' ? 'bg-red-500' : 'bg-amber-400'}`}></div>
 
-                       <div className="pl-3 md:pl-4">
-                         <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 md:gap-4 mb-4">
-                           <div>
-                             <div className="flex items-center gap-3 mb-1">
-                               <h4 className="text-lg md:text-xl font-black text-gray-900 dark:text-white">{log.judul || 'Logbook'}</h4>
-                               <span className={`px-2 py-1 text-[9px] md:text-[10px] font-black uppercase tracking-wider rounded-lg border ${log.status === 'Disetujui' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' : log.status === 'Ditolak' ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'}`}>
-                                 {log.status === 'Pending' ? 'Menunggu Dosen' : log.status}
-                               </span>
-                             </div>
-                             <p className="text-xs md:text-sm font-bold text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                               📅 {new Date(log.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                             </p>
-                           </div>
-                         </div>
+                    {/* FILTER TABS (Desain Lebih Rapi) */}
+                    <div className="inline-flex bg-gray-100 dark:bg-slate-800 p-1.5 rounded-2xl gap-1 overflow-x-auto max-w-full border border-gray-200 dark:border-slate-700">
+                      {['Semua', 'Disetujui', 'Revisi', 'Pending'].map((status) => (
+                        <button
+                          key={status}
+                          onClick={() => setFilterLogbook(status as any)}
+                          className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap ${
+                            filterLogbook === status 
+                            ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm' 
+                            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                          }`}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-                         <div className="bg-slate-50/80 dark:bg-slate-700/50 rounded-xl p-4 md:p-5 border border-slate-100 dark:border-slate-600 mb-4 md:mb-5 transition-colors">
-                           <p className="text-slate-700 dark:text-slate-300 font-medium leading-relaxed whitespace-pre-wrap text-xs md:text-sm">{log.kegiatan}</p>
-                         </div>
+                  {/* INFO LAPORAN AKHIR (Desain Banner Alert Lembut) */}
+                  {isLaporanAkhirReady ? (
+                    <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-3xl p-8 text-white shadow-xl shadow-indigo-200 dark:shadow-none relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+                        <svg className="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                      </div>
+                      <div className="relative z-10">
+                        <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-sm border border-white/20">Akses Terbuka</span>
+                        <h4 className="text-xl font-black mt-4">Selamat! Laporan Akhir Sudah Bisa Diisi.</h4>
+                        <p className="text-indigo-100 text-sm mt-2 mb-6 max-w-md leading-relaxed">Seluruh logbook harian/mingguan kamu sudah disetujui dosen. Sekarang saatnya mengunggah laporan akhir magangmu.</p>
+                        <button className="px-8 py-3 bg-white text-indigo-600 font-black rounded-xl hover:bg-indigo-50 transition-all shadow-lg flex items-center gap-2 hover:-translate-y-1">
+                          Unggah Laporan Akhir Sekarang 🚀
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center sm:items-start gap-5">
+                      <div className="w-10 h-10 bg-white dark:bg-slate-700 rounded-full flex items-center justify-center text-lg shadow-sm border border-gray-100 dark:border-slate-600 shrink-0">🔒</div>
+                      <div className="text-center sm:text-left">
+                        <h4 className="text-sm font-black text-gray-900 dark:text-white mb-1">Akses Laporan Akhir Terkunci</h4>
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 leading-relaxed">Tombol unggah akan otomatis terbuka jika <strong className="text-gray-700 dark:text-gray-300">SEMUA</strong> laporan logbook kamu sudah berstatus <span className="text-emerald-500 font-bold bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded">Disetujui</span> tanpa ada revisi.</p>
+                      </div>
+                    </div>
+                  )}
 
-                         {log.status === 'Ditolak' && log.feedback && (
-                           <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 border border-red-100 dark:border-red-900/50 mb-4 md:mb-5 flex items-start gap-3 transition-colors">
-                              <span className="text-base md:text-lg">⚠️</span>
-                              <div>
-                                <p className="text-[10px] md:text-xs font-bold text-red-700 dark:text-red-400 uppercase tracking-widest mb-1">Catatan Revisi Dosen:</p>
-                                <p className="text-red-900 dark:text-red-300 text-xs md:text-sm font-medium italic">"{log.feedback}"</p>
+                  {/* DAFTAR KARTU LOGBOOK (Desain Kartu Premium) */}
+                  <div className="grid grid-cols-1 gap-6 pt-2">
+                    {logbookFiltered.length === 0 ? (
+                      <div className="py-16 text-center border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-3xl">
+                        <p className="text-gray-400 dark:text-gray-500 font-bold">Belum ada logbook dengan status ini.</p>
+                      </div>
+                    ) : logbookFiltered.map((log) => (
+                      <div key={log.id} className="bg-white dark:bg-slate-800 rounded-[28px] border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col md:flex-row group">
+                        
+                        {/* Kiri: Kolom Status & Nilai Angka */}
+                        <div className="md:w-48 bg-slate-50/50 dark:bg-slate-800/80 border-b md:border-b-0 md:border-r border-gray-100 dark:border-slate-700 p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-6 shadow-sm border z-10 ${
+                            log.status === 'Disetujui' ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800' : 
+                            log.status === 'Revisi' || log.status === 'Ditolak' ? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/30 dark:border-red-800' : 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:border-amber-800'
+                          }`}>
+                            {log.status}
+                          </span>
+                          
+                          <div className="z-10">
+                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Nilai</p>
+                            {log.nilai !== null ? (
+                              <p className="text-6xl font-black text-indigo-600 dark:text-indigo-400 tracking-tighter drop-shadow-sm">{log.nilai}</p>
+                            ) : (
+                              <p className="text-xs font-bold text-gray-400 dark:text-gray-500 italic mt-2">Belum Dinilai</p>
+                            )}
+                          </div>
+                          
+                          {/* Dekorasi Background Angka Samar */}
+                          {log.nilai !== null && (
+                            <div className="absolute -right-4 -bottom-4 text-9xl font-black text-slate-100 dark:text-slate-700/30 opacity-50 z-0 select-none pointer-events-none">
+                              {log.nilai}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Kanan: Detail Konten & Pesan Dosen */}
+                        <div className="flex-1 p-6 md:p-8 flex flex-col">
+                          <div className="flex justify-between items-start gap-4 mb-5">
+                            <div>
+                              <h4 className="text-xl font-black text-gray-900 dark:text-white mb-3 group-hover:text-indigo-600 transition-colors">{log.judul}</h4>
+                              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-slate-700 rounded-lg text-xs font-bold text-gray-500 dark:text-gray-400">
+                                <span>📅</span>
+                                <span>{new Date(log.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
                               </div>
-                           </div>
-                         )}
+                            </div>
+                            
+                            {log.link_dokumen && (
+                              <a href={log.link_dokumen} target="_blank" className="w-11 h-11 rounded-xl bg-gray-50 hover:bg-indigo-50 dark:bg-slate-700 dark:hover:bg-indigo-900/40 border border-gray-100 dark:border-slate-600 flex items-center justify-center transition-all shrink-0 hover:scale-105 shadow-sm" title="Buka Dokumen Laporan">
+                                🔗
+                              </a>
+                            )}
+                          </div>
 
-                         {log.link_dokumen && (
-                           <a href={log.link_dokumen} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-xs md:text-sm font-bold text-[#1e3a8a] dark:text-blue-400 bg-blue-50/50 dark:bg-[#1e3a8a]/20 hover:bg-blue-100 dark:hover:bg-[#1e3a8a]/40 px-3 md:px-4 py-2 md:py-2.5 rounded-xl transition-all">
-                             📎 Buka Lampiran Bukti
-                           </a>
-                         )}
-                       </div>
-                    </div>
-                  ))}
-               </motion.div>
-             )}
-           </AnimatePresence>
-        </div>
-      </main>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-6 whitespace-pre-wrap">
+                            {log.kegiatan}
+                          </p>
+
+                          {/* Chat Bubble: Pesan Dosen (Desain Jauh Lebih Bersih) */}
+                          {log.catatan_dosen && (
+                            <div className="mt-auto bg-indigo-50/70 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-2xl p-5 flex gap-4 items-start relative">
+                              <div className="w-10 h-10 rounded-full bg-white dark:bg-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-300 shadow-sm border border-indigo-100 dark:border-indigo-700 shrink-0 text-lg">
+                                👨‍🏫
+                              </div>
+                              <div className="pt-0.5">
+                                <p className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-1.5">Pesan & Revisi Dosen</p>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium italic leading-relaxed">"{log.catatan_dosen}"</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                </AnimatePresence> {/* <--- SELIPKAN KEMBALI TAG INI DI SINI */}
+              </div>
+            </main>
 
       {/* MODAL INPUT LINK LOA */}
       <AnimatePresence>
@@ -418,18 +506,9 @@ export default function DashboardMahasiswa() {
                   <button type="submit" disabled={isSubmitting} className="flex-1 py-3 md:py-4 bg-[#1e3a8a] text-white font-bold rounded-xl hover:bg-blue-900 shadow-lg transition-all text-sm md:text-base">{isSubmitting ? 'Menyimpan...' : 'Kirim Logbook'}</button>
                 </div>
               </form>
-              {/* --- TEMPEL KODE RIWAYAT LOGBOOK DI SINI --- */}
-      <div className="mt-12 space-y-8">
-        <h3 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-3">
-          <span className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center text-sm">📋</span>
-          Riwayat Laporan Logbook
-        </h3>
-        {/* ... dan seterusnya sampai penutup div riwayat ... */}
-      </div>
       {/* <--- Ini adalah penutup activeTab === 'Logbook' yang asli */}
             </motion.div>
           </div>
-          
         )}
       </AnimatePresence>
 
@@ -440,7 +519,7 @@ export default function DashboardMahasiswa() {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
         .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
-      `}</style>
+        `}</style>
     </div>
   );
 }

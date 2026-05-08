@@ -15,7 +15,14 @@ export default function DosenDashboard() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // ---> FUNGSI MEMUNCULKAN NOTIFIKASI TOAST <---
+  // ---> MESIN NOTIFIKASI TOAST (PASTIKAN KEDUANYA ADA DI SINI) <---
   const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
+
+  const showToast = (msg: string, type: 'success' | 'error') => {
+    setToast({ show: true, msg, type });
+    setTimeout(() => setToast({ show: false, msg: '', type: 'success' }), 4000);
+  };
 
   // Modal Input Nilai
   const [showNilaiModal, setShowNilaiModal] = useState(false);
@@ -328,16 +335,16 @@ const pendingLogbooks = logbooks.filter(l => l.status === 'Pending' || l.status 
                                </a>
                               </td>
                               <td className="p-5 pr-8 align-top text-center">
-                                <div className="flex flex-col gap-2">
-                                  <button onClick={() => handleACCLogbook(log.id)} className="w-full px-3 py-2 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 font-bold rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/60 transition-colors text-xs">✅ ACC Logbook</button>
-                                  <button onClick={() => { setRevisiForm({ id_logbook: log.id, nama_mahasiswa: log.nama_mahasiswa, kegiatan: log.kegiatan, catatan_dosen: '' }); setShowRevisiModal(true); }} className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 font-bold rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors text-xs">❌ Minta Revisi</button>
-                                </div>
+                                <button 
+                                  onClick={() => { 
+                                    setReviewForm({ id_logbook: log.id, nama_mahasiswa: log.nama_mahasiswa, kegiatan: log.kegiatan, catatan_dosen: '', nilai: '', status: 'Disetujui' }); 
+                                    setShowReviewModal(true); 
+                                  }} 
+                                  className="w-full px-3 py-2 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 font-bold rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/60 transition-colors text-xs shadow-sm"
+                                >
+                                  📝 Beri Review & Nilai
+                                </button>
                               </td>
-                          <div className="flex flex-col gap-2">
-                                  <button onClick={() => { setReviewForm({ id_logbook: log.id, nama_mahasiswa: log.nama_mahasiswa, kegiatan: log.kegiatan, catatan_dosen: '', nilai: '', status: 'Disetujui' }); setShowReviewModal(true); }} className="w-full px-3 py-2 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 font-bold rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/60 transition-colors text-xs shadow-sm">
-                                    📝 Beri Review & Nilai
-                                  </button>
-                                </div>
                             </tr>
                         ))}
                       </tbody>
