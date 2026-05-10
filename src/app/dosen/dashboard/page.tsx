@@ -23,7 +23,7 @@ export default function DosenDashboard() {
     setToast({ show: true, msg, type });
     setTimeout(() => setToast({ show: false, msg: '', type: 'success' }), 4000);
   };
-
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
   // Modal Input Nilai
   const [showNilaiModal, setShowNilaiModal] = useState(false);
   const [nilaiForm, setNilaiForm] = useState({ 

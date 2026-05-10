@@ -1,35 +1,36 @@
 import { Sequelize } from 'sequelize';
 
-// Mengambil URL database dari environment variable (.env / Vercel settings)
-// Format URL Aiven: mysql://user:password@host:port/defaultdb
-const databaseUrl = process.env.DATABASE_URL || 'mysql://root:@localhost:3306/db_magang';
+// Membaca URL dari .env
+const databaseUrl = process.env.DATABASE_URL;
 
-const sequelize = new Sequelize(databaseUrl, {
+// Jika .env tidak terbaca, aplikasi akan langsung memberi tahu
+if (!databaseUrl) {
+  console.error("⚠️ ERROR: DATABASE_URL di file .env tidak terbaca!");
+}
+
+const sequelize = new Sequelize(databaseUrl || 'mysql://root:@localhost:3306/db_magang', {
   dialect: 'mysql',
   logging: false,
   dialectOptions: {
-    // Aiven mewajibkan koneksi menggunakan SSL
-    // Cek apakah ini berjalan di production/Aiven dengan melihat keberadaan DATABASE_URL
-    ...(process.env.DATABASE_URL && {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
-      }
-    })
+    // Memaksa penggunaan SSL untuk Aiven
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
+    }
   }
 });
 
-let isConnected = false; // ← flag supaya hanya connect sekali
+let isConnected = false;
 
 export const connectDB = async () => {
-  if (isConnected) return; // ← kalau sudah konek, skip
+  if (isConnected) return;
   
   try {
     await sequelize.authenticate();
-    console.log('Koneksi ke database MySQL berhasil!');
+    console.log('✅ Koneksi ke database Aiven BERHASIL!');
     isConnected = true;
   } catch (error) {
-    console.error('Tidak dapat terhubung ke database:', error);
+    console.error('❌ Tidak dapat terhubung ke database:', error);
     throw error;
   }
 };
