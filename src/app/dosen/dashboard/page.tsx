@@ -175,9 +175,12 @@ export default function DosenDashboard() {
   };
 
   const handleLogout = async () => {
-    if (!confirm("Yakin ingin keluar?")) return;
-    await fetch('/api/logout', { method: 'POST' });
-    window.location.href = '/';
+   try {
+      await fetch('/api/logout', { method: 'POST' });
+      window.location.href = '/';
+    } catch (error) {
+      console.error("Gagal logout:", error);
+    }
   };
 
   const pendingBimbingan = bimbinganList.filter(b => b.status_dosen !== 'Disetujui' && b.status_dosen !== 'Ditolak');
@@ -237,9 +240,9 @@ const pendingLogbooks = logbooks.filter(l => l.status === 'Pending' || l.status 
           <Link href="/" className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white/5 text-white hover:bg-white/10 rounded-xl font-bold transition-all shadow-sm border border-white/10 hover:-translate-y-0.5">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg> Kembali ke Beranda
           </Link>
-          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-red-500/20 text-red-100 hover:bg-red-500 hover:text-white rounded-xl font-bold transition-all border border-red-500/20 hover:-translate-y-0.5">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg> Logout Akun
-          </button>
+          <button onClick={() => setShowLogoutModal(true)} className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-red-500/20 text-red-100 hover:bg-red-500 hover:text-white rounded-xl font-bold transition-all border border-red-500/20 hover:-translate-y-0.5">
+          Logout Akun
+        </button>
         </div>
       </aside>
 
@@ -486,7 +489,37 @@ const pendingLogbooks = logbooks.filter(l => l.status === 'Pending' || l.status 
           </div>
         )}
       </AnimatePresence>
-
+{/* MODAL LOGOUT POP-OUT */}
+      <AnimatePresence>
+        {showLogoutModal && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowLogoutModal(false)}></div>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl shadow-2xl p-8 z-10 transition-colors text-center overflow-hidden">
+              {/* Dekorasi Background */}
+              <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-red-50 dark:from-red-900/20 to-transparent -z-10"></div>
+              
+              <div className="w-20 h-20 bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-inner border-4 border-white dark:border-slate-800 z-10 relative">
+                🚪
+              </div>
+              
+              <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Yakin Ingin Keluar?</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm font-medium leading-relaxed">
+                Sesi kamu akan diakhiri. Kamu harus login kembali untuk mengakses portal mahasiswa.
+              </p>
+              
+              <div className="flex gap-3">
+                <button onClick={() => setShowLogoutModal(false)} className="flex-1 py-3.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
+                  Batal
+                </button>
+                <button onClick={handleLogout} className="flex-1 py-3.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-lg shadow-red-200 dark:shadow-none transition-all">
+                  Ya, Keluar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }

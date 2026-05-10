@@ -33,7 +33,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-500 font-sans flex flex-col relative overflow-hidden pt-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-500 font-sans flex flex-col relative overflow-hidden">
       
       {/* Efek Latar Belakang Estetik */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-400/20 dark:bg-[#1e3a8a]/20 rounded-full blur-3xl -z-10"></div>
@@ -68,7 +68,69 @@ export default function LandingPage() {
           </Link>
         </div>
       </main>
+{/* --- SECTION ABOUT US --- */}
+      <section id="about" className="py-20 bg-white dark:bg-slate-900 transition-colors">
+        <div className="max-w-7xl mx-auto px-6 md:px-10">
+          <div className="flex flex-col md:flex-row items-center gap-16">
+            
+            {/* Gambar / Ilustrasi Kiri */}
+            <div className="w-full md:w-1/2 relative group">
+              {/* Efek Glow di Belakang */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[32px] transform rotate-3 scale-105 opacity-20 blur-xl group-hover:opacity-30 transition-opacity duration-500"></div>
+              
+              <div className="relative bg-slate-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-[32px] p-8 md:p-12 shadow-xl overflow-hidden transition-colors">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100 dark:bg-indigo-900/30 rounded-bl-full -z-10"></div>
+                <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-6 leading-tight">
+                  Menjembatani <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Akademik & Industri</span>
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-8">
+                  SI Magang Fasilkom UNSIKA hadir sebagai solusi digital terintegrasi untuk menyederhanakan seluruh proses administrasi magang. Mulai dari pengajuan Letter of Acceptance (LOA), pelaporan logbook, hingga penilaian akhir, semuanya kini dapat dilakukan dalam satu pintu.
+                </p>
+                
+                {/* Ikon User Terlibat */}
+                <div className="flex items-center gap-4">
+                  <div className="flex -space-x-4">
+                    <div className="w-12 h-12 rounded-full border-4 border-white dark:border-slate-800 bg-blue-100 flex items-center justify-center text-xl shadow-sm z-30">👨‍🎓</div>
+                    <div className="w-12 h-12 rounded-full border-4 border-white dark:border-slate-800 bg-emerald-100 flex items-center justify-center text-xl shadow-sm z-20">👨‍🏫</div>
+                    <div className="w-12 h-12 rounded-full border-4 border-white dark:border-slate-800 bg-amber-100 flex items-center justify-center text-xl shadow-sm z-10">🏢</div>
+                  </div>
+                  <p className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Mahasiswa • Dosen • Mitra</p>
+                </div>
+              </div>
+            </div>
 
+            {/* Konten Teks Kanan */}
+            <div className="w-full md:w-1/2 space-y-8">
+              <div>
+                <span className="text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-widest text-sm flex items-center gap-2">
+                  <span className="w-8 h-1 bg-indigo-600 dark:bg-indigo-400 rounded-full"></span> Tentang SI Magang
+                </span>
+                <h2 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white mt-4 mb-6 leading-tight">
+                  Transformasi Digital Magang <span className="text-[#1e3a8a] dark:text-blue-400">Fasilkom</span>
+                </h2>
+                <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
+                  Sistem ini dirancang khusus untuk memberikan kemudahan dan transparansi bagi semua pihak yang terlibat dalam program studi independen dan magang mahasiswa.
+                </p>
+              </div>
+
+              {/* Poin-poin Keunggulan */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
+                <div className="bg-blue-50 dark:bg-slate-800/50 p-6 rounded-[24px] border border-blue-100 dark:border-slate-700 hover:-translate-y-1 transition-transform">
+                  <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-blue-600/30 mb-4">⚡</div>
+                  <h4 className="text-xl font-black text-gray-900 dark:text-white mb-2">Efisien</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Bebas tumpukan kertas. Ajukan dan pantau status magangmu secara real-time.</p>
+                </div>
+                <div className="bg-indigo-50 dark:bg-slate-800/50 p-6 rounded-[24px] border border-indigo-100 dark:border-slate-700 hover:-translate-y-1 transition-transform">
+                  <div className="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-indigo-600/30 mb-4">🎯</div>
+                  <h4 className="text-xl font-black text-gray-900 dark:text-white mb-2">Terpantau</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Evaluasi logbook dan komunikasi dengan dosen pembimbing jadi lebih terarah.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
       {/* 2. AREA FAQ (KEMBALI FULL 5 PERTANYAAN) */}
       <section id="faq" className="w-full max-w-4xl mx-auto px-6 py-16 z-10">
         <div className="text-center mb-12">
@@ -130,7 +192,7 @@ export default function LandingPage() {
           </details>
         </div>
       </section>
-
+      
       {/* 3. AREA PESAN & MASUKAN */}
       <section className="w-full max-w-3xl mx-auto px-6 py-16 mb-20 z-10">
         <div className="bg-white dark:bg-slate-800 rounded-[32px] border border-gray-200 dark:border-slate-700 p-8 md:p-12 shadow-xl shadow-blue-900/5 transition-colors">

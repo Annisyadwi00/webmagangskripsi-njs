@@ -28,6 +28,8 @@ export default function DashboardMahasiswa() {
   // Modal State
   const [showLOAModal, setShowLOAModal] = useState(false);
   const [showLogbookModal, setShowLogbookModal] = useState(false);
+  const [showLaporanModal, setShowLaporanModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   
   const [loaForm, setLoaForm] = useState({ perusahaan: '', posisi: '', link_loa: '' });
   const [logbookForm, setLogbookForm] = useState({ judul: 'Logbook Harian', tanggal: '', kegiatan: '', link_bukti: '' });
@@ -36,18 +38,12 @@ export default function DashboardMahasiswa() {
     // Cek apakah mode malam sudah aktif sebelumnya
     if (document.documentElement.classList.contains('dark')) setIsDarkMode(true);
   }, []);
-// Logika Filter Logbook berdasarkan Status & Tipe
-  const logbookFiltered = logbooks.filter(l => {
-    if (filterLogbook === 'Semua') return true;
-    if (filterLogbook === 'Disetujui') return l.status === 'Disetujui';
-    if (filterLogbook === 'Revisi') return l.status === 'Revisi' || l.status === 'Ditolak';
-    if (filterLogbook === 'Pending') return l.status === 'Pending' || l.status === 'Menunggu Validasi';
-    return true;
-  });
+  // Fungsi menghitung persentase progres magang
+ 
+
 
   // Logika Cek apakah boleh upload Laporan Akhir
   // Syarat: Minimal sudah ada logbook, dan SEMUA logbook harus 'Disetujui'
-  const isLaporanAkhirReady = logbooks.length > 0 && logbooks.every(l => l.status === 'Disetujui');
   const toggleDarkMode = () => {
     document.documentElement.classList.toggle('dark');
     setIsDarkMode(!isDarkMode);
@@ -118,10 +114,45 @@ export default function DashboardMahasiswa() {
   };
 
   const handleLogout = async () => {
-    if (!confirm("Yakin ingin keluar?")) return;
-    await fetch('/api/logout', { method: 'POST' });
-    window.location.href = '/';
+   try {
+      await fetch('/api/logout', { method: 'POST' });
+      window.location.href = '/';
+    } catch (error) {
+      console.error("Gagal logout:", error);
+    }
   };
+  // ---> LOGIKA FILTER LOGBOOK <---
+  const logbookFiltered = logbooks.filter(l => {
+    if (filterLogbook === 'Semua') return true;
+    if (filterLogbook === 'Disetujui') return l.status === 'Disetujui';
+    if (filterLogbook === 'Revisi') return l.status === 'Revisi' || l.status === 'Ditolak';
+    if (filterLogbook === 'Pending') return l.status === 'Pending' || l.status === 'Menunggu Validasi';
+    return true;
+  });
+
+  // ---> LOGIKA CEK LAPORAN AKHIR <---
+  const isLaporanAkhirReady = logbooks.length > 0 && logbooks.every(l => l.status === 'Disetujui');
+// ---> FUNGSI HITUNG PROGRES MAGANG (CUKUP 1 KALI SAJA DI SINI) <---
+  // ---> FUNGSI HITUNG PROGRES MAGANG (CUKUP 1 KALI SAJA DI SINI) <---
+  const calculateInternProgress = () => {
+    if (!pengajuan || !pengajuan.tgl_mulai || !pengajuan.tgl_berakhir) return 0;
+    
+    const start = new Date(pengajuan.tgl_mulai).getTime();
+    const end = new Date(pengajuan.tgl_berakhir).getTime();
+    const now = new Date().getTime();
+
+    if (isNaN(start) || isNaN(end)) return 0;
+    if (now < start) return 0; 
+    if (now > end) return 100; 
+
+    const totalDuration = end - start;
+    const timeElapsed = now - start;
+    const percent = Math.round((timeElapsed / totalDuration) * 100);
+    
+    return Math.max(0, Math.min(100, percent));
+  };
+
+  const progressPercent = calculateInternProgress();
 
   const statusProgress = [
     { label: 'Upload LOA', done: !!pengajuan, active: !pengajuan },
@@ -179,7 +210,9 @@ export default function DashboardMahasiswa() {
         
         <div className="p-6 border-t border-white/10 mt-auto flex flex-col gap-3">
           <Link href="/" className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white/5 text-white hover:bg-white/10 rounded-xl font-bold transition-all shadow-sm border border-white/10 hover:-translate-y-0.5">Kembali ke Beranda</Link>
-          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-red-500/20 text-red-100 hover:bg-red-500 hover:text-white rounded-xl font-bold transition-all border border-red-500/20 hover:-translate-y-0.5">Logout Akun</button>
+          <button onClick={() => setShowLogoutModal(true)} className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-red-500/20 text-red-100 hover:bg-red-500 hover:text-white rounded-xl font-bold transition-all border border-red-500/20 hover:-translate-y-0.5">
+  Logout Akun
+</button>
         </div>
       </aside>
 
@@ -278,7 +311,37 @@ export default function DashboardMahasiswa() {
                            <p className="font-black text-gray-900 dark:text-white text-sm md:text-base">{pengajuan.nama_dosen || 'Belum Ada'}</p>
                          </div>
                        </div>
-
+{/* --- TAMPILAN PROGRESS BAR MASA MAGANG --- */}
+                       {pengajuan.status_dosen === 'Disetujui' && (
+                         <div className="bg-slate-50 dark:bg-slate-900/40 rounded-[24px] p-6 border border-gray-100 dark:border-slate-700 mb-8 relative overflow-hidden transition-colors">
+                           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
+                             <div>
+                               <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg text-[10px] font-black uppercase tracking-widest mb-2 border border-emerald-100 dark:border-emerald-800">
+                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                 Magang Berjalan
+                               </div>
+                               <h4 className="text-lg font-black text-gray-900 dark:text-white">Progres Waktu Magang</h4>
+                             </div>
+                             <div className="text-left md:text-right">
+                               <span className="text-4xl font-black text-indigo-600 dark:text-indigo-400">{progressPercent}<span className="text-xl text-indigo-400">%</span></span>
+                             </div>
+                           </div>
+                           
+                           {/* Bar Animasi */}
+                           <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3 mb-2 overflow-hidden border border-gray-300 dark:border-slate-600 p-0.5">
+                             <div 
+                               className="bg-gradient-to-r from-indigo-500 to-blue-500 h-full rounded-full transition-all duration-1000 relative overflow-hidden" 
+                               style={{ width: `${progressPercent}%` }}
+                             >
+                               <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]"></div>
+                             </div>
+                           </div>
+                           <div className="flex justify-between text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                             <span>Hari Pertama</span>
+                             <span>Selesai (100%)</span>
+                           </div>
+                         </div>
+                       )}
                        {pengajuan.status === 'Aktif' && pengajuan.status_dosen === 'Menunggu' && (
                           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-5 mb-6 transition-colors">
                             <p className="text-amber-800 dark:text-amber-400 font-bold text-xs md:text-sm">Menunggu Konfirmasi Dosen. Harap hubungi dosen terkait agar segera di-ACC.</p>
@@ -301,8 +364,9 @@ export default function DashboardMahasiswa() {
                  )}
                </motion.div>
              )}
-{/* --- BAGIAN RIWAYAT LOGBOOK MAHASISWA --- */}
-                <div className="mt-0 space-y-0">
+             
+              {/*  BAGIAN RIWAYAT LOGBOOK MAHASISWA --- */}
+                <div className="mt-2 space-y-6">
                   <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 dark:border-slate-800 pb-6">
                     <div>
                       <h3 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-3">
@@ -329,7 +393,40 @@ export default function DashboardMahasiswa() {
                       ))}
                     </div>
                   </div>
-
+{/* MODAL UNGGAH LAPORAN AKHIR */}
+      <AnimatePresence>
+        {showLaporanModal && (
+          <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:px-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowLaporanModal(false)}></div>
+            <motion.div initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} className="relative bg-white dark:bg-slate-800 w-full max-w-xl rounded-t-3xl md:rounded-3xl shadow-2xl p-6 md:p-8 z-10 transition-colors">
+              <div className="w-12 h-1.5 bg-gray-300 dark:bg-slate-600 rounded-full mx-auto mb-6 md:hidden"></div>
+              
+              <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-sm">🎓</div>
+              
+              <h3 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white mb-2">Unggah Laporan Akhir</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-6 text-xs md:text-sm border-b border-gray-100 dark:border-slate-700 pb-6">Selamat! Kamu telah menyelesaikan seluruh rangkaian logbook. Silakan lampirkan draf laporan akhir magangmu di bawah ini.</p>
+              
+              <form onSubmit={(e) => { e.preventDefault(); alert("Fitur submit laporan akhir sedang dalam pengembangan!"); setShowLaporanModal(false); }} className="space-y-4 md:space-y-5">
+                <div>
+                  <label className="block text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Link Dokumen (Google Drive / PDF) *</label>
+                  <input type="url" required className="w-full px-4 md:px-5 py-3 md:py-4 border border-gray-200 dark:border-slate-600 rounded-xl bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white focus:bg-white dark:focus:bg-slate-600 outline-none focus:ring-2 focus:ring-indigo-600 transition-all text-sm md:text-base" placeholder="https://drive.google.com/..." />
+                </div>
+                
+                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-100 dark:border-amber-800/50 mt-4">
+                  <p className="text-xs font-medium text-amber-800 dark:text-amber-400 leading-relaxed">
+                    <strong>Penting:</strong> Pastikan akses link Google Drive tidak terkunci (Anyone with the link can view) agar Dosen Penguji dapat membacanya.
+                  </p>
+                </div>
+                
+                <div className="flex gap-3 md:gap-4 pt-4 mt-2">
+                  <button type="button" onClick={() => setShowLaporanModal(false)} className="flex-1 py-3 md:py-4 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors text-sm md:text-base">Nanti Saja</button>
+                  <button type="submit" className="flex-1 py-3 md:py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 dark:shadow-none transition-all text-sm md:text-base">Kirim Laporan</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
                   {/* INFO LAPORAN AKHIR (Desain Banner Alert Lembut) */}
                   {isLaporanAkhirReady ? (
                     <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-3xl p-8 text-white shadow-xl shadow-indigo-200 dark:shadow-none relative overflow-hidden group">
@@ -340,7 +437,7 @@ export default function DashboardMahasiswa() {
                         <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-sm border border-white/20">Akses Terbuka</span>
                         <h4 className="text-xl font-black mt-4">Selamat! Laporan Akhir Sudah Bisa Diisi.</h4>
                         <p className="text-indigo-100 text-sm mt-2 mb-6 max-w-md leading-relaxed">Seluruh logbook harian/mingguan kamu sudah disetujui dosen. Sekarang saatnya mengunggah laporan akhir magangmu.</p>
-                        <button className="px-8 py-3 bg-white text-indigo-600 font-black rounded-xl hover:bg-indigo-50 transition-all shadow-lg flex items-center gap-2 hover:-translate-y-1">
+                        <button onClick={() => setShowLaporanModal(true)} className="px-8 py-3 bg-white text-indigo-600 font-black rounded-xl hover:bg-indigo-50 transition-all shadow-lg flex items-center gap-2 hover:-translate-y-1">
                           Unggah Laporan Akhir Sekarang 🚀
                         </button>
                       </div>
@@ -511,7 +608,37 @@ export default function DashboardMahasiswa() {
           </div>
         )}
       </AnimatePresence>
-
+{/* MODAL LOGOUT POP-OUT */}
+      <AnimatePresence>
+        {showLogoutModal && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowLogoutModal(false)}></div>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl shadow-2xl p-8 z-10 transition-colors text-center overflow-hidden">
+              {/* Dekorasi Background */}
+              <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-red-50 dark:from-red-900/20 to-transparent -z-10"></div>
+              
+              <div className="w-20 h-20 bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-inner border-4 border-white dark:border-slate-800 z-10 relative">
+                🚪
+              </div>
+              
+              <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Yakin Ingin Keluar?</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm font-medium leading-relaxed">
+                Sesi kamu akan diakhiri. Kamu harus login kembali untuk mengakses portal mahasiswa.
+              </p>
+              
+              <div className="flex gap-3">
+                <button onClick={() => setShowLogoutModal(false)} className="flex-1 py-3.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
+                  Batal
+                </button>
+                <button onClick={handleLogout} className="flex-1 py-3.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-lg shadow-red-200 dark:shadow-none transition-all">
+                  Ya, Keluar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }

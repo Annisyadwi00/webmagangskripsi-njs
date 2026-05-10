@@ -28,6 +28,8 @@ Pengajuan.init(
     posisi: { type: DataTypes.STRING, allowNull: false },
     link_loa: { type: DataTypes.STRING, allowNull: true },
     tipeKonversi: { type: DataTypes.STRING, allowNull: true },
+    tgl_mulai: { type: DataTypes.DATEONLY, allowNull: true },
+  tgl_berakhir: { type: DataTypes.DATEONLY, allowNull: true },
     matkulKonversi: { type: DataTypes.TEXT, allowNull: true },
     link_laporan_akhir: { type: DataTypes.STRING, allowNull: true },
     nilai_dari_dosen: { type: DataTypes.STRING, allowNull: true },
@@ -35,7 +37,7 @@ Pengajuan.init(
     nama_dosen: { type: DataTypes.STRING, allowNull: true },
     status: { type: DataTypes.STRING, allowNull: false, defaultValue: 'Menunggu_Verifikasi' },
     status_dosen: { type: DataTypes.STRING, allowNull: true, defaultValue: 'Menunggu' },
-    alasan_penolakan: { type: DataTypes.TEXT, allowNull: true }, // <-- KOLOM BARU
+    alasan_penolakan: { type: DataTypes.TEXT, allowNull: true }, 
   },
   { sequelize, tableName: 'pengajuan', timestamps: true }
 );
