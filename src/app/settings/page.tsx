@@ -14,7 +14,10 @@ export default function SettingsPage() {
   const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [user, setUser] = useState({ name: '', email: '', role: '', nim_nidn: '', prodi: '', phone: '', photo: '' });
+  const [user, setUser] = useState({ 
+    name: '', email: '', role: '', nim_nidn: '', prodi: '', phone: '', photo: '', 
+    semester: '', kategori_dosen: '' // <-- Tambahan state baru
+  });
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
 
   // REVISI: State untuk tombol mata (show password)
@@ -35,7 +38,8 @@ export default function SettingsPage() {
           const data = (await res.json()).data;
           setUser({
             name: data.name || '', email: data.email || '', role: data.role || 'Pengguna',
-            nim_nidn: data.nim_nidn || '-', prodi: data.prodi || '-', phone: data.phone || '', photo: data.photo || ''
+            nim_nidn: data.nim_nidn || '-', prodi: data.prodi || '-', phone: data.phone || '', photo: data.photo || '',
+            semester: data.semester || '', kategori_dosen: data.kategori_dosen || '' // <-- Tambahan mapping
           });
         } else {
           router.push('/login');
@@ -64,7 +68,11 @@ export default function SettingsPage() {
     try {
       const res = await fetch('/api/auth/me', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update_profile', name: user.name, phone: user.phone, photo: user.photo })
+        body: JSON.stringify({ 
+          action: 'update_profile', 
+          name: user.name, phone: user.phone, photo: user.photo,
+          semester: user.semester, kategori_dosen: user.kategori_dosen // <-- Tambahkan ini
+        })
       });
       if (!res.ok) throw new Error((await res.json()).message);
       showToast('Profil berhasil diperbarui!', 'success');
@@ -164,6 +172,38 @@ export default function SettingsPage() {
                       <div><label className="block text-sm font-bold text-gray-700 mb-2">Email (Read Only)</label><input type="email" value={user.email} disabled className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-gray-100 text-gray-500 cursor-not-allowed outline-none" /></div>
                       <div><label className="block text-sm font-bold text-gray-700 mb-2">{user.role === 'Dosen' ? 'NIDN' : 'NIM'} (Read Only)</label><input type="text" value={user.nim_nidn} disabled className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-gray-100 text-gray-500 cursor-not-allowed outline-none" /></div>
                       <div><label className="block text-sm font-bold text-gray-700 mb-2">No WhatsApp</label><input type="text" value={user.phone} onChange={(e) => setUser({...user, phone: e.target.value.replace(/[^0-9]/g, '')})} className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] text-gray-900 transition-all" /></div>
+                      {/* TAMPIL JIKA MAHASISWA */}
+                      {user.role === 'Mahasiswa' && (
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Semester Aktif</label>
+                          <select value={user.semester} onChange={(e) => setUser({...user, semester: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] text-gray-900 transition-all appearance-none cursor-pointer">
+                            <option value="">Pilih Semester</option>
+                            <option value="Semester 5">Semester 5</option>
+                            <option value="Semester 6">Semester 6</option>
+                            <option value="Semester 7">Semester 7</option>
+                            <option value="Semester 8">Semester 8</option>
+                            <option value="Lulus">Sudah Lulus / Alumni</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {/* TAMPIL JIKA DOSEN */}
+                      {user.role === 'Dosen' && (
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Kategori / Keahlian Utama</label>
+                          <select value={user.kategori_dosen} onChange={(e) => setUser({...user, kategori_dosen: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] text-gray-900 transition-all appearance-none cursor-pointer">
+                            <option value="">Pilih Keahlian Utama</option>
+                            <option value="💻 Web Development">💻 Web Development</option>
+                            <option value="🤖 AI & Machine Learning">🤖 AI & Machine Learning</option>
+                            <option value="📊 Data Science & Analytics">📊 Data Science & Analytics</option>
+                            <option value="📱 Mobile App Development">📱 Mobile App Development</option>
+                            <option value="🔒 Cyber Security">🔒 Cyber Security</option>
+                            <option value="☁️ Cloud & DevOps">☁️ Cloud & DevOps</option>
+                            <option value="🎨 UI/UX Design">🎨 UI/UX Design</option>
+                            <option value="🛠️ Rekayasa Perangkat Lunak">🛠️ Rekayasa Perangkat Lunak</option>
+                          </select>
+                        </div>
+                      )}
                     </div>
                    
                     <div className="pt-6 mt-6 border-t border-gray-100 flex justify-end">

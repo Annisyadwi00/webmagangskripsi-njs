@@ -16,6 +16,7 @@ class Pengajuan extends Model {
   declare nama_dosen: string | null;
   declare status: string; 
   declare status_dosen: string | null;
+  declare semester_konversi: string | null;
   declare alasan_penolakan: string | null; // <-- KOLOM BARU
 }
 
@@ -27,9 +28,10 @@ Pengajuan.init(
     perusahaan: { type: DataTypes.STRING, allowNull: false },
     posisi: { type: DataTypes.STRING, allowNull: false },
     link_loa: { type: DataTypes.STRING, allowNull: true },
+    semester_konversi: { type: DataTypes.STRING, allowNull: true},
     tipeKonversi: { type: DataTypes.STRING, allowNull: true },
     tgl_mulai: { type: DataTypes.DATEONLY, allowNull: true },
-  tgl_berakhir: { type: DataTypes.DATEONLY, allowNull: true },
+    tgl_berakhir: { type: DataTypes.DATEONLY, allowNull: true },
     matkulKonversi: { type: DataTypes.TEXT, allowNull: true },
     link_laporan_akhir: { type: DataTypes.STRING, allowNull: true },
     nilai_dari_dosen: { type: DataTypes.STRING, allowNull: true },

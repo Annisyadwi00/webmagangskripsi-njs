@@ -39,6 +39,15 @@ export async function PUT(request: Request) {
         phone: body.phone,
         photo: body.photo  // <--- INI TAMBAHANNYA
       }, { where: { id: decoded.id } });
+      const { name, phone, photo, semester, kategori_dosen } = await request.json();
+
+      // 2. Siapkan objek update (hanya update yang dikirim)
+      const updateData: any = { name, phone, photo };
+      if (semester !== undefined) updateData.semester = semester;
+      if (kategori_dosen !== undefined) updateData.kategori_dosen = kategori_dosen;
+
+      // 3. Simpan ke database
+      await User.update(updateData, { where: { id: decoded.id } });
       return NextResponse.json({ message: 'Profil berhasil diperbarui di database!' }, { status: 200 });
     }
 

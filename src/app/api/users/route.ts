@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     if (!isAdmin) return NextResponse.json({ message: 'Akses Ditolak' }, { status: 403 });
 
     const body = await request.json();
-    const { name, email, password, role, nim_nidn, prodi } = body;
+    const { name, email, password, role, nim_nidn, prodi,semester, kategori_dosen } = body;
 
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) return NextResponse.json({ message: 'Email sudah terdaftar!' }, { status: 400 });
@@ -56,7 +56,9 @@ export async function POST(request: Request) {
       password: hashedPassword,
       role,
       nim_nidn: nim_nidn || '-',
-      prodi: role === 'Mahasiswa' ? prodi : null
+      prodi: role === 'Mahasiswa' ? prodi : null,
+      semester: role === 'Mahasiswa' ? semester : null, // <-- Tambahkan ini
+      kategori_dosen: role === 'Dosen' ? kategori_dosen : null // <-- Tambahkan ini
     });
 
     return NextResponse.json({ message: 'Pengguna berhasil ditambahkan!' }, { status: 201 });

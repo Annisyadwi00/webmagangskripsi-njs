@@ -7,15 +7,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminDashboard() {
   const router = useRouter();
-  
+
   const [jobs, setJobs] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-  const [pengajuans, setPengajuans] = useState<any[]>([]); 
+  const [pengajuans, setPengajuans] = useState<any[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectId, setRejectId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -24,7 +24,7 @@ export default function AdminDashboard() {
   const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
 
   const [showModal, setShowModal] = useState(false);
-  
+
   // ---> FITUR BARU: STATE UNTUK EDIT <---
   const [isEditingJob, setIsEditingJob] = useState(false);
   const [editJobId, setEditJobId] = useState<number | null>(null);
@@ -37,14 +37,17 @@ export default function AdminDashboard() {
   const [showJobDetailModal, setShowJobDetailModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState<any>(null);
 
-  const [showUserModal, setShowUserModal] = useState(false); 
-  const [userForm, setUserForm] = useState({ name: '', email: '', password: '', role: 'Dosen', nim_nidn: '', prodi: 'S1 Informatika' });
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [userForm, setUserForm] = useState({
+    name: '', email: '', password: '', role: 'Dosen', nim_nidn: '',
+    prodi: 'S1 Informatika', semester: 'Semester 6', kategori_dosen: '💻 Web Development' // <-- Tambahan
+  });
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState<'Semua' | 'Mahasiswa' | 'Dosen' | 'Admin'>('Semua');
 
   const [showVerifModal, setShowVerifModal] = useState(false);
   const [verifForm, setVerifForm] = useState({ id: 0, nama_mahasiswa: '', perusahaan: '', tipeKonversi: 'Full', matkulInput: '' });
-const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const showToast = (msg: string, type: 'success' | 'error') => {
     setToast({ show: true, msg, type });
     setTimeout(() => setToast({ show: false, msg: '', type: 'success' }), 3000);
@@ -56,7 +59,7 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
       const [resJobs, resMsg, resUsers, resPengajuan] = await Promise.all([
         fetch('/api/lowongan'), fetch('/api/feedback'), fetch('/api/users'), fetch('/api/pengajuan')
       ]);
-      
+
       if (resJobs.ok) setJobs((await resJobs.json()).data || []);
       if (resMsg.ok) setMessages((await resMsg.json()).data || []);
       if (resUsers.ok) setUsers((await resUsers.json()).data || []);
@@ -81,36 +84,36 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // ============ BAGIAN PENGELOLAAN LOWONGAN ============ //
   const handleSubmitJob = async (e: React.FormEvent) => {
-    e.preventDefault(); 
+    e.preventDefault();
     setIsSubmitting(true);
     try {
       if (isEditingJob && editJobId) {
         // PROSES EDIT
-        const res = await fetch('/api/lowongan', { 
-          method: 'PUT', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ ...formData, id: editJobId, action: 'edit' }) 
+        const res = await fetch('/api/lowongan', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...formData, id: editJobId, action: 'edit' })
         });
         if (!res.ok) throw new Error((await res.json()).message);
         showToast('Lowongan berhasil diperbarui!', 'success');
       } else {
         // PROSES TAMBAH BARU
-        const res = await fetch('/api/lowongan', { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' }, 
+        const res = await fetch('/api/lowongan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...formData, status: 'Aktif' }) // Admin tambah langsung Aktif
         });
         if (!res.ok) throw new Error((await res.json()).message);
         showToast('Berhasil menambah lowongan!', 'success');
       }
-      setShowModal(false); 
+      setShowModal(false);
       setIsEditingJob(false);
       setEditJobId(null);
       fetchData();
-    } catch (err: any) { 
-      showToast(err.message, 'error'); 
-    } finally { 
-      setIsSubmitting(false); 
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -139,7 +142,7 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
     if (!confirm(`Yakin ingin memproses lowongan ini?`)) return;
     await fetch('/api/lowongan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, action }) });
     showToast('Aksi berhasil diproses.', 'success');
-    if (showJobDetailModal) setShowJobDetailModal(false); 
+    if (showJobDetailModal) setShowJobDetailModal(false);
     fetchData();
   };
 
@@ -180,12 +183,12 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
   const submitRejectLOA = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rejectId || !rejectReason.trim()) return;
-    
+
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/pengajuan', { 
-        method: 'PUT', 
-        headers: { 'Content-Type': 'application/json' }, 
+      const res = await fetch('/api/pengajuan', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'tolak', id: rejectId, alasan: rejectReason })
       });
       if (res.ok) {
@@ -224,7 +227,7 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
     await fetch('/api/feedback', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
     fetchData();
   };
-  
+
   const deleteMessage = async (id: number) => {
     if (!confirm('Hapus pesan ini secara permanen dari sistem?')) return;
     try {
@@ -274,7 +277,7 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans relative overflow-hidden">
-      
+
       {/* CUSTOM TOAST NOTIFICATION */}
       <AnimatePresence>
         {toast.show && (
@@ -294,10 +297,10 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
           <h1 className="font-extrabold text-2xl tracking-wide">SI Magang</h1>
           <p className="text-sm text-slate-400 mt-1 font-medium">Administrator Portal</p>
         </div>
-        
+
         <nav className="flex-1 py-8 px-5 space-y-3 relative z-10 overflow-y-auto">
           <p className="px-2 text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">Menu Utama</p>
-          
+
           <button onClick={() => setActiveTab('Aktif')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${activeTab === 'Aktif' ? 'bg-[#1e3a8a] text-white shadow-lg shadow-blue-900/50 scale-105' : 'text-slate-300 hover:bg-white/5 hover:translate-x-1'}`}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> Lowongan Tayang
           </button>
@@ -331,8 +334,8 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg> Kembali ke Beranda
           </Link>
           <button onClick={() => setShowLogoutModal(true)} className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-red-500/20 text-red-100 hover:bg-red-500 hover:text-white rounded-xl font-bold transition-all border border-red-500/20 hover:-translate-y-0.5">
-        Logout Akun
-        </button>
+            Logout Akun
+          </button>
         </div>
       </aside>
 
@@ -341,11 +344,11 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
         <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200 px-10 py-6 flex justify-between items-center sticky top-0 z-10">
           <div>
             <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-              {activeTab === 'Aktif' ? 'Lowongan Tersedia' : 
-               activeTab === 'Pending' ? 'Validasi Antrean Mitra' : 
-               activeTab === 'Verifikasi' ? 'Verifikasi Pengajuan Magang' : 
-               activeTab === 'Rekap' ? 'Rekapitulasi & Ekspor Data' :
-               activeTab === 'Pesan' ? 'Pesan Masuk' : 'Manajemen Pengguna'}
+              {activeTab === 'Aktif' ? 'Lowongan Tersedia' :
+                activeTab === 'Pending' ? 'Validasi Antrean Mitra' :
+                  activeTab === 'Verifikasi' ? 'Verifikasi Pengajuan Magang' :
+                    activeTab === 'Rekap' ? 'Rekapitulasi & Ekspor Data' :
+                      activeTab === 'Pesan' ? 'Pesan Masuk' : 'Manajemen Pengguna'}
             </h2>
           </div>
           <div className="flex gap-3">
@@ -363,7 +366,7 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
                 + Tambah Lowongan
               </button>
             )}
-            
+
             {activeTab === 'Pengguna' && <button onClick={() => setShowUserModal(true)} className="px-5 py-2.5 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all hover:-translate-y-0.5">+ Tambah Pengguna</button>}
             {activeTab === 'Rekap' && <button onClick={handleExportCSV} className="px-5 py-2.5 bg-cyan-600 text-white font-bold rounded-xl shadow-lg shadow-cyan-600/20 hover:bg-cyan-700 transition-all hover:-translate-y-0.5 flex items-center gap-2"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> Unduh CSV (Excel)</button>}
           </div>
@@ -371,13 +374,13 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
 
         <div className="p-10 max-w-7xl mx-auto w-full">
           {isLoading ? (
-             <div className="flex items-center justify-center h-64">
-               <svg className="w-12 h-12 animate-spin text-[#1e3a8a]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-             </div>
+            <div className="flex items-center justify-center h-64">
+              <svg className="w-12 h-12 animate-spin text-[#1e3a8a]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            </div>
           ) : (
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
               <AnimatePresence mode="wait">
-                
+
                 {/* TAB VERIFIKASI LOA */}
                 {activeTab === 'Verifikasi' && (
                   <motion.div key="verif" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="overflow-x-auto">
@@ -391,17 +394,17 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
                         {pendingLOA.length === 0 ? (
                           <tr><td colSpan={4} className="p-16 text-center text-gray-400 font-bold">Hore! Antrean Kosong. Belum ada mahasiswa yang mengajukan LOA baru.</td></tr>
                         ) : pendingLOA.map((p) => (
-                            <tr key={p.id} className="hover:bg-amber-50/30 transition-colors">
-                              <td className="p-5 pl-8"><p className="font-bold text-gray-900 text-base">{p.nama_mahasiswa}</p><p className="text-xs text-amber-600 font-bold mt-1 bg-amber-100 w-fit px-2 py-0.5 rounded">Menunggu Verifikasi</p></td>
-                              <td className="p-5"><p className="font-bold text-[#1e3a8a]">{p.perusahaan}</p><p className="text-sm text-gray-600">{p.posisi}</p></td>
-                              <td className="p-5"><a href={p.link_loa} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-blue-600 font-bold text-sm bg-blue-50 w-fit px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg> Buka Bukti LOA</a></td>
-                              <td className="p-5 pr-8 text-center">
-                                <div className="flex gap-2 justify-center">
-                                  <button onClick={() => handleOpenVerifModal(p)} className="px-4 py-2 bg-emerald-100 text-emerald-700 font-bold rounded-xl hover:bg-emerald-200 transition-all hover:-translate-y-0.5">Proses & Setujui</button>
-                                  <button onClick={() => handleRejectLOA(p.id)} className="px-4 py-2 bg-white border border-red-200 text-red-600 font-bold rounded-xl hover:bg-red-50 transition-all hover:-translate-y-0.5">Tolak</button>
-                                </div>
-                              </td>
-                            </tr>
+                          <tr key={p.id} className="hover:bg-amber-50/30 transition-colors">
+                            <td className="p-5 pl-8"><p className="font-bold text-gray-900 text-base">{p.nama_mahasiswa}</p><p className="text-xs text-amber-600 font-bold mt-1 bg-amber-100 w-fit px-2 py-0.5 rounded">Menunggu Verifikasi</p></td>
+                            <td className="p-5"><p className="font-bold text-[#1e3a8a]">{p.perusahaan}</p><p className="text-sm text-gray-600">{p.posisi}</p></td>
+                            <td className="p-5"><a href={p.link_loa} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-blue-600 font-bold text-sm bg-blue-50 w-fit px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg> Buka Bukti LOA</a></td>
+                            <td className="p-5 pr-8 text-center">
+                              <div className="flex gap-2 justify-center">
+                                <button onClick={() => handleOpenVerifModal(p)} className="px-4 py-2 bg-emerald-100 text-emerald-700 font-bold rounded-xl hover:bg-emerald-200 transition-all hover:-translate-y-0.5">Proses & Setujui</button>
+                                <button onClick={() => handleRejectLOA(p.id)} className="px-4 py-2 bg-white border border-red-200 text-red-600 font-bold rounded-xl hover:bg-red-50 transition-all hover:-translate-y-0.5">Tolak</button>
+                              </div>
+                            </td>
+                          </tr>
                         ))}
                       </tbody>
                     </table>
@@ -425,17 +428,17 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
                         {activeMagang.length === 0 ? (
                           <tr><td colSpan={5} className="p-16 text-center text-gray-400 font-bold">Belum ada mahasiswa yang berstatus magang aktif/selesai.</td></tr>
                         ) : activeMagang.map((p) => (
-                            <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                              <td className="p-5 pl-8 font-bold text-gray-900 text-base">{p.nama_mahasiswa}</td>
-                              <td className="p-5"><p className="font-bold text-[#1e3a8a]">{p.perusahaan}</p><p className="text-xs text-gray-500">{p.posisi}</p></td>
-                              <td className="p-5"><span className="px-2 py-1 bg-gray-100 rounded text-xs font-bold text-gray-600">{p.tipeKonversi}</span></td>
-                              <td className="p-5 font-medium text-gray-700">{p.dosen_pembimbing || <span className="text-red-500 text-xs italic">Belum Memilih</span>}</td>
-                              <td className="p-5 pr-8 text-center">
-                                <span className={`text-xl font-black ${p.nilai_dari_dosen ? 'text-green-600' : 'text-gray-300'}`}>
-                                  {p.nilai_dari_dosen || '-'}
-                                </span>
-                              </td>
-                            </tr>
+                          <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="p-5 pl-8 font-bold text-gray-900 text-base">{p.nama_mahasiswa}</td>
+                            <td className="p-5"><p className="font-bold text-[#1e3a8a]">{p.perusahaan}</p><p className="text-xs text-gray-500">{p.posisi}</p></td>
+                            <td className="p-5"><span className="px-2 py-1 bg-gray-100 rounded text-xs font-bold text-gray-600">{p.tipeKonversi}</span></td>
+                            <td className="p-5 font-medium text-gray-700">{p.dosen_pembimbing || <span className="text-red-500 text-xs italic">Belum Memilih</span>}</td>
+                            <td className="p-5 pr-8 text-center">
+                              <span className={`text-xl font-black ${p.nilai_dari_dosen ? 'text-green-600' : 'text-gray-300'}`}>
+                                {p.nilai_dari_dosen || '-'}
+                              </span>
+                            </td>
+                          </tr>
                         ))}
                       </tbody>
                     </table>
@@ -555,7 +558,7 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowJobDetailModal(false)} />
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white w-full max-w-3xl rounded-3xl shadow-2xl p-8 z-10 max-h-full overflow-y-auto custom-scrollbar">
-              
+
               <div className="flex justify-between items-start border-b border-gray-100 pb-5 mb-6">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
@@ -589,7 +592,7 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
                   </div>
                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Batas Waktu (Deadline)</p>
-                    <p className="font-bold text-red-600">{selectedJob.valid_until ? new Date(selectedJob.valid_until).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : 'Terbuka Terus'}</p>
+                    <p className="font-bold text-red-600">{selectedJob.valid_until ? new Date(selectedJob.valid_until).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Terbuka Terus'}</p>
                   </div>
                 </div>
               </div>
@@ -638,7 +641,7 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
               <form onSubmit={handleApproveLOA} className="space-y-5">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Tipe Konversi SKS *</label>
-                  <select required value={verifForm.tipeKonversi} onChange={(e) => setVerifForm({...verifForm, tipeKonversi: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-amber-500 font-medium transition-all">
+                  <select required value={verifForm.tipeKonversi} onChange={(e) => setVerifForm({ ...verifForm, tipeKonversi: e.target.value })} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-amber-500 font-medium transition-all">
                     <option value="Full">✅ Konversi Penuh (Maks 20 SKS)</option>
                     <option value="Parsial">⚠️ Konversi Parsial (Beberapa Mata Kuliah)</option>
                     <option value="Tidak">❌ Tidak Ada Konversi (Reguler)</option>
@@ -647,7 +650,7 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
                 {verifForm.tipeKonversi !== 'Tidak' && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
                     <label className="block text-sm font-bold text-gray-700 mb-2 mt-4">Daftar Mata Kuliah yang Dikonversi *</label>
-                    <textarea required rows={3} value={verifForm.matkulInput} onChange={(e) => setVerifForm({...verifForm, matkulInput: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-amber-500 transition-all" placeholder="Contoh: Web, Basis Data Lanjut (Pisahkan dengan koma)"></textarea>
+                    <textarea required rows={3} value={verifForm.matkulInput} onChange={(e) => setVerifForm({ ...verifForm, matkulInput: e.target.value })} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-amber-500 transition-all" placeholder="Contoh: Web, Basis Data Lanjut (Pisahkan dengan koma)"></textarea>
                   </motion.div>
                 )}
                 <div className="flex gap-4 pt-6 mt-4">
@@ -671,35 +674,53 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">Peran Akses *</label>
-                    <select required value={userForm.role} onChange={(e) => setUserForm({...userForm, role: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500 transition-colors">
+                    <select required value={userForm.role} onChange={(e) => setUserForm({ ...userForm, role: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500 transition-colors">
                       <option value="Dosen">Dosen</option><option value="Admin">Admin</option><option value="Mahasiswa">Mahasiswa</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">Nama Lengkap *</label>
-                    <input type="text" required value={userForm.name} onChange={(e) => setUserForm({...userForm, name: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500 transition-colors" placeholder="Nama Lengkap" />
+                    <input type="text" required value={userForm.name} onChange={(e) => setUserForm({ ...userForm, name: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500 transition-colors" placeholder="Nama Lengkap" />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">Email *</label>
-                    <input type="email" required value={userForm.email} onChange={(e) => setUserForm({...userForm, email: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500 transition-colors" placeholder="email@unsika.ac.id" />
+                    <input type="email" required value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500 transition-colors" placeholder="email@unsika.ac.id" />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">NIM / NIDN</label>
-                    <input type="text" value={userForm.nim_nidn} onChange={(e) => setUserForm({...userForm, nim_nidn: e.target.value.replace(/[^0-9]/g, '')})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500 transition-colors" placeholder="Hanya Angka" />
+                    <input type="text" value={userForm.nim_nidn} onChange={(e) => setUserForm({ ...userForm, nim_nidn: e.target.value.replace(/[^0-9]/g, '') })} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500 transition-colors" placeholder="Hanya Angka" />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">Kata Sandi</label>
-                    <input type="text" required value={userForm.password} onChange={(e) => setUserForm({...userForm, password: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500 transition-colors" placeholder="Sandi Default" />
+                    <input type="text" required value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500 transition-colors" placeholder="Sandi Default" />
                   </div>
                   {userForm.role === 'Mahasiswa' && (
                     <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-1">Program Studi</label>
-                      <select required value={userForm.prodi} onChange={(e) => setUserForm({...userForm, prodi: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500 transition-colors">
-                        <option value="S1 Informatika">S1 Informatika</option><option value="S1 Sistem Informasi">S1 Sistem Informasi</option>
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Semester</label>
+                      <select required value={userForm.semester} onChange={(e) => setUserForm({ ...userForm, semester: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500 transition-colors">
+                        <option value="Semester 5">Semester 5</option>
+                        <option value="Semester 6">Semester 6</option>
+                        <option value="Semester 7">Semester 7</option>
+                        <option value="Semester 8">Semester 8</option>
+                      </select>
+                    </div>
+                  )}
+                  {userForm.role === 'Dosen' && (
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Keahlian (Kategori)</label>
+                      <select required value={userForm.kategori_dosen} onChange={(e) => setUserForm({ ...userForm, kategori_dosen: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500 transition-colors">
+                        <option value="💻 Web Development">💻 Web Development</option>
+                        <option value="🤖 AI & Machine Learning">🤖 AI & Machine Learning</option>
+                        <option value="📊 Data Science & Analytics">📊 Data Science & Analytics</option>
+                        <option value="📱 Mobile App Development">📱 Mobile App Development</option>
+                        <option value="🔒 Cyber Security">🔒 Cyber Security</option>
+                        <option value="☁️ Cloud & DevOps">☁️ Cloud & DevOps</option>
+                        <option value="🎨 UI/UX Design">🎨 UI/UX Design</option>
+                        <option value="🛠️ Rekayasa Perangkat Lunak">🛠️ Rekayasa Perangkat Lunak</option>
                       </select>
                     </div>
                   )}
@@ -725,23 +746,23 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
               </h3>
               <form onSubmit={handleSubmitJob} className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div><label className="block text-sm font-bold text-gray-700 mb-1">Nama Perusahaan *</label><input type="text" required value={formData.perusahaan} onChange={(e) => setFormData({...formData, perusahaan: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors" /></div>
-                  <div><label className="block text-sm font-bold text-gray-700 mb-1">Posisi Magang *</label><input type="text" required value={formData.posisi} onChange={(e) => setFormData({...formData, posisi: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors" /></div>
+                  <div><label className="block text-sm font-bold text-gray-700 mb-1">Nama Perusahaan *</label><input type="text" required value={formData.perusahaan} onChange={(e) => setFormData({ ...formData, perusahaan: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors" /></div>
+                  <div><label className="block text-sm font-bold text-gray-700 mb-1">Posisi Magang *</label><input type="text" required value={formData.posisi} onChange={(e) => setFormData({ ...formData, posisi: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors" /></div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">Kategori IT *</label>
-                    <select required value={formData.kategori} onChange={(e) => setFormData({...formData, kategori: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors">
+                    <select required value={formData.kategori} onChange={(e) => setFormData({ ...formData, kategori: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors">
                       <option value="💻 Frontend Developer">💻 Frontend Developer</option><option value="⚙️ Backend Developer">⚙️ Backend Developer</option><option value="🎨 UI/UX Designer">🎨 UI/UX Designer</option><option value="📊 Data Analyst / Science">📊 Data Analyst / Science</option><option value="📱 Mobile App Developer">📱 Mobile App Developer</option><option value="🔒 Keamanan Sistem / Cyber">🔒 Keamanan Sistem / Cyber</option><option value="☁️ Cloud / DevOps">☁️ Cloud / DevOps</option><option value="🛠️ Lainnya (IT Support, QA)">🛠️ Lainnya (IT Support, QA)</option>
                     </select>
                   </div>
-                  <div><label className="block text-sm font-bold text-gray-700 mb-1">Link Pendaftaran *</label><input type="url" required value={formData.link_pendaftaran} onChange={(e) => setFormData({...formData, link_pendaftaran: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors" /></div>
+                  <div><label className="block text-sm font-bold text-gray-700 mb-1">Link Pendaftaran *</label><input type="url" required value={formData.link_pendaftaran} onChange={(e) => setFormData({ ...formData, link_pendaftaran: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors" /></div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">Sistem Konversi Kampus</label>
-                    <select value={formData.tipeKonversi} onChange={(e) => setFormData({...formData, tipeKonversi: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none cursor-pointer">
+                    <select value={formData.tipeKonversi} onChange={(e) => setFormData({ ...formData, tipeKonversi: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none cursor-pointer">
                       <option value="Full">✅ Konversi SKS Penuh</option>
                       <option value="Parsial">⚠️ Parsial (Beberapa Matkul)</option>
                       <option value="Tidak">❌ Tidak Ada Konversi</option>
@@ -749,13 +770,13 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">Sistem Kerja</label>
-                    <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none cursor-pointer">
+                    <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none cursor-pointer">
                       <option value="Onsite">WFO (Onsite)</option><option value="Hybrid">Hybrid</option><option value="Remote">WFH (Remote)</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">Status Gaji</label>
-                    <select value={formData.isPaid} onChange={(e) => setFormData({...formData, isPaid: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none cursor-pointer">
+                    <select value={formData.isPaid} onChange={(e) => setFormData({ ...formData, isPaid: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none cursor-pointer">
                       <option value="Tidak">Tidak Ada (Unpaid)</option><option value="Ya">Ada (Paid)</option>
                     </select>
                   </div>
@@ -763,10 +784,10 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
 
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Batas Waktu (Deadline) *</label>
-                  <input type="date" required value={formData.valid_until} onChange={(e) => setFormData({...formData, valid_until: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors" />
+                  <input type="date" required value={formData.valid_until} onChange={(e) => setFormData({ ...formData, valid_until: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors" />
                 </div>
 
-                <div><label className="block text-sm font-bold text-gray-700 mb-1">Deskripsi Pekerjaan *</label><textarea required rows={4} value={formData.deskripsi} onChange={(e) => setFormData({...formData, deskripsi: e.target.value})} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors custom-scrollbar"></textarea></div>
+                <div><label className="block text-sm font-bold text-gray-700 mb-1">Deskripsi Pekerjaan *</label><textarea required rows={4} value={formData.deskripsi} onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white text-gray-900 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-colors custom-scrollbar"></textarea></div>
                 <div className="flex gap-4 pt-4 border-t border-gray-100 mt-2">
                   <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3.5 px-4 rounded-xl font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors">Batal</button>
                   <button type="submit" disabled={isSubmitting} className="flex-1 py-3.5 px-4 rounded-xl shadow-lg font-bold text-white bg-[#1e3a8a] hover:bg-blue-900 transition-all">
@@ -778,7 +799,7 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
           </div>
         )}
       </AnimatePresence>
-{/* MODAL LOGOUT POP-OUT */}
+      {/* MODAL LOGOUT POP-OUT */}
       <AnimatePresence>
         {showLogoutModal && (
           <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
@@ -786,16 +807,16 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl shadow-2xl p-8 z-10 transition-colors text-center overflow-hidden">
               {/* Dekorasi Background */}
               <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-red-50 dark:from-red-900/20 to-transparent -z-10"></div>
-              
+
               <div className="w-20 h-20 bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-inner border-4 border-white dark:border-slate-800 z-10 relative">
                 🚪
               </div>
-              
+
               <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Yakin Ingin Keluar?</h3>
               <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm font-medium leading-relaxed">
                 Sesi kamu akan diakhiri. Kamu harus login kembali untuk mengakses portal mahasiswa.
               </p>
-              
+
               <div className="flex gap-3">
                 <button onClick={() => setShowLogoutModal(false)} className="flex-1 py-3.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
                   Batal
@@ -820,29 +841,29 @@ const [showLogoutModal, setShowLogoutModal] = useState(false);
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowRejectModal(false)}></div>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl p-8 z-10">
-              
+
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-black text-2xl">!</div>
                 <div>
                   <h3 className="text-2xl font-black text-gray-900">Tolak Pengajuan LOA</h3>
                 </div>
               </div>
-              
+
               <p className="text-gray-500 mb-6 text-sm border-b pb-6">Berikan alasan yang jelas mengapa pengajuan magang ini ditolak agar mahasiswa dapat segera memperbaikinya.</p>
-              
+
               <form onSubmit={submitRejectLOA} className="space-y-5">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Alasan Penolakan *</label>
-                  <textarea 
-                    required 
-                    rows={4} 
-                    value={rejectReason} 
-                    onChange={(e) => setRejectReason(e.target.value)} 
-                    className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 focus:bg-white outline-none focus:ring-2 focus:ring-red-500 transition-all" 
+                  <textarea
+                    required
+                    rows={4}
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 focus:bg-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
                     placeholder="Contoh: Format dokumen LOA tidak resmi, atau posisi magang tidak relevan dengan prodi Informatika..."
                   ></textarea>
                 </div>
-                
+
                 <div className="flex gap-4 pt-4 mt-2 border-t border-gray-100">
                   <button type="button" onClick={() => setShowRejectModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Batal</button>
                   <button type="submit" disabled={isSubmitting} className="flex-1 py-4 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-lg shadow-red-500/20 transition-all">
