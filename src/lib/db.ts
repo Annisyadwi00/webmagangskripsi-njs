@@ -1,4 +1,5 @@
 import { Sequelize } from 'sequelize';
+import mysql2 from 'mysql2'; // <--- 1. TAMBAHKAN IMPORT INI
 
 // Membaca URL dari .env
 const databaseUrl = process.env.DATABASE_URL;
@@ -10,6 +11,7 @@ if (!databaseUrl) {
 
 const sequelize = new Sequelize(databaseUrl || 'mysql://root:@localhost:3306/db_magang', {
   dialect: 'mysql',
+  dialectModule: mysql2, // <--- 2. TAMBAHKAN INI AGAR VERCEL MEMBAWANYA
   logging: false,
   dialectOptions: {
     // Memaksa penggunaan SSL untuk Aiven
