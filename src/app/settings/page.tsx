@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+// Tambahkan import Variants dari framer-motion di sini
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -74,7 +75,7 @@ export default function SettingsPage() {
     e.preventDefault();
     if (passwords.new !== passwords.confirm) return showToast('Konfirmasi kata sandi tidak cocok!', 'error');
     if (passwords.new.length < 8) return showToast('Kata sandi baru minimal 8 karakter!', 'error');
-    
+   
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/auth/me', {
@@ -87,7 +88,8 @@ export default function SettingsPage() {
     } catch (err: any) { showToast(err.message, 'error'); } finally { setIsSubmitting(false); }
   };
 
-  const fadeUp = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } } };
+  // Berikan tipe Variants agar TypeScript tidak memunculkan error
+  const fadeUp: Variants = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } } };
 
   if (isLoading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center"><div className="w-12 h-12 border-4 border-[#1e3a8a] border-t-transparent rounded-full animate-spin"></div></div>;
 
@@ -114,10 +116,10 @@ export default function SettingsPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 flex flex-col md:flex-row gap-8">
-        <aside className="w-full md:w-72 flex-shrink-0">
+        <aside className="w-full md:w-72 shrink-0">
           <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 sticky top-24">
             <div className="flex items-center gap-4 mb-8 pb-6 border-b border-gray-100">
-              <div className="w-14 h-14 rounded-full border-2 border-[#1e3a8a]/20 bg-gradient-to-tr from-[#1e3a8a] to-blue-500 text-white flex items-center justify-center font-black text-xl overflow-hidden flex-shrink-0">
+              <div className="w-14 h-14 rounded-full border-2 border-[#1e3a8a]/20 bg-linear-to-tr from-[#1e3a8a] to-blue-500 text-white flex items-center justify-center font-black text-xl overflow-hidden shrink-0">
                 {user.photo ? <img src={user.photo} alt="Profil" className="w-full h-full object-cover" /> : user.name.charAt(0).toUpperCase()}
               </div>
               <div className="overflow-hidden">
@@ -134,13 +136,13 @@ export default function SettingsPage() {
 
         <div className="flex-1">
           <AnimatePresence mode="wait">
-            
+           
             {activeTab === 'profil' && (
               <motion.div key="profil" variants={fadeUp} initial="hidden" animate="show" exit={{ opacity: 0, y: -20 }}>
                 <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
                   <h2 className="text-2xl font-black text-gray-900 mb-2">Informasi Personal</h2>
                   <p className="text-gray-500 mb-8 border-b pb-6">Kelola data diri Anda.</p>
-                  
+                 
                   <form onSubmit={handleUpdateProfile} className="space-y-6">
                     <div className="flex items-center gap-6 mb-8">
                       <input type="file" accept="image/png, image/jpeg, image/jpg" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
@@ -163,7 +165,7 @@ export default function SettingsPage() {
                       <div><label className="block text-sm font-bold text-gray-700 mb-2">{user.role === 'Dosen' ? 'NIDN' : 'NIM'} (Read Only)</label><input type="text" value={user.nim_nidn} disabled className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-gray-100 text-gray-500 cursor-not-allowed outline-none" /></div>
                       <div><label className="block text-sm font-bold text-gray-700 mb-2">No WhatsApp</label><input type="text" value={user.phone} onChange={(e) => setUser({...user, phone: e.target.value.replace(/[^0-9]/g, '')})} className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] text-gray-900 transition-all" /></div>
                     </div>
-                    
+                   
                     <div className="pt-6 mt-6 border-t border-gray-100 flex justify-end">
                       <button type="submit" disabled={isSubmitting} className="px-8 py-3.5 bg-[#1e3a8a] text-white font-bold rounded-2xl hover:bg-blue-900 transition-all">{isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan'}</button>
                     </div>
@@ -178,9 +180,9 @@ export default function SettingsPage() {
                 <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
                   <h2 className="text-2xl font-black text-gray-900 mb-2">Ganti Kata Sandi</h2>
                   <p className="text-gray-500 mb-8 border-b pb-6">Pastikan kata sandi baru Anda unik dan memiliki minimal 8 karakter demi keamanan akun Anda.</p>
-                  
+                 
                   <form onSubmit={handleUpdatePassword} className="space-y-6 max-w-lg">
-                    
+                   
                     {/* Password Saat Ini */}
                     <div>
                       <label className="block text-sm font-bold text-gray-700 mb-2">Kata Sandi Saat Ini</label>
@@ -191,7 +193,7 @@ export default function SettingsPage() {
                         </button>
                       </div>
                     </div>
-                    
+                   
                     {/* Password Baru */}
                     <div className="pt-2">
                       <label className="block text-sm font-bold text-gray-700 mb-2">Kata Sandi Baru</label>

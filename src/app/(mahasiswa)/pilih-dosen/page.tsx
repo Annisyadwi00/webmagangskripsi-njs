@@ -3,14 +3,15 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+// Tambahkan import Variants dari framer-motion di sini
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 export default function PilihDosenPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [dosenList, setDosenList] = useState<any[]>([]);
   const [magangInfo, setMagangInfo] = useState({ perusahaan: "Memuat...", posisi: "Memuat..." });
-  
+ 
   // Custom Toast Notification State
   const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,7 +62,7 @@ export default function PilihDosenPage() {
       if (!res.ok) throw new Error(data.message);
 
       showToast("Berhasil! Mengalihkan ke dashboard...", "success");
-      
+     
       // Tunggu animasi toast selesai, lalu lempar ke dashboard
       setTimeout(() => router.push('/dashboard'), 2000);
     } catch (error: any) {
@@ -71,16 +72,17 @@ export default function PilihDosenPage() {
     }
   };
 
-  const filteredDosen = dosenList.filter(dosen => 
+  const filteredDosen = dosenList.filter(dosen =>
     dosen.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const containerVariants = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } };
-  const cardVariants = { hidden: { opacity: 0, scale: 0.95, y: 20 }, show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 100 } } };
+  // Berikan tipe Variants di sini agar TypeScript mengenali konfigurasi framer-motion
+  const containerVariants: Variants = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } };
+  const cardVariants: Variants = { hidden: { opacity: 0, scale: 0.95, y: 20 }, show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 100 } } };
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-16 relative">
-      
+     
       {/* CUSTOM TOAST NOTIFICATION */}
       <AnimatePresence>
         {toast.show && (
@@ -110,14 +112,14 @@ export default function PilihDosenPage() {
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+         
           {/* KOLOM KIRI */}
           <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="space-y-6">
-            
+           
             {/* Kartu Info Magang Dinamis */}
-            <div className="bg-gradient-to-br from-[#1e3a8a] to-blue-700 rounded-3xl shadow-xl shadow-blue-900/10 p-8 text-white relative overflow-hidden">
+            <div className="bg-linear-to-br from-[#1e3a8a] to-blue-700 rounded-3xl shadow-xl shadow-blue-900/10 p-8 text-white relative overflow-hidden">
               <div className="absolute -right-10 -top-10 w-48 h-48 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
-              
+             
               <div className="flex items-center gap-3 mb-6 pb-6 border-b border-white/20 relative z-10">
                 <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md border border-white/20">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
@@ -167,7 +169,7 @@ export default function PilihDosenPage() {
                   <motion.div key={dosen.id} variants={cardVariants} className="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-blue-100 transition-all duration-300 flex flex-col h-full overflow-hidden group">
                     <div className="p-6 flex-1 flex flex-col">
                       <div className="flex items-start gap-4 mb-5">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 flex-shrink-0 overflow-hidden shadow-inner group-hover:scale-105 transition-transform">
+                        <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-50 border border-blue-100 flex-shrink-0 overflow-hidden shadow-inner group-hover:scale-105 transition-transform">
                           <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(dosen.name)}&background=1e3a8a&color=fff&bold=true`} alt={dosen.name} className="w-full h-full object-cover" />
                         </div>
                         <div className="pt-1 flex-1">
@@ -185,7 +187,7 @@ export default function PilihDosenPage() {
                     </div>
 
                     <div className="px-6 py-5 bg-gray-50/50 mt-auto border-t border-gray-50">
-                      <button 
+                      <button
                         onClick={() => handlePilihDosen(dosen.id, dosen.name)}
                         disabled={isSubmitting}
                         className="w-full py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm bg-white border-2 border-[#1e3a8a] text-[#1e3a8a] hover:bg-[#1e3a8a] hover:text-white hover:shadow-lg hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0"
@@ -204,3 +206,4 @@ export default function PilihDosenPage() {
     </div>
   );
 }
+

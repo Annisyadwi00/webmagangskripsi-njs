@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+// Tambahkan import Variants dari framer-motion di sini
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 export default function MitraPage() {
   const [showJobModal, setShowJobModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
-  
+ 
   const [jobForm, setJobForm] = useState({
     perusahaan: '', email_perusahaan: '', posisi: '', kategori: '💻 Frontend Developer',
     type: 'Onsite', tipeKonversi: 'Full', isPaid: 'Tidak', link_pendaftaran: '', deskripsi: '', valid_until: ''
@@ -26,11 +27,11 @@ export default function MitraPage() {
       const res = await fetch('/api/lowongan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(jobForm) 
+        body: JSON.stringify(jobForm)
       });
-      
+     
       if (!res.ok) throw new Error("Gagal mengirim pengajuan lowongan.");
-      
+     
       showToast("Lowongan berhasil diajukan! Menunggu verifikasi dari Admin Fasilkom.", "success");
       setShowJobModal(false);
       setJobForm({
@@ -44,8 +45,9 @@ export default function MitraPage() {
     }
   };
 
-  const fadeUp = { hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, type: "spring", bounce: 0.4 } } };
-  const staggerContainer = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.2 } } };
+  // Berikan tipe Variants pada animasi agar TypeScript tidak error
+  const fadeUp: Variants = { hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, type: "spring", bounce: 0.4 } } };
+  const staggerContainer: Variants = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.2 } } };
 
   return (
     <div className="font-sans selection:bg-[#1e3a8a] selection:text-white flex flex-col">
@@ -150,7 +152,7 @@ export default function MitraPage() {
         {showJobModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" onClick={() => setShowJobModal(false)} />
-            
+           
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white w-full max-w-4xl rounded-3xl shadow-2xl p-6 md:p-10 z-10 max-h-full overflow-y-auto custom-scrollbar">
               <div className="flex justify-between items-start mb-6 border-b border-gray-100 pb-6">
                 <div>
