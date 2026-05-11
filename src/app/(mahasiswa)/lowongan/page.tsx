@@ -89,8 +89,7 @@ export default function LowonganPage() {
   };
 
   const containerVariants = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } };
-  const cardVariants = { hidden: { opacity: 0, y: 20, scale: 0.95 }, show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", bounce: 0.4 } } };
-
+ const cardVariants = { hidden: { opacity: 0, y: 20, scale: 0.95 }, show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, bounce: 0.4 } } };
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-20">
       
