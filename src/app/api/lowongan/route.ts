@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       kategori: body.kategori,
       type: body.type,
       tipeKonversi: body.tipeKonversi,
-      isPaid: body.isPaid,
+      isPaid: body.isPaid === 'Ya',
       link_pendaftaran: body.link_pendaftaran,
       valid_until: body.valid_until || null,
       status: 'Pending' // Jika yang tambah mitra, status default pending
@@ -59,7 +59,7 @@ export async function PUT(request: Request) {
         kategori: body.kategori,
         type: body.type,
         tipeKonversi: body.tipeKonversi,
-        isPaid: body.isPaid,
+        isPaid: body.isPaid === 'Ya', 
         link_pendaftaran: body.link_pendaftaran,
         valid_until: body.valid_until || null,
       }, { where: { id } });

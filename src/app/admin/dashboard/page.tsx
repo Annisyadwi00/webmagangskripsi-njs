@@ -46,7 +46,10 @@ export default function AdminDashboard() {
   const [userRoleFilter, setUserRoleFilter] = useState<'Semua' | 'Mahasiswa' | 'Dosen' | 'Admin'>('Semua');
 
   const [showVerifModal, setShowVerifModal] = useState(false);
-  const [verifForm, setVerifForm] = useState({ id: 0, nama_mahasiswa: '', perusahaan: '', tipeKonversi: 'Full', matkulInput: '' });
+  const [verifForm, setVerifForm] = useState({ 
+    id: 0, nama_mahasiswa: '', perusahaan: '', tipeKonversi: 'Full', matkulInput: '', 
+    semester_konversi: 'Semester 6' // <-- Tambahkan ini
+  });
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const showToast = (msg: string, type: 'success' | 'error') => {
     setToast({ show: true, msg, type });
@@ -153,7 +156,11 @@ export default function AdminDashboard() {
   // ====================================================== //
 
   const handleOpenVerifModal = (pengajuan: any) => {
-    setVerifForm({ id: pengajuan.id, nama_mahasiswa: pengajuan.nama_mahasiswa, perusahaan: pengajuan.perusahaan, tipeKonversi: 'Full', matkulInput: '' });
+    setVerifForm({ 
+      id: pengajuan.id, nama_mahasiswa: pengajuan.nama_mahasiswa, perusahaan: pengajuan.perusahaan, 
+      tipeKonversi: 'Full', matkulInput: '', 
+      semester_konversi: 'Semester 6' // <-- Tambahkan ini
+    });
     setShowVerifModal(true);
   };
 
@@ -164,13 +171,25 @@ export default function AdminDashboard() {
       const matkulArray = verifForm.tipeKonversi === 'Tidak' ? [] : verifForm.matkulInput.split(',').map(m => m.trim()).filter(m => m);
       const res = await fetch('/api/pengajuan', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'setujui', id: verifForm.id, tipeKonversi: verifForm.tipeKonversi, matkulKonversi: matkulArray })
+        body: JSON.stringify({ 
+          action: 'setujui', id: verifForm.id, tipeKonversi: verifForm.tipeKonversi, 
+          matkulKonversi: matkulArray, 
+          semester_konversi: verifForm.semester_konversi // <-- Tambahkan ini
+        })
       });
-      if (!res.ok) throw new Error((await res.json()).message);
-      showToast('LOA Berhasil disetujui!', 'success');
-      setShowVerifModal(false);
-      fetchData();
-    } catch (err: any) { showToast(err.message, 'error'); } finally { setIsSubmitting(false); }
+      
+      if (res.ok) {
+        showToast('Pengajuan berhasil disetujui', 'success');
+        setShowVerifModal(false);
+        fetchData();
+      } else {
+        throw new Error('Gagal memproses');
+      }
+    } catch (error: any) {
+      showToast('Gagal menyetujui pengajuan', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleRejectLOA = (id: number) => {
@@ -653,6 +672,15 @@ export default function AdminDashboard() {
                     <textarea required rows={3} value={verifForm.matkulInput} onChange={(e) => setVerifForm({ ...verifForm, matkulInput: e.target.value })} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-amber-500 transition-all" placeholder="Contoh: Web, Basis Data Lanjut (Pisahkan dengan koma)"></textarea>
                   </motion.div>
                 )}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2 mt-4">Diakui Untuk Semester *</label>
+                  <select required value={verifForm.semester_konversi} onChange={(e) => setVerifForm({...verifForm, semester_konversi: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-amber-500 font-medium transition-all">
+                    <option value="Semester 5">Semester 5</option>
+                    <option value="Semester 6">Semester 6</option>
+                    <option value="Semester 7">Semester 7</option>
+                    <option value="Semester 8">Semester 8</option>
+                  </select>
+                </div>
                 <div className="flex gap-4 pt-6 mt-4">
                   <button type="button" onClick={() => setShowVerifModal(false)} className="flex-1 py-4 px-4 rounded-xl font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors">Batal</button>
                   <button type="submit" disabled={isSubmitting} className="flex-1 py-4 px-4 rounded-xl shadow-lg shadow-amber-500/30 font-bold text-white bg-amber-500 hover:bg-amber-600 transition-all hover:-translate-y-1">{isSubmitting ? 'Memproses...' : 'Setujui LOA Mahasiswa'}</button>
@@ -878,4 +906,4 @@ export default function AdminDashboard() {
       </AnimatePresence>
     </div>
   );
-}
+  }

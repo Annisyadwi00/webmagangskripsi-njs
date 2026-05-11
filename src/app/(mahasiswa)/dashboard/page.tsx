@@ -31,7 +31,7 @@ export default function DashboardMahasiswa() {
   const [showLaporanModal, setShowLaporanModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   
-  const [loaForm, setLoaForm] = useState({ perusahaan: '', posisi: '', link_loa: '' });
+  const [loaForm, setLoaForm] = useState({ perusahaan: '', posisi: '', link_loa: '', tgl_mulai: '', tgl_berakhir: ''});
   const [logbookForm, setLogbookForm] = useState({ judul: 'Logbook Harian', tanggal: '', kegiatan: '', link_bukti: '' });
 
   useEffect(() => {
@@ -87,10 +87,18 @@ export default function DashboardMahasiswa() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const payload = { perusahaan: loaForm.perusahaan, posisi: loaForm.posisi, link_loa: loaForm.link_loa, nama_mahasiswa: user?.name };
+      // Masukkan tgl_mulai dan tgl_berakhir ke payload
+      const payload = { 
+        perusahaan: loaForm.perusahaan, posisi: loaForm.posisi, link_loa: loaForm.link_loa, 
+        nama_mahasiswa: user?.name,
+        tgl_mulai: loaForm.tgl_mulai, tgl_berakhir: loaForm.tgl_berakhir
+      };
       const res = await fetch('/api/pengajuan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error((await res.json()).message || 'Terjadi kesalahan sistem');
-      showToast('LOA Berhasil Diajukan!', 'success'); setShowLOAModal(false); setLoaForm({ perusahaan: '', posisi: '', link_loa: '' }); fetchData();
+      showToast('LOA Berhasil Diajukan!', 'success'); 
+      setShowLOAModal(false); 
+      setLoaForm({ perusahaan: '', posisi: '', link_loa: '', tgl_mulai: '', tgl_berakhir: '' }); 
+      fetchData();
     } catch (err: any) { showToast(err.message, 'error'); } finally { setIsSubmitting(false); }
   };
 
@@ -132,8 +140,6 @@ export default function DashboardMahasiswa() {
 
   // ---> LOGIKA CEK LAPORAN AKHIR <---
   const isLaporanAkhirReady = logbooks.length > 0 && logbooks.every(l => l.status === 'Disetujui');
-// ---> FUNGSI HITUNG PROGRES MAGANG (CUKUP 1 KALI SAJA DI SINI) <---
-  // ---> FUNGSI HITUNG PROGRES MAGANG (CUKUP 1 KALI SAJA DI SINI) <---
   const calculateInternProgress = () => {
     if (!pengajuan || !pengajuan.tgl_mulai || !pengajuan.tgl_berakhir) return 0;
     
@@ -151,7 +157,29 @@ export default function DashboardMahasiswa() {
     
     return Math.max(0, Math.min(100, percent));
   };
+  // ---> LOGIKA DETEKSI LOGBOOK HARI INI <---
+  const checkMissingLogbook = () => {
+    if (!pengajuan || pengajuan.status_dosen !== 'Disetujui') return null;
+    
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = Minggu, 1 = Senin, ... 6 = Sabtu
+    
+    // Abaikan peringatan jika ini hari Sabtu (6) atau Minggu (0)
+    if (dayOfWeek === 0 || dayOfWeek === 6) return null;
 
+    // Cek apakah ada logbook harian yang tanggalnya hari ini
+    const todayStr = today.toISOString().split('T')[0];
+    const hasLogbookToday = logbooks.some(log => 
+      log.judul === 'Logbook Harian' && log.tanggal === todayStr
+    );
+
+    if (!hasLogbookToday) {
+      return "Peringatan: Anda belum mengisi Logbook Harian untuk hari ini!";
+    }
+    return null;
+  };
+
+  const missingLogbookWarning = checkMissingLogbook();
   const progressPercent = calculateInternProgress();
 
   const statusProgress = [
@@ -373,9 +401,31 @@ export default function DashboardMahasiswa() {
                         <span className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-none">📋</span>
                         Riwayat Laporan
                       </h3>
+                      {/* Tampilkan Peringatan di Sini Jika Ada */}
+                      {missingLogbookWarning && (
+                        <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl">
+                          <p className="text-yellow-800 dark:text-yellow-300 text-xs font-bold flex items-center gap-2">
+                            ⚠️ {missingLogbookWarning}
+                          </p>
+                        </div>
+                      )}
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">Pantau status validasi, nilai, dan pesan dari dosen pembimbingmu di sini.</p>
                     </div>
-
+{/* BANNER PERINGATAN LOGBOOK KOSONG */}
+                  {missingLogbookWarning && activeTab === 'Logbook' && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-4 flex items-center justify-between gap-4 mt-6 animate-pulse">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">⚠️</span>
+                        <div>
+                          <h4 className="text-sm font-black text-red-800 dark:text-red-400">Tindakan Diperlukan</h4>
+                          <p className="text-xs font-bold text-red-600 dark:text-red-300">{missingLogbookWarning}</p>
+                        </div>
+                      </div>
+                      <button onClick={() => setShowLogbookModal(true)} className="px-4 py-2 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 shadow-sm shrink-0">
+                        Isi Sekarang
+                      </button>
+                    </div>
+                  )}
                     {/* FILTER TABS (Desain Lebih Rapi) */}
                     <div className="inline-flex bg-gray-100 dark:bg-slate-800 p-1.5 rounded-2xl gap-1 overflow-x-auto max-w-full border border-gray-200 dark:border-slate-700">
                       {['Semua', 'Disetujui', 'Revisi', 'Pending'].map((status) => (
@@ -548,6 +598,16 @@ export default function DashboardMahasiswa() {
                 <div>
                   <label className="block text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Posisi Magang *</label>
                   <input type="text" required value={loaForm.posisi} onChange={(e) => setLoaForm({...loaForm, posisi: e.target.value})} className="w-full px-4 md:px-5 py-3 md:py-4 border border-gray-200 dark:border-slate-600 rounded-xl bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white focus:bg-white dark:focus:bg-slate-600 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all text-sm md:text-base" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Tanggal Mulai Magang *</label>
+                    <input type="date" required value={loaForm.tgl_mulai} onChange={(e) => setLoaForm({...loaForm, tgl_mulai: e.target.value})} className="w-full px-4 md:px-5 py-3 md:py-4 border border-gray-200 dark:border-slate-600 rounded-xl bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white focus:bg-white focus:ring-2 focus:ring-[#1e3a8a] transition-all text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Tanggal Selesai Magang *</label>
+                    <input type="date" required value={loaForm.tgl_berakhir} onChange={(e) => setLoaForm({...loaForm, tgl_berakhir: e.target.value})} className="w-full px-4 md:px-5 py-3 md:py-4 border border-gray-200 dark:border-slate-600 rounded-xl bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white focus:bg-white focus:ring-2 focus:ring-[#1e3a8a] transition-all text-sm" />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Link Dokumen LOA *</label>

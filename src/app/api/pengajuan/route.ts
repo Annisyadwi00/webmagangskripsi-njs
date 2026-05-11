@@ -48,10 +48,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Hanya mahasiswa!' }, { status: 403 });
     }
 
-    const { perusahaan, posisi, link_loa, nama_mahasiswa } = await request.json();
+    const { perusahaan, posisi, link_loa, nama_mahasiswa, tgl_mulai, tgl_berakhir } = await request.json();
 
-    if (!perusahaan || !posisi || !link_loa) {
-      return NextResponse.json({ message: 'Perusahaan, Posisi, dan Link LOA wajib diisi!' }, { status: 400 });
+    if (!perusahaan || !posisi || !link_loa || !tgl_mulai || !tgl_berakhir) {
+      return NextResponse.json({ message: 'Semua data form (termasuk tanggal) wajib diisi!' }, { status: 400 });
     }
 
     const existingPengajuan = await Pengajuan.findOne({
@@ -62,12 +62,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Anda sudah memiliki proses magang yang sedang berjalan.' }, { status: 409 });
     }
 
-    const newPengajuan = await Pengajuan.create({
+   const newPengajuan = await Pengajuan.create({
       user_id: decoded.id,
       nama_mahasiswa: nama_mahasiswa || 'Mahasiswa',
       perusahaan: perusahaan,
       posisi: posisi,
       link_loa: link_loa,
+      tgl_mulai: tgl_mulai,         // <-- Tambahan Baru
+      tgl_berakhir: tgl_berakhir,   // <-- Tambahan Baru
       status: 'Menunggu_Verifikasi',
     });
 
@@ -107,7 +109,12 @@ export async function PUT(request: Request) {
     }
     else if (decoded.role === 'Admin') {
       if (body.action === 'setujui') {
-        await Pengajuan.update({ tipeKonversi: body.tipeKonversi, matkulKonversi: JSON.stringify(body.matkulKonversi), status: 'Pilih_Dosen' }, { where: { id: body.id } });
+        await Pengajuan.update({ 
+          tipeKonversi: body.tipeKonversi, 
+          matkulKonversi: JSON.stringify(body.matkulKonversi), 
+          semester_konversi: body.semester_konversi, // <-- TAMBAHKAN BARIS INI
+          status: 'Pilih_Dosen' 
+        }, { where: { id: body.id } });
         return NextResponse.json({ message: 'Pengajuan disetujui!' }, { status: 200 });
       }
       // ---> ADMIN UPDATE STATUS & ALASAN, BUKAN HAPUS DATA <---

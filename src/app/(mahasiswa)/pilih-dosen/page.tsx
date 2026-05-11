@@ -178,6 +178,11 @@ export default function PilihDosenPage() {
                             NIDN: {dosen.nim_nidn || '-'}
                           </span>
                         </div>
+                        {dosen.kategori_dosen && (
+                            <span className="inline-block ml-2 px-2.5 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-lg border border-indigo-100">
+                              {dosen.kategori_dosen}
+                            </span>
+                          )}
                       </div>
 
                       <div className="flex items-center gap-2 text-xs text-gray-500 font-medium mb-auto mt-2 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
