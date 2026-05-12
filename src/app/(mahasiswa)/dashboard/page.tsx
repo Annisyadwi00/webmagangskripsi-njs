@@ -718,29 +718,23 @@ export default function DashboardMahasiswa() {
           </div>
         )}
           {/* --- Ini adalah bagian bawah kartu Detail Pengajuan --- */}
-                <div className="mt-8 pt-6 border-t border-gray-100 dark:border-slate-700">
-                  {pengajuan?.status === 'Selesai' ? (
-                    <div>
-                      <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl mb-4 border border-emerald-100 dark:border-emerald-800">
-                        <h4 className="text-emerald-800 dark:text-emerald-400 font-bold text-sm mb-1">🎉 Magang Telah Selesai!</h4>
-                        <p className="text-emerald-600 dark:text-emerald-300 text-xs">Selamat, seluruh proses magang dan penilaian telah selesai. Anda dapat mencetak lembar pengesahan sekarang.</p>
-                      </div>
-                      {/* TOMBOL UNDUH PDF */}
-                      <button 
-                        onClick={generatePDF}
-                        className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-black rounded-xl transition-all shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-1">
-                        <span className="text-xl">📄</span> Cetak Lembar Pengesahan (PDF)
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                      <p className="text-blue-600 dark:text-blue-300 text-xs text-center font-medium">
-                        Fitur cetak dokumen pengesahan akan otomatis terbuka setelah Dosen memberikan nilai akhir.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
+                {pengajuan?.status === 'Selesai' ? (
+                  <div>
+                    {/* TOMBOL UNDUH PDF */}
+                    <button 
+                      onClick={generatePDF}
+                      className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-black rounded-xl transition-all shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-1 mt-4"
+                    >
+                      <span className="text-xl">📄</span> Cetak Lembar Pengesahan (PDF)
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl mt-4">
+                    <p className="text-blue-600 dark:text-blue-300 text-xs text-center font-medium">
+                      Fitur cetak dokumen pengesahan akan otomatis terbuka setelah Dosen memberikan nilai akhir.
+                    </p>
+                  </div>
+                )}
       </AnimatePresence>
 
       {/* MODAL ISI LOGBOOK */}
