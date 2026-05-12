@@ -59,8 +59,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-500 font-sans flex flex-col relative overflow-hidden">
-      
+    <div className=" bg-slate-50 dark:bg-slate-900 transition-colors duration-500 font-sans flex flex-col relative overflow-hidden">
       {/* Efek Latar Belakang Estetik */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-400/20 dark:bg-[#1e3a8a]/20 rounded-full blur-3xl -z-10"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-emerald-400/10 dark:bg-emerald-900/20 rounded-full blur-3xl -z-10"></div>
@@ -72,15 +71,15 @@ export default function LandingPage() {
             Fakultas Ilmu Komputer UNSIKA
           </span>
         </div>
-        
+
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-gray-900 dark:text-white max-w-4xl leading-tight md:leading-[1.15] mb-6 md:mb-8 transition-colors px-4 md:px-0">
           Sistem Informasi Magang <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1e3a8a] to-blue-500 dark:from-blue-400 dark:to-emerald-400 block md:inline mt-2 md:mt-0">Terintegrasi & Modern</span>
         </h1>
-        
+
         <p className="text-base md:text-xl text-gray-500 dark:text-gray-400 max-w-2xl mb-12 leading-relaxed font-medium transition-colors">
           Platform digital inovatif untuk mempermudah mahasiswa dalam mengajukan Letter of Acceptance (LOA), menyusun laporan harian, dan memantau proses penilaian magang secara transparan.
         </p>
-        
+
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <Link href="/login" className="px-8 py-4 text-base font-bold text-white bg-[#1e3a8a] hover:bg-blue-900 shadow-xl shadow-blue-900/30 rounded-2xl transition-all hover:-translate-y-1 text-center flex items-center justify-center gap-2">
             Masuk ke Portal
@@ -91,16 +90,16 @@ export default function LandingPage() {
           </Link>
         </div>
       </main>
-{/* --- SECTION ABOUT US --- */}
+      {/* --- SECTION ABOUT US --- */}
       <section id="about" className="py-20 bg-white dark:bg-slate-900 transition-colors">
         <div className="max-w-7xl mx-auto px-6 md:px-10">
           <div className="flex flex-col md:flex-row items-center gap-16">
-            
+
             {/* Gambar / Ilustrasi Kiri */}
             <div className="w-full md:w-1/2 relative group">
               {/* Efek Glow di Belakang */}
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[32px] transform rotate-3 scale-105 opacity-20 blur-xl group-hover:opacity-30 transition-opacity duration-500"></div>
-              
+
               <div className="relative bg-slate-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-[32px] p-8 md:p-12 shadow-xl overflow-hidden transition-colors">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100 dark:bg-indigo-900/30 rounded-bl-full -z-10"></div>
                 <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-6 leading-tight">
@@ -109,7 +108,7 @@ export default function LandingPage() {
                 <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-8">
                   SI Magang Fasilkom UNSIKA hadir sebagai solusi digital terintegrasi untuk menyederhanakan seluruh proses administrasi magang. Mulai dari pengajuan Letter of Acceptance (LOA), pelaporan logbook, hingga penilaian akhir, semuanya kini dapat dilakukan dalam satu pintu.
                 </p>
-                
+
                 {/* Ikon User Terlibat */}
                 <div className="flex items-center gap-4">
                   <div className="flex -space-x-4">
@@ -155,7 +154,20 @@ export default function LandingPage() {
         </div>
       </section>
       {/* BAGIAN FAQ YANG SUDAH DI-ANIMASI */}
-        <div className="space-y-4">
+      <div id="faq" className="py-16">
+        {/* --- BAGIAN JUDUL FAQ --- */}
+        <div className="text-center mb-10 px-4">
+          <h2 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
+            Frequently Asked Questions
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400 mt-3 text-sm md:text-base">
+            Pertanyaan yang sering diajukan seputar SI Magang.
+          </p>
+        </div>
+
+        {/* --- BAGIAN DAFTAR PERTANYAAN --- */}
+        {/* Catatan: px-40 diubah jadi responsif agar rapi di HP maupun Laptop */}
+        <div className="space-y-4 px-4 md:px-20 lg:px-40">
           {faqs.map((faq, idx) => (
             <div key={idx} className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden transition-colors">
               <button
@@ -163,21 +175,24 @@ export default function LandingPage() {
                 className="w-full flex justify-between items-center p-6 text-left font-bold text-gray-900 dark:text-white text-base md:text-lg focus:outline-none"
               >
                 {faq.tanya}
-                <motion.span 
-                  animate={{ rotate: openFaq === idx ? 180 : 0 }} 
-                  transition={{ duration: 0.3 }} 
-                  className="text-[#1e3a8a] dark:text-blue-400 text-xl ml-4"
+                <motion.span
+                  animate={{ rotate: openFaq === idx ? 180 : 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-[#1e3a8a] dark:text-blue-400 text-xl ml-4 shrink-0"
                 >
                   ▾
                 </motion.span>
               </button>
-              <AnimatePresence>
+
+              {/* Tambahkan initial={false} agar saat pertama kali web dimuat tidak ada animasi aneh */}
+              <AnimatePresence initial={false}>
                 {openFaq === idx && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="overflow-hidden" // <--- INI KUNCI RAHASIA AGAR ANIMASI BUKA-TUTUPNYA SMOOTH
                   >
                     <p className="px-6 pb-6 text-gray-600 dark:text-gray-400 leading-relaxed text-sm">
                       {faq.jawab}
@@ -188,7 +203,8 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
-      
+      </div>
+
       {/* 3. AREA PESAN & MASUKAN */}
       <section className="w-full max-w-3xl mx-auto px-6 py-16 mb-20 z-10">
         <div className="bg-white dark:bg-slate-800 rounded-[32px] border border-gray-200 dark:border-slate-700 p-8 md:p-12 shadow-xl shadow-blue-900/5 transition-colors">
@@ -207,18 +223,18 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Nama Lengkap</label>
-                <input required type="text" value={form.nama} onChange={(e) => setForm({...form, nama: e.target.value})} className="w-full px-5 py-3.5 border border-gray-200 dark:border-slate-600 rounded-xl bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white focus:bg-white dark:focus:bg-slate-600 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" placeholder="Masukkan nama..." />
+                <input required type="text" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} className="w-full px-5 py-3.5 border border-gray-200 dark:border-slate-600 rounded-xl bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white focus:bg-white dark:focus:bg-slate-600 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" placeholder="Masukkan nama..." />
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Alamat Email</label>
-                <input required type="email" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} className="w-full px-5 py-3.5 border border-gray-200 dark:border-slate-600 rounded-xl bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white focus:bg-white dark:focus:bg-slate-600 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" placeholder="email@contoh.com" />
+                <input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-5 py-3.5 border border-gray-200 dark:border-slate-600 rounded-xl bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white focus:bg-white dark:focus:bg-slate-600 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" placeholder="email@contoh.com" />
               </div>
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Pesan / Kendala</label>
-              <textarea required rows={4} value={form.pesan} onChange={(e) => setForm({...form, pesan: e.target.value})} className="w-full px-5 py-3.5 border border-gray-200 dark:border-slate-600 rounded-xl bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white focus:bg-white dark:focus:bg-slate-600 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" placeholder="Jelaskan masalah atau saran Anda..."></textarea>
+              <textarea required rows={4} value={form.pesan} onChange={(e) => setForm({ ...form, pesan: e.target.value })} className="w-full px-5 py-3.5 border border-gray-200 dark:border-slate-600 rounded-xl bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white focus:bg-white dark:focus:bg-slate-600 outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all" placeholder="Jelaskan masalah atau saran Anda..."></textarea>
             </div>
-            
+
             <button type="submit" disabled={loading} className="w-full py-4 bg-[#1e3a8a] text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 hover:bg-blue-900 hover:-translate-y-1 transition-all disabled:opacity-70 disabled:hover:translate-y-0 mt-4">
               {loading ? 'Mengirim Pesan...' : 'Kirim Sekarang'}
             </button>
