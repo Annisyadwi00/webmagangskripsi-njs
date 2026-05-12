@@ -46,10 +46,10 @@ export default function AdminDashboard() {
   const [userRoleFilter, setUserRoleFilter] = useState<'Semua' | 'Mahasiswa' | 'Dosen' | 'Admin'>('Semua');
 
   const [showVerifModal, setShowVerifModal] = useState(false);
-  const [verifForm, setVerifForm] = useState({ 
-    id: 0, nama_mahasiswa: '', perusahaan: '', tipeKonversi: 'Full', matkulInput: '', 
-    semester_konversi: 'Semester 6' // <-- Tambahkan ini
-  });
+ const [verifForm, setVerifForm] = useState({ 
+  id: 0, nama_mahasiswa: '', perusahaan: '', tipeKonversi: 'Full', matkulInput: '', 
+  semester_konversi: 'Semester 6' // <-- TAMBAHKAN INI
+});
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const showToast = (msg: string, type: 'success' | 'error') => {
     setToast({ show: true, msg, type });
@@ -169,12 +169,14 @@ export default function AdminDashboard() {
     setIsSubmitting(true);
     try {
       const matkulArray = verifForm.tipeKonversi === 'Tidak' ? [] : verifForm.matkulInput.split(',').map(m => m.trim()).filter(m => m);
-      const res = await fetch('/api/pengajuan', {
+     const res = await fetch('/api/Pengajuan', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          action: 'setujui', id: verifForm.id, tipeKonversi: verifForm.tipeKonversi, 
-          matkulKonversi: matkulArray, 
-          semester_konversi: verifForm.semester_konversi // <-- Tambahkan ini
+          action: 'setujui', 
+          id: verifForm.id, 
+          tipeKonversi: verifForm.tipeKonversi, 
+          matkulKonversi: matkulArray,
+          semester_konversi: verifForm.semester_konversi // <-- TAMBAHKAN INI
         })
       });
       
@@ -668,8 +670,7 @@ export default function AdminDashboard() {
                 </div>
                 {verifForm.tipeKonversi !== 'Tidak' && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
-                    <label className="block text-sm font-bold text-gray-700 mb-2 mt-4">Daftar Mata Kuliah yang Dikonversi *</label>
-                    <textarea required rows={3} value={verifForm.matkulInput} onChange={(e) => setVerifForm({ ...verifForm, matkulInput: e.target.value })} className="w-full px-5 py-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-amber-500 transition-all" placeholder="Contoh: Web, Basis Data Lanjut (Pisahkan dengan koma)"></textarea>
+                    {/* ... (kode textarea matkul biarkan saja) ... */}
                   </motion.div>
                 )}
                 <div>
@@ -681,6 +682,7 @@ export default function AdminDashboard() {
                     <option value="Semester 8">Semester 8</option>
                   </select>
                 </div>
+                {/* -------------------------------------- */}
                 <div className="flex gap-4 pt-6 mt-4">
                   <button type="button" onClick={() => setShowVerifModal(false)} className="flex-1 py-4 px-4 rounded-xl font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors">Batal</button>
                   <button type="submit" disabled={isSubmitting} className="flex-1 py-4 px-4 rounded-xl shadow-lg shadow-amber-500/30 font-bold text-white bg-amber-500 hover:bg-amber-600 transition-all hover:-translate-y-1">{isSubmitting ? 'Memproses...' : 'Setujui LOA Mahasiswa'}</button>
