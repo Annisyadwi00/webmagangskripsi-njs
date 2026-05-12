@@ -1,6 +1,8 @@
 "use client"; // (Pastikan ini ada kalau ini file frontend)
 
 import { useState, useEffect } from 'react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -100,7 +102,57 @@ export default function DashboardMahasiswa() {
       fetchData();
     } catch (err: any) { showToast(err.message, 'error'); } finally { setIsSubmitting(false); }
   };
+    const generatePDF = () => {
+    const doc = new jsPDF();
+    
+    // Header Kop Surat Sederhana
+    doc.setFontSize(14);
+    doc.text("UNIVERSITAS SINGAPERBANGSA KARAWANG", 105, 15, { align: "center" });
+    doc.setFontSize(12);
+    doc.text("FAKULTAS ILMU KOMPUTER", 105, 22, { align: "center" });
+    doc.line(20, 25, 190, 25); // Garis Pembatas
 
+    // Judul Dokumen
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("LEMBAR PENGESAHAN LAPORAN MAGANG", 105, 40, { align: "center" });
+
+    // Isi Data Mahasiswa
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Nama Mahasiswa : ${user?.name || '-'}`, 20, 55);
+    doc.text(`NPM            : ${user?.nim || '-'}`, 20, 62);
+    doc.text(`Perusahaan     : ${pengajuan?.perusahaan || '-'}`, 20, 69);
+    doc.text(`Posisi Magang  : ${pengajuan?.posisi || '-'}`, 20, 76);
+    doc.text(`Periode        : ${pengajuan?.tgl_mulai} s/d ${pengajuan?.tgl_berakhir}`, 20, 83);
+
+    // Tabel Nilai (Jika sudah ada)
+    if (pengajuan?.nilai_dari_dosen) {
+      doc.text("Rincian Penilaian Akademik:", 20, 95);
+      (doc as any).autoTable({
+        startY: 100,
+        head: [['Komponen Penilaian', 'Nilai']],
+        body: [
+          ['Kedisiplinan', pengajuan.nilai_kedisiplinan || 0],
+          ['Pemahaman Materi', pengajuan.nilai_materi || 0],
+          ['Kualitas Pekerjaan', pengajuan.nilai_koding || 0],
+          ['Laporan Akhir', pengajuan.nilai_laporan || 0],
+          ['TOTAL NILAI', pengajuan.nilai_dari_dosen],
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [30, 58, 138] } // Warna Biru Gelap sesuai tema webmu
+      });
+    }
+
+    // Tanda Tangan
+    const finalY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 20 : 120;
+    doc.text("Menyetujui,", 150, finalY);
+    doc.text("Dosen Pembimbing,", 150, finalY + 7);
+    doc.text(`( ${pengajuan?.nama_dosen || '..........................'} )`, 150, finalY + 35);
+
+    // Download File
+    doc.save(`Lembar_Pengesahan_${user?.name}.pdf`);
+  };
   const handleBatalPengajuan = async () => {
     if (!confirm('Yakin ingin menghapus pengajuan magang ini? Anda harus menginput ulang dari awal.')) return;
     try {
@@ -158,6 +210,7 @@ export default function DashboardMahasiswa() {
   };
   // ---> LOGIKA DETEKSI LOGBOOK HARI INI <---
   const checkMissingLogbook = () => {
+    if (pengajuan?.status === 'Selesai') return null;
     if (!pengajuan || pengajuan.status_dosen !== 'Disetujui') return null;
     
     const today = new Date();
@@ -279,7 +332,31 @@ export default function DashboardMahasiswa() {
                       <p className="text-gray-500 dark:text-gray-400 font-bold text-sm md:text-base">{user.nim} • {user.prodi}</p>
                     </div>
                  </div>
-
+{/* --- Ini adalah bagian bawah kartu Detail Pengajuan --- */}
+                <div className="mt-8 pt-6 border-t border-gray-100 dark:border-slate-700">
+                  {pengajuan?.status === 'Selesai' ? (
+                    <div>
+                      <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl mb-4 border border-emerald-100 dark:border-emerald-800">
+                        <h4 className="text-emerald-800 dark:text-emerald-400 font-bold text-sm mb-1">🎉 Magang Telah Selesai!</h4>
+                        <p className="text-emerald-600 dark:text-emerald-300 text-xs">Selamat, seluruh proses magang dan penilaian telah selesai. Anda dapat mencetak lembar pengesahan sekarang.</p>
+                      </div>
+                      
+                      {/* TOMBOL UNDUH PDF */}
+                      <button 
+                        onClick={generatePDF}
+                        className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-black rounded-xl transition-all shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-1"
+                      >
+                        <span className="text-xl">📄</span> Cetak Lembar Pengesahan (PDF)
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                      <p className="text-blue-600 dark:text-blue-300 text-xs text-center font-medium">
+                        Fitur cetak dokumen pengesahan akan otomatis terbuka setelah Dosen memberikan nilai akhir.
+                      </p>
+                    </div>
+                  )}
+                </div>
                  {/* Progress Bar - Bisa Digeser Kanan-Kiri di HP */}
                  <div className="bg-white dark:bg-slate-800 rounded-[32px] p-6 md:p-12 border border-gray-100 dark:border-slate-700 shadow-sm mb-8 md:mb-10 overflow-x-auto pb-10 transition-colors">
                     <div className="flex items-center min-w-max px-4">
@@ -430,7 +507,7 @@ export default function DashboardMahasiswa() {
                       )}
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">Pantau status validasi, nilai, dan pesan dari dosen pembimbingmu di sini.</p>
                     </div>
-{/* BANNER PERINGATAN LOGBOOK KOSONG */}
+                  {/* BANNER PERINGATAN LOGBOOK KOSONG */}
                   {missingLogbookWarning && activeTab === 'Logbook' && (
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-4 flex items-center justify-between gap-4 mt-6 animate-pulse">
                       <div className="flex items-center gap-3">
@@ -440,9 +517,9 @@ export default function DashboardMahasiswa() {
                           <p className="text-xs font-bold text-red-600 dark:text-red-300">{missingLogbookWarning}</p>
                         </div>
                       </div>
-                      <button onClick={() => setShowLogbookModal(true)} disabled={pengajuan?.status === 'Selesai'} className="disabled:opacity-50 disabled:cursor-not-allowed ...">
-                        {pengajuan?.status === 'Selesai' ? 'Magang Selesai (Data Dikunci)' : '+ Logbook'}
-                      </button>
+                      <button onClick={() => setShowLogbookModal(true)} disabled={pengajuan?.status === 'Selesai'}  className={`px-4 py-2 font-bold rounded-xl text-sm transition-all shadow-sm flex items-center gap-2 ${pengajuan?.status === 'Selesai' ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[#1e3a8a] hover:bg-blue-800 text-white hover:-translate-y-0.5'}`}>
+                        {pengajuan?.status === 'Selesai' ? '🔒 Data Dikunci' : '+ Tambah Logbook'}
+                        </button>
                     </div>
                   )}
                     {/* FILTER TABS (Desain Lebih Rapi) */}
@@ -640,6 +717,30 @@ export default function DashboardMahasiswa() {
             </motion.div>
           </div>
         )}
+          {/* --- Ini adalah bagian bawah kartu Detail Pengajuan --- */}
+                <div className="mt-8 pt-6 border-t border-gray-100 dark:border-slate-700">
+                  {pengajuan?.status === 'Selesai' ? (
+                    <div>
+                      <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl mb-4 border border-emerald-100 dark:border-emerald-800">
+                        <h4 className="text-emerald-800 dark:text-emerald-400 font-bold text-sm mb-1">🎉 Magang Telah Selesai!</h4>
+                        <p className="text-emerald-600 dark:text-emerald-300 text-xs">Selamat, seluruh proses magang dan penilaian telah selesai. Anda dapat mencetak lembar pengesahan sekarang.</p>
+                      </div>
+                      {/* TOMBOL UNDUH PDF */}
+                      <button 
+                        onClick={generatePDF}
+                        className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-black rounded-xl transition-all shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-1">
+                        <span className="text-xl">📄</span> Cetak Lembar Pengesahan (PDF)
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                      <p className="text-blue-600 dark:text-blue-300 text-xs text-center font-medium">
+                        Fitur cetak dokumen pengesahan akan otomatis terbuka setelah Dosen memberikan nilai akhir.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
       </AnimatePresence>
 
       {/* MODAL ISI LOGBOOK */}
