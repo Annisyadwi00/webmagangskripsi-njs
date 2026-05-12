@@ -169,7 +169,7 @@ export default function AdminDashboard() {
     setIsSubmitting(true);
     try {
       const matkulArray = verifForm.tipeKonversi === 'Tidak' ? [] : verifForm.matkulInput.split(',').map(m => m.trim()).filter(m => m);
-     const res = await fetch('/api/Pengajuan', {
+     const res = await fetch('/api/pengajuan', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           action: 'setujui', 
