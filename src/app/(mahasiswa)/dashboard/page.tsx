@@ -1,41 +1,9 @@
-"use client";
+"use client"; // (Pastikan ini ada kalau ini file frontend)
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { NextResponse } from 'next/server';
-import User from '@/models/User';
-import Pengajuan from '@/models/Pengajuan'; // Tambahkan ini untuk menghitung load
-import { connectDB } from '@/lib/db';
-
-export async function GET() {
-  try {
-    await connectDB();
-    // Tarik semua user yang perannya adalah 'Dosen' beserta kuotanya
-    const dosenList = await User.findAll({
-      where: { role: 'Dosen' },
-      attributes: ['id', 'name', 'email', 'nim_nidn', 'kategori_dosen', 'kuota_bimbingan']
-    });
-
-    // Hitung beban mahasiswa aktif untuk masing-masing dosen
-    const dosenWithLoad = await Promise.all(dosenList.map(async (dosen) => {
-      const count = await Pengajuan.count({
-        where: { 
-          dosenId: dosen.id, 
-          // Hitung yang sedang proses pengajuan (Pilih_Dosen) dan yang sudah ACC (Aktif)
-          status: ['Pilih_Dosen', 'Aktif'] 
-        } 
-      });
-      return { ...dosen.toJSON(), current_load: count };
-    }));
-
-    return NextResponse.json({ data: dosenWithLoad }, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ message: 'Gagal mengambil data dosen' }, { status: 500 });
-  }
-}
-
 export default function DashboardMahasiswa() {
   const router = useRouter();
   
