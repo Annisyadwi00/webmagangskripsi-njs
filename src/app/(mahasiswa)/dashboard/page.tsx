@@ -4,11 +4,42 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { NextResponse } from 'next/server';
+import User from '@/models/User';
+import Pengajuan from '@/models/Pengajuan'; // Tambahkan ini untuk menghitung load
+import { connectDB } from '@/lib/db';
+
+export async function GET() {
+  try {
+    await connectDB();
+    // Tarik semua user yang perannya adalah 'Dosen' beserta kuotanya
+    const dosenList = await User.findAll({
+      where: { role: 'Dosen' },
+      attributes: ['id', 'name', 'email', 'nim_nidn', 'kategori_dosen', 'kuota_bimbingan']
+    });
+
+    // Hitung beban mahasiswa aktif untuk masing-masing dosen
+    const dosenWithLoad = await Promise.all(dosenList.map(async (dosen) => {
+      const count = await Pengajuan.count({
+        where: { 
+          dosenId: dosen.id, 
+          // Hitung yang sedang proses pengajuan (Pilih_Dosen) dan yang sudah ACC (Aktif)
+          status: ['Pilih_Dosen', 'Aktif'] 
+        } 
+      });
+      return { ...dosen.toJSON(), current_load: count };
+    }));
+
+    return NextResponse.json({ data: dosenWithLoad }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ message: 'Gagal mengambil data dosen' }, { status: 500 });
+  }
+}
 
 export default function DashboardMahasiswa() {
   const router = useRouter();
   
-  const [activeTab, setActiveTab] = useState<'Magang' | 'Logbook'>('Magang');
+  const [activeTab, setActiveTab] = useState<'Magang' | 'Logbook' | 'Dokumen'>('Magang');
   const [filterLogbook, setFilterLogbook] = useState<'Semua' | 'Disetujui' | 'Revisi' | 'Pending'>('Semua');
   const [user, setUser] = useState<{name: string, nim: string, prodi: string, role: string, id: number} | null>(null);
   const [pengajuan, setPengajuan] = useState<any>(null);
@@ -227,7 +258,9 @@ export default function DashboardMahasiswa() {
           <button onClick={() => {setActiveTab('Magang'); setIsMobileMenuOpen(false);}} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl font-bold transition-all ${activeTab === 'Magang' ? 'bg-white text-[#1e3a8a] shadow-lg scale-105' : 'text-blue-100 hover:bg-white/10 hover:translate-x-1'}`}>
              Status Magang
           </button>
-          
+          <button onClick={() => setActiveTab('Dokumen')} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl font-bold transition-all ${activeTab === 'Dokumen' ? 'bg-white text-[#1e3a8a] shadow-lg' : 'text-blue-100 hover:bg-white/10'}`}>
+          📁 Template Dokumen
+          </button>
           <button onClick={() => {setActiveTab('Logbook'); setIsMobileMenuOpen(false);}} disabled={!(pengajuan?.status_dosen === 'Disetujui')} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${activeTab === 'Logbook' ? 'bg-white text-[#1e3a8a] shadow-lg scale-105' : 'text-blue-100 hover:bg-white/10 hover:translate-x-1'}`}>
              Logbook
           </button>
@@ -339,7 +372,8 @@ export default function DashboardMahasiswa() {
                            <p className="font-black text-gray-900 dark:text-white text-sm md:text-base">{pengajuan.nama_dosen || 'Belum Ada'}</p>
                          </div>
                        </div>
-{/* --- TAMPILAN PROGRESS BAR MASA MAGANG --- */}
+                       
+                      {/* --- TAMPILAN PROGRESS BAR MASA MAGANG --- */}
                        {pengajuan.status_dosen === 'Disetujui' && (
                          <div className="bg-slate-50 dark:bg-slate-900/40 rounded-[24px] p-6 border border-gray-100 dark:border-slate-700 mb-8 relative overflow-hidden transition-colors">
                            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
@@ -392,7 +426,24 @@ export default function DashboardMahasiswa() {
                  )}
                </motion.div>
              )}
-             
+             {activeTab === 'Dokumen' && (
+  <motion.div key="dokumen" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+    <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-6">Pusat Unduhan Format Dokumen</h3>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {[
+        { title: 'Format Logbook Harian', link: '#' },
+        { title: 'Template Laporan Akhir Magang', link: '#' },
+        { title: 'Formulir Penilaian Instansi', link: '#' },
+        { title: 'Surat Permohonan Izin Magang', link: '#' },
+      ].map((doc, i) => (
+        <div key={i} className="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 flex justify-between items-center shadow-sm">
+          <span className="font-bold text-gray-700 dark:text-gray-300">{doc.title}</span>
+          <a href={doc.link} className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-xs hover:bg-indigo-100">Unduh PDF</a>
+        </div>
+      ))}
+    </div>
+  </motion.div>
+)}
               {/*  BAGIAN RIWAYAT LOGBOOK MAHASISWA --- */}
                 <div className="mt-2 space-y-6">
                   <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 dark:border-slate-800 pb-6">
@@ -421,8 +472,8 @@ export default function DashboardMahasiswa() {
                           <p className="text-xs font-bold text-red-600 dark:text-red-300">{missingLogbookWarning}</p>
                         </div>
                       </div>
-                      <button onClick={() => setShowLogbookModal(true)} className="px-4 py-2 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 shadow-sm shrink-0">
-                        Isi Sekarang
+                      <button onClick={() => setShowLogbookModal(true)} disabled={pengajuan?.status === 'Selesai'} className="disabled:opacity-50 disabled:cursor-not-allowed ...">
+                        {pengajuan?.status === 'Selesai' ? 'Magang Selesai (Data Dikunci)' : '+ Logbook'}
                       </button>
                     </div>
                   )}
@@ -487,7 +538,7 @@ export default function DashboardMahasiswa() {
                         <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-sm border border-white/20">Akses Terbuka</span>
                         <h4 className="text-xl font-black mt-4">Selamat! Laporan Akhir Sudah Bisa Diisi.</h4>
                         <p className="text-indigo-100 text-sm mt-2 mb-6 max-w-md leading-relaxed">Seluruh logbook harian/mingguan kamu sudah disetujui dosen. Sekarang saatnya mengunggah laporan akhir magangmu.</p>
-                        <button onClick={() => setShowLaporanModal(true)} className="px-8 py-3 bg-white text-indigo-600 font-black rounded-xl hover:bg-indigo-50 transition-all shadow-lg flex items-center gap-2 hover:-translate-y-1">
+                        <button onClick={() => setShowLaporanModal(true)} disabled={pengajuan?.status === 'Selesai'} className="px-8 py-3 bg-white text-indigo-600 font-black rounded-xl hover:bg-indigo-50 transition-all shadow-lg flex items-center gap-2 hover:-translate-y-1">
                           Unggah Laporan Akhir Sekarang 🚀
                         </button>
                       </div>

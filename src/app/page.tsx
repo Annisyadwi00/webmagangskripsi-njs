@@ -2,13 +2,39 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
 
 export default function LandingPage() {
   // State untuk form Pesan & Masukan
   const [form, setForm] = useState({ nama: '', email: '', pesan: '' });
   const [loading, setLoading] = useState(false);
   const [pesanSukses, setPesanSukses] = useState('');
+  // State untuk FAQ
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
+  const faqs = [
+    {
+      tanya: "Siapa saja yang bisa menggunakan SI Magang?",
+      jawab: "Sistem ini dikhususkan untuk Mahasiswa, Dosen Pembimbing, dan Admin dari Fakultas Ilmu Komputer (Fasilkom) Universitas Singaperbangsa Karawang (UNSIKA)."
+    },
+    {
+      tanya: "Bagaimana alur pendaftaran magang?",
+      jawab: "Mahasiswa wajib memiliki akun, lalu mengunggah Letter of Acceptance (LOA) dari perusahaan. Setelah diverifikasi oleh Admin, mahasiswa baru bisa memilih Dosen Pembimbing untuk kemudian memulai pengisian logbook."
+    },
+    {
+      tanya: "Apakah pengisian logbook wajib setiap hari?",
+      jawab: "Tergantung dari Tipe Logbook yang dilaporkan (Harian, Mingguan, atau Bulanan). Pastikan untuk selalu melampirkan link bukti dokumen/foto kegiatan agar dapat di-review oleh Dosen Pembimbing."
+    },
+    {
+      tanya: "Bagaimana sistem penilaian dan konversi SKS magang?",
+      jawab: "Sistem konversi akan ditentukan oleh Admin Fakultas setelah LOA Anda disetujui. Nilai akhir akan diberikan oleh Dosen Pembimbing berdasarkan logbook yang Anda kerjakan dan laporan akhir kegiatan magang."
+    },
+    {
+      tanya: "Apa yang harus saya lakukan jika pengajuan LOA ditolak?",
+      jawab: "Anda dapat melihat alasan penolakan dari Admin pada halaman Status Magang. Silakan perbaiki atau lengkapi dokumen Anda sesuai catatan tersebut, lalu klik tombol 'Hapus & Ajukan Ulang LOA' untuk mengirim ulang."
+    }
+  ];
   const kirimPesan = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -47,11 +73,8 @@ export default function LandingPage() {
           </span>
         </div>
         
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-gray-900 dark:text-white max-w-4xl leading-[1.15] mb-8 transition-colors">
-          Sistem Informasi Magang <br className="hidden md:block" /> 
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1e3a8a] to-blue-500 dark:from-blue-400 dark:to-emerald-400">
-            Terintegrasi & Modern
-          </span>
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-gray-900 dark:text-white max-w-4xl leading-tight md:leading-[1.15] mb-6 md:mb-8 transition-colors px-4 md:px-0">
+          Sistem Informasi Magang <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1e3a8a] to-blue-500 dark:from-blue-400 dark:to-emerald-400 block md:inline mt-2 md:mt-0">Terintegrasi & Modern</span>
         </h1>
         
         <p className="text-base md:text-xl text-gray-500 dark:text-gray-400 max-w-2xl mb-12 leading-relaxed font-medium transition-colors">
@@ -131,67 +154,40 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-      {/* 2. AREA FAQ (KEMBALI FULL 5 PERTANYAAN) */}
-      <section id="faq" className="w-full max-w-4xl mx-auto px-6 py-16 z-10">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-4">FAQ (Frequently Asked Questions)</h2>
-          <p className="text-gray-500 dark:text-gray-400 font-medium">Pertanyaan yang sering ditanyakan seputar pendaftaran magang.</p>
-        </div>
-        
+      {/* BAGIAN FAQ YANG SUDAH DI-ANIMASI */}
         <div className="space-y-4">
-          <details className="group bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 [&_summary::-webkit-details-marker]:hidden cursor-pointer shadow-sm transition-colors">
-            <summary className="flex justify-between items-center font-bold text-gray-900 dark:text-white text-lg">
-              Siapa saja yang bisa menggunakan SI Magang?
-              <span className="transition group-open:rotate-180">▾</span>
-            </summary>
-            <p className="text-gray-600 dark:text-gray-400 mt-4 leading-relaxed text-sm">
-              Sistem ini dikhususkan untuk Mahasiswa, Dosen Pembimbing, dan Admin dari Fakultas Ilmu Komputer (Fasilkom) Universitas Singaperbangsa Karawang (UNSIKA).
-            </p>
-          </details>
-
-          <details className="group bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 [&_summary::-webkit-details-marker]:hidden cursor-pointer shadow-sm transition-colors">
-            <summary className="flex justify-between items-center font-bold text-gray-900 dark:text-white text-lg">
-              Bagaimana alur pendaftaran magang?
-              <span className="transition group-open:rotate-180">▾</span>
-            </summary>
-            <p className="text-gray-600 dark:text-gray-400 mt-4 leading-relaxed text-sm">
-              Mahasiswa wajib memiliki akun, lalu mengunggah Letter of Acceptance (LOA) dari perusahaan. Setelah diverifikasi oleh Admin, mahasiswa baru bisa memilih Dosen Pembimbing untuk kemudian memulai pengisian logbook.
-            </p>
-          </details>
-
-          <details className="group bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 [&_summary::-webkit-details-marker]:hidden cursor-pointer shadow-sm transition-colors">
-            <summary className="flex justify-between items-center font-bold text-gray-900 dark:text-white text-lg">
-              Apakah pengisian logbook wajib setiap hari?
-              <span className="transition group-open:rotate-180">▾</span>
-            </summary>
-            <p className="text-gray-600 dark:text-gray-400 mt-4 leading-relaxed text-sm">
-              Tergantung dari Tipe Logbook yang dilaporkan (Harian, Mingguan, atau Bulanan). Pastikan untuk selalu melampirkan link bukti dokumen/foto kegiatan agar dapat di-review oleh Dosen Pembimbing.
-            </p>
-          </details>
-
-          {/* TAMBAHAN FAQ KE-4 */}
-          <details className="group bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 [&_summary::-webkit-details-marker]:hidden cursor-pointer shadow-sm transition-colors">
-            <summary className="flex justify-between items-center font-bold text-gray-900 dark:text-white text-lg">
-              Bagaimana sistem penilaian dan konversi SKS magang?
-              <span className="transition group-open:rotate-180">▾</span>
-            </summary>
-            <p className="text-gray-600 dark:text-gray-400 mt-4 leading-relaxed text-sm">
-              Sistem konversi akan ditentukan oleh Admin Fakultas setelah LOA Anda disetujui. Nilai akhir akan diberikan oleh Dosen Pembimbing berdasarkan logbook yang Anda kerjakan dan laporan akhir kegiatan magang.
-            </p>
-          </details>
-
-          {/* TAMBAHAN FAQ KE-5 */}
-          <details className="group bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 [&_summary::-webkit-details-marker]:hidden cursor-pointer shadow-sm transition-colors">
-            <summary className="flex justify-between items-center font-bold text-gray-900 dark:text-white text-lg">
-              Apa yang harus saya lakukan jika pengajuan LOA ditolak?
-              <span className="transition group-open:rotate-180">▾</span>
-            </summary>
-            <p className="text-gray-600 dark:text-gray-400 mt-4 leading-relaxed text-sm">
-              Anda dapat melihat alasan penolakan dari Admin pada halaman Status Magang. Silakan perbaiki atau lengkapi dokumen Anda sesuai catatan tersebut, lalu klik tombol "Hapus & Ajukan Ulang LOA" untuk mengirim ulang.
-            </p>
-          </details>
+          {faqs.map((faq, idx) => (
+            <div key={idx} className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden transition-colors">
+              <button
+                onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                className="w-full flex justify-between items-center p-6 text-left font-bold text-gray-900 dark:text-white text-base md:text-lg focus:outline-none"
+              >
+                {faq.tanya}
+                <motion.span 
+                  animate={{ rotate: openFaq === idx ? 180 : 0 }} 
+                  transition={{ duration: 0.3 }} 
+                  className="text-[#1e3a8a] dark:text-blue-400 text-xl ml-4"
+                >
+                  ▾
+                </motion.span>
+              </button>
+              <AnimatePresence>
+                {openFaq === idx && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                  >
+                    <p className="px-6 pb-6 text-gray-600 dark:text-gray-400 leading-relaxed text-sm">
+                      {faq.jawab}
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
         </div>
-      </section>
       
       {/* 3. AREA PESAN & MASUKAN */}
       <section className="w-full max-w-3xl mx-auto px-6 py-16 mb-20 z-10">

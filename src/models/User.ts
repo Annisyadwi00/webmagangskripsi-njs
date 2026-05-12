@@ -22,6 +22,7 @@ User.init({
   nim_nidn: { type: DataTypes.STRING, allowNull: false },
   semester: { type: DataTypes.STRING, allowNull: true },
   kategori_dosen: { type: DataTypes.STRING, allowNull: true },
+  kuota_bimbingan: {  type: DataTypes.INTEGER, allowNull: false, defaultValue: 5 },
   prodi: { type: DataTypes.STRING, allowNull: true, defaultValue: 'S1 Informatika' } // Default
 }, { sequelize, tableName: 'users', timestamps: true });
 

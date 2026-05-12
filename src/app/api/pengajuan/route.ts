@@ -131,9 +131,17 @@ export async function PUT(request: Request) {
         await Pengajuan.update({ status_dosen: 'Ditolak', dosenId: null, nama_dosen: null, status: 'Pilih_Dosen' }, { where: { id: body.id_pengajuan } });
         return NextResponse.json({ message: 'Bimbingan ditolak.' }, { status: 200 });
       }
-      if (body.nilai_dari_dosen) {
-        await Pengajuan.update({ nilai_dari_dosen: body.nilai_dari_dosen }, { where: { id: body.id_pengajuan } });
-        return NextResponse.json({ message: 'Nilai diberikan!' }, { status: 200 });
+     if (body.nilai_dari_dosen) {
+        await Pengajuan.update({ 
+          nilai_dari_dosen: body.nilai_dari_dosen,
+          // --- SIMPAN RINCIAN NILAI ---
+          nilai_kedisiplinan: body.nilai_kedisiplinan,
+          nilai_materi: body.nilai_materi,
+          nilai_koding: body.nilai_koding,
+          nilai_laporan: body.nilai_laporan,
+          // --- (Opsional: Jika ada kolom masukan_dosen di model, simpan juga) ---
+        }, { where: { id: body.id_pengajuan } });
+        return NextResponse.json({ message: 'Nilai dan rubrik evaluasi berhasil disimpan!' }, { status: 200 });
       }
     }
     return NextResponse.json({ message: 'Aksi tidak valid' }, { status: 400 });

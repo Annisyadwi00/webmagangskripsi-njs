@@ -137,7 +137,11 @@ export default function DosenDashboard() {
         body: JSON.stringify({
           id_pengajuan: nilaiForm.id_pengajuan,
           nilai_dari_dosen: nilaiAkhir,
-          masukan_dosen: nilaiForm.masukan_terakhir,   // Kolom masukan
+          nilai_kedisiplinan: nilaiForm.n_aktivitas,
+          nilai_materi: nilaiForm.n_dokumen,
+          nilai_koding: nilaiForm.n_kinerja,
+          nilai_laporan: nilaiForm.n_perusahaan,
+          masukan_dosen: nilaiForm.masukan_terakhir, 
           saran_dosen: nilaiForm.langkah_selanjutnya    // Kolom langkah selanjutnya
         })
       });
@@ -200,7 +204,13 @@ export default function DosenDashboard() {
   const activeBimbingan = bimbinganList.filter(b => b.status_dosen === 'Disetujui');
   // Kita tambahkan 'Pending' agar logbook yang baru diisi mahasiswa bisa terbaca
   const pendingLogbooks = logbooks.filter(l => l.status === 'Pending' || l.status === 'Menunggu Validasi' || !l.status);
-
+  // FILTER LOGBOOK YANG TERTUNDA > 3 HARI
+  const logbooksTertunda = pendingLogbooks.filter(log => {
+    const logDate = new Date(log.createdAt || log.tanggal);
+    const diffTime = Math.abs(new Date().getTime() - logDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 3;
+  });
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans relative overflow-hidden">
 
@@ -323,6 +333,17 @@ export default function DosenDashboard() {
               {/* TAB 3: VALIDASI LOGBOOK */}
               {activeTab === 'Logbook' && (
                 <motion.div key="logbook" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden transition-colors">
+                  {logbooksTertunda.length > 0 && (
+                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl flex items-center gap-4 animate-pulse shadow-sm mx-1">
+                      <span className="text-3xl">⚠️</span>
+                      <div>
+                        <h4 className="text-sm font-black text-red-800 dark:text-red-400">Tindakan Mendesak!</h4>
+                        <p className="text-xs font-bold text-red-600 dark:text-red-300">
+                          Ada <strong className="text-lg">{logbooksTertunda.length}</strong> laporan mahasiswa yang telah lewat 3 hari dan belum Anda evaluasi.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-gray-50 dark:bg-slate-900/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-bold border-b border-gray-100 dark:border-slate-700 transition-colors">

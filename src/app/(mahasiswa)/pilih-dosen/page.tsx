@@ -192,12 +192,20 @@ export default function PilihDosenPage() {
                     </div>
 
                     <div className="px-6 py-5 bg-gray-50/50 mt-auto border-t border-gray-50">
+                      {/* TAMPILAN SISA KUOTA */}
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-xs font-bold text-gray-500">Kuota Bimbingan:</span>
+                        <span className={`text-xs font-black px-2 py-1 rounded ${dosen.current_load >= (dosen.kuota_bimbingan || 5) ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'}`}>
+                          {dosen.current_load || 0} / {dosen.kuota_bimbingan || 5} Terisi
+                        </span>
+                      </div>
+
                       <button
                         onClick={() => handlePilihDosen(dosen.id, dosen.name)}
-                        disabled={isSubmitting}
-                        className="w-full py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm bg-white border-2 border-[#1e3a8a] text-[#1e3a8a] hover:bg-[#1e3a8a] hover:text-white hover:shadow-lg hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0"
+                        disabled={isSubmitting || dosen.current_load >= (dosen.kuota_bimbingan || 5)} // BLOKIR JIKA PENUH
+                        className="w-full py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm bg-white border-2 border-[#1e3a8a] text-[#1e3a8a] hover:bg-[#1e3a8a] hover:text-white hover:shadow-lg hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-white disabled:hover:text-[#1e3a8a] disabled:cursor-not-allowed"
                       >
-                        Pilih Dosen Ini
+                        {dosen.current_load >= (dosen.kuota_bimbingan || 5) ? 'Kuota Penuh' : 'Pilih Dosen Ini'}
                       </button>
                     </div>
                   </motion.div>
