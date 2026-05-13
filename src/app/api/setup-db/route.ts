@@ -14,7 +14,7 @@ export async function GET() {
     await connectDB();
 
     // Perintah otomatis untuk membuat tabel-tabel di database
-    await sequelize.sync({ alter: true });
+   await sequelize.sync({ force: true });
 
     return NextResponse.json({ message: "Sukses! Tabel berhasil dibuat di Aiven." });
   } catch (error: any) {

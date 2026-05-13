@@ -9,15 +9,21 @@ class Pengajuan extends Model {
   declare posisi: string;
   declare link_loa: string | null; 
   declare tipeKonversi: string | null;
+  declare tgl_mulai: string | null; // DITAMBAHKAN
+  declare tgl_berakhir: string | null; // DITAMBAHKAN
   declare matkulKonversi: string | null; 
   declare link_laporan_akhir: string | null;
   declare nilai_dari_dosen: string | null;
   declare dosenId: number | null;
   declare nama_dosen: string | null;
+  declare nilai_kedisiplinan: number | null; // DITAMBAHKAN
+  declare nilai_materi: number | null; // DITAMBAHKAN
+  declare nilai_koding: number | null; // DITAMBAHKAN
+  declare nilai_laporan: number | null; // DITAMBAHKAN
   declare status: string; 
   declare status_dosen: string | null;
   declare semester_konversi: string | null;
-  declare alasan_penolakan: string | null; // <-- KOLOM BARU
+  declare alasan_penolakan: string | null; 
 }
 
 Pengajuan.init(
@@ -49,10 +55,9 @@ Pengajuan.init(
     sequelize, 
     tableName: 'pengajuan', 
     timestamps: true,
-    paranoid: true // <--- TAMBAHAN UNTUK SOFT DELETES
+    paranoid: true
   }
 );
 
-Pengajuan.sync({ alter: true }).catch((err) => console.log("Pesan Sync:", err.message));
 
 export default Pengajuan;

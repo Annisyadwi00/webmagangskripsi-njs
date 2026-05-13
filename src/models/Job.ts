@@ -35,6 +35,4 @@ Job.init({
   status: { type: DataTypes.STRING, allowNull: false, defaultValue: 'Aktif' }
 }, { sequelize, tableName: 'jobs', timestamps: true });
 
-// alter: true akan otomatis mengubah tabel yang sudah ada tanpa menghapus data
-Job.sync({ alter: true });
 export default Job;

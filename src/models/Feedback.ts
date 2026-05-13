@@ -17,5 +17,5 @@ Feedback.init({
   status: { type: DataTypes.STRING, allowNull: false, defaultValue: 'Unread' },
 }, { sequelize, tableName: 'feedbacks', timestamps: true });
 
-Feedback.sync({ alter: true });
+
 export default Feedback;

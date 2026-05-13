@@ -10,7 +10,8 @@ class User extends Model {
   declare nim_nidn: string;
   declare prodi: string;
   declare semester: string | null;
-  declare kategori_dosen: string | null; // <--- INI YANG BARU
+  declare kategori_dosen: string | null; 
+  declare kuota_bimbingan: number; // DITAMBAHKAN
 }
 
 User.init({
@@ -23,8 +24,8 @@ User.init({
   semester: { type: DataTypes.STRING, allowNull: true },
   kategori_dosen: { type: DataTypes.STRING, allowNull: true },
   kuota_bimbingan: {  type: DataTypes.INTEGER, allowNull: false, defaultValue: 5 },
-  prodi: { type: DataTypes.STRING, allowNull: true, defaultValue: 'S1 Informatika' } // Default
+  prodi: { type: DataTypes.STRING, allowNull: true, defaultValue: 'S1 Informatika' } 
 }, { sequelize, tableName: 'users', timestamps: true });
 
-User.sync({ alter: true }); // Ini yang bakal otomatis nambahin kolom di MySQL kamu
+// PANGGILAN .sync() DIHAPUS DARI SINI
 export default User;

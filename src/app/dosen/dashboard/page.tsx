@@ -85,12 +85,7 @@ export default function DosenDashboard() {
     setIsDarkMode(!isDarkMode);
   };
 
-  const [revisiForm, setRevisiForm] = useState({
-    id_logbook: 0,
-    catatan_dosen: '',
-    nilai: 0
-  });
-
+  
   const fetchData = async () => {
     setIsLoading(true);
     try {
@@ -151,46 +146,7 @@ export default function DosenDashboard() {
       fetchData();
     } catch (err: any) { showToast(err.message, "error"); } finally { setIsSubmitting(false); }
   };
-
-  // Fungsi khusus untuk Setuju Langsung (Tanpa Catatan)
-  const handleACCLogbook = async (id: number) => {
-    if (!confirm(`Tandai logbook ini sebagai Disetujui?`)) return;
-    try {
-      const res = await fetch('/api/logbook', {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status: 'Disetujui', catatan_dosen: null })
-      });
-      if (!res.ok) throw new Error("Gagal memvalidasi logbook");
-      showToast(`Logbook berhasil di-ACC`, "success");
-      fetchData();
-    } catch (err: any) { showToast(err.message, "error"); }
-  };
-
   // ---> FUNGSI BARU: Submit Form Revisi Dosen <---
-  const handleSubmitRevisi = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      const res = await fetch('/api/logbook', {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: revisiForm.id_logbook,
-          status: 'Disetujui', // Jika dosen ngisi nilai, kita anggap disetujui
-          catatan_dosen: revisiForm.catatan_dosen,
-          nilai: Number(revisiForm.nilai) // <--- KIRIM NILAI KE API
-        })
-      });
-      if (!res.ok) throw new Error("Gagal mengirim catatan revisi");
-      showToast(`Catatan revisi terkirim!`, "success");
-      setShowRevisiModal(false);
-      fetchData();
-    } catch (err: any) {
-      showToast(err.message, "error");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleLogout = async () => {
     try {
       await fetch('/api/logout', { method: 'POST' });
@@ -226,7 +182,7 @@ export default function DosenDashboard() {
       </AnimatePresence>
 
       {/* SIDEBAR DOSEN */}
-      <aside className="w-72 bg-linear-to-b from-indigo-900 to-indigo-950 text-white flex flex-col hidden md:flex h-screen sticky top-0 shadow-2xl z-20">
+      <aside className="w-72 bg-gradient-to-b from-indigo-900 to-indigo-950 text-white flex flex-col hidden md:flex h-screen sticky top-0 shadow-2xl z-20">
         <div className="p-8 border-b border-white/10">
           <h1 className="font-extrabold text-2xl tracking-wide">SI Magang</h1>
           <p className="text-sm text-indigo-300 mt-1 font-medium">Portal Dosen Pembimbing</p>
@@ -536,7 +492,7 @@ export default function DosenDashboard() {
       {/* MODAL LOGOUT POP-OUT */}
       <AnimatePresence>
         {showLogoutModal && (
-          <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowLogoutModal(false)}></div>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl shadow-2xl p-8 z-10 transition-colors text-center overflow-hidden">
               {/* Dekorasi Background */}

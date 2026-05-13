@@ -1,20 +1,17 @@
 import { Sequelize } from 'sequelize';
-import mysql2 from 'mysql2'; // <--- 1. TAMBAHKAN IMPORT INI
+import mysql2 from 'mysql2'; 
 
-// Membaca URL dari .env
 const databaseUrl = process.env.DATABASE_URL;
 
-// Jika .env tidak terbaca, aplikasi akan langsung memberi tahu
 if (!databaseUrl) {
   console.error("⚠️ ERROR: DATABASE_URL di file .env tidak terbaca!");
 }
 
 const sequelize = new Sequelize(databaseUrl || 'mysql://root:@localhost:3306/db_magang', {
   dialect: 'mysql',
-  dialectModule: mysql2, // <--- 2. TAMBAHKAN INI AGAR VERCEL MEMBAWANYA
+  dialectModule: mysql2, 
   logging: false,
   dialectOptions: {
-    // Memaksa penggunaan SSL untuk Aiven
     ssl: {
       require: true,
       rejectUnauthorized: false
@@ -34,6 +31,23 @@ export const connectDB = async () => {
   } catch (error) {
     console.error('❌ Tidak dapat terhubung ke database:', error);
     throw error;
+  }
+};
+
+// FUNGSI BARU UNTUK SINKRONISASI DATABASE (DIPANGGIL HANYA JIKA PERLU)
+export const syncDatabase = async () => {
+  try {
+    // Import semua model di sini agar Sequelize mengenali tabelnya
+    await import('../models/User');
+    await import('../models/Pengajuan');
+    await import('../models/Logbook');
+    await import('../models/Job');
+    await import('../models/Feedback');
+
+    await sequelize.sync({ alter: true });
+    console.log('✅ Semua struktur tabel berhasil diperbarui (di-sync)!');
+  } catch (error) {
+    console.error('❌ Gagal melakukan sinkronisasi database:', error);
   }
 };
 

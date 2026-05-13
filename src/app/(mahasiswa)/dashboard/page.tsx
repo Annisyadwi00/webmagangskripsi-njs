@@ -862,7 +862,7 @@ export default function DashboardMahasiswa() {
       </main>
 
       {/* MODAL INPUT LINK LOA */}
-      <AnimatePresence />
+      <AnimatePresence>
       {showLOAModal && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:px-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowLOAModal(false)}></div>
@@ -902,7 +902,7 @@ export default function DashboardMahasiswa() {
           </motion.div>
         </div>
       )}
-
+</AnimatePresence>
       {/* MODAL ISI LOGBOOK */}
       <AnimatePresence>
         {showLogbookModal && (

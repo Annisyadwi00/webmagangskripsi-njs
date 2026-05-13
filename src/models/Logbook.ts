@@ -45,7 +45,5 @@ Logbook.init(
   }
 );
 
-// alter: true akan otomatis menambahkan kolom status & komentar_dosen ke MySQL tanpa menghapus data lama
-Logbook.sync({ alter: true }).catch((err) => console.log("Pesan Sync Logbook:", err.message));
 
 export default Logbook;

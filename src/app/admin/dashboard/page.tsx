@@ -85,29 +85,6 @@ export default function AdminDashboard() {
       console.error("Gagal logout:", error);
     }
   };
-    // --- LOGIKA PENGOLAHAN DATA GRAFIK ---
-  const getChartData = () => {
-    if (!pengajuans || pengajuans.length === 0) return [];
-    
-    // Menghitung jumlah per status
-    const counts = pengajuans.reduce((acc: any, curr: any) => {
-      const status = curr.status.replace(/_/g, ' '); // Hapus underscore (misal: Menunggu_Verifikasi -> Menunggu Verifikasi)
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    }, {});
-
-    // Mengubah ke bentuk Array untuk Recharts
-    return Object.keys(counts).map(key => ({
-      name: key,
-      value: counts[key]
-    }));
-  };
-
-  const chartData = getChartData();
-  
-  // Kode warna elegan untuk masing-masing potongan kue (Pie)
-  const COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6'];
-  
   // ============ BAGIAN PENGELOLAAN LOWONGAN ============ //
   const handleSubmitJob = async (e: React.FormEvent) => {
     e.preventDefault();
