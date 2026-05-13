@@ -16,20 +16,53 @@ export async function GET(request: Request) {
     
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
    
-    // PERBAIKAN DI SINI: Deklarasi tipe eksplisit agar TypeScript tidak bingung
+    // --- FITUR PAGINASI ---
+    // Menerima query URL seperti ?page=1&limit=50
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50'); // Batasi maksimal 50 data per tarikan
+    const offset = (page - 1) * limit;
+
     let data: any[] = [];
+    let totalData = 0;
     
     if (decoded.role === 'Admin' || decoded.role === 'Dosen') {
-      data = await Pengajuan.findAll({ order: [['createdAt', 'DESC']] });
+      // Menggunakan findAndCountAll untuk mendapatkan data beserta total keseluruhannya
+      const result = await Pengajuan.findAndCountAll({ 
+        limit: limit,
+        offset: offset,
+        order: [['createdAt', 'DESC']] 
+      });
+      data = result.rows;
+      totalData = result.count;
     } else if (decoded.role === 'Mahasiswa') {
-      data = await Pengajuan.findAll({ where: { user_id: decoded.id }, order: [['createdAt', 'DESC']] });
-    } else {
-      data = [];
-    }
+      const result = await Pengajuan.findAndCountAll({ 
+        where: { user_id: decoded.id }, 
+        limit: limit,
+        offset: offset,
+        order: [['createdAt', 'DESC']] 
+      });
+      data = result.rows;
+      totalData = result.count;
+    } 
     
-    return NextResponse.json({ data }, { status: 200 });
+    // Kembalikan data dengan format yang lebih lengkap
+    return NextResponse.json({ 
+      data: data, 
+      meta: {
+        total: totalData,
+        page: page,
+        totalPages: Math.ceil(totalData / limit)
+      }
+    }, { status: 200 });
+
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    // --- KEAMANAN ERROR HANDLING ---
+    // Log error asli hanya di console server (VS Code) untuk kebutuhan debugging
+    console.error("GET Pengajuan Error:", error);
+    
+    // Lempar pesan generik ke Frontend (Browser) agar struktur DB aman
+    return NextResponse.json({ message: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
@@ -74,7 +107,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ message: 'LOA berhasil dikirim!', data: newPengajuan }, { status: 201 });
-  } catch (error: any) {
+ } catch (error: any) {
     return NextResponse.json({ message: `Gagal simpan ke database: ${error.message}` }, { status: 500 });
   }
 }
@@ -145,7 +178,7 @@ export async function PUT(request: Request) {
       }
     }
     return NextResponse.json({ message: 'Aksi tidak valid' }, { status: 400 });
-  } catch (error: any) {
-    return NextResponse.json({ message: `Error server: ${error.message}` }, { status: 500 });
+ } catch (error: any) {
+    return NextResponse.json({ message: `Gagal simpan ke database: ${error.message}` }, { status: 500 });
   }
 }

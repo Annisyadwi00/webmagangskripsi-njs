@@ -4,6 +4,8 @@ import { connectDB } from '@/lib/db';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 
+
+
 export async function GET(request: Request) {
   try {
     await connectDB();
@@ -85,12 +87,35 @@ export async function PUT(request: Request) {
     }
    
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    const body = await request.json();
    
-    if (decoded.role !== 'Dosen') {
-      return NextResponse.json({ message: 'Hanya dosen yang bisa mereview logbook!' }, { status: 403 });
+    // --- LOGIKA UNTUK DOSEN MEMBERIKAN KOMENTAR/ACC ---
+    if (decoded.role === 'Dosen') {
+      if (body.action === 'evaluasi') {
+        await Logbook.update({ 
+          status: body.status, // 'Disetujui' atau 'Revisi'
+          komentar_dosen: body.komentar_dosen 
+        }, { 
+          where: { id: body.logbook_id } 
+        });
+        return NextResponse.json({ message: 'Evaluasi logbook berhasil disimpan!' }, { status: 200 });
+      }
     }
 
-    const body = await request.json();
+    // --- LOGIKA UNTUK MAHASISWA MEMPERBAIKI LOGBOOK ---
+    if (decoded.role === 'Mahasiswa') {
+      // Jika mahasiswa mengirim ulang logbook yang direvisi, ubah status kembali jadi 'Menunggu'
+      await Logbook.update({
+        kegiatan: body.kegiatan,
+        jam_mulai: body.jam_mulai,
+        jam_selesai: body.jam_selesai,
+        bukti_kegiatan: body.bukti_kegiatan || null,
+        status: 'Menunggu' // <--- Reset ke Menunggu agar dosen tahu sudah diperbaiki
+      }, {
+        where: { id: body.logbook_id, user_id: decoded.id }
+      });
+      return NextResponse.json({ message: 'Logbook berhasil diperbarui!' }, { status: 200 });
+    }
    
     // UPDATE DATA: Menyimpan status, catatan dari dosen, dan juga NILAI ANGKA
     await Logbook.update({

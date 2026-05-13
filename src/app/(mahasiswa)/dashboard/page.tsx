@@ -31,6 +31,7 @@ export default function DashboardMahasiswa() {
   const [showLogbookModal, setShowLogbookModal] = useState(false);
   const [showLaporanModal, setShowLaporanModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [editingLogbookId, setEditingLogbookId] = useState<number | null>(null);
 
   const [loaForm, setLoaForm] = useState({ perusahaan: '', posisi: '', link_loa: '', tgl_mulai: '', tgl_berakhir: '' });
   const [logbookForm, setLogbookForm] = useState({ judul: 'Logbook Harian', tanggal: '', kegiatan: '', link_bukti: '' });
@@ -42,7 +43,32 @@ export default function DashboardMahasiswa() {
   // Fungsi menghitung persentase progres magang
 
 
+  const getLogbookProgress = () => {
+    if (!pengajuan?.tgl_mulai || !pengajuan?.tgl_berakhir) return { percent: 0, current: 0, target: 0 };
 
+    const start = new Date(pengajuan.tgl_mulai);
+    const end = new Date(pengajuan.tgl_berakhir);
+
+    // 1. Hitung total minggu magang (Target Total Logbook)
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const totalWeeks = Math.ceil(diffDays / 7); // Misal 90 hari / 7 = 13 minggu target
+
+    // 2. Ambil jumlah logbook yang sudah dikumpulkan (Setoran)
+    const submittedCount = logbooks?.length || 0;
+
+    // 3. Hitung persentase
+    let percentage = totalWeeks > 0 ? Math.round((submittedCount / totalWeeks) * 100) : 0;
+    if (percentage > 100) percentage = 100; // Jaga-jaga kalau mahasiswa rajin banget
+
+    return {
+      percent: percentage,
+      current: submittedCount,
+      target: totalWeeks
+    };
+  };
+
+  const logStats = getLogbookProgress();
   // Logika Cek apakah boleh upload Laporan Akhir
   // Syarat: Minimal sudah ada logbook, dan SEMUA logbook harus 'Disetujui'
   const toggleDarkMode = () => {
@@ -86,21 +112,51 @@ export default function DashboardMahasiswa() {
 
   const handleSubmitLOA = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // --- 1. LAKUKAN VALIDASI DULU ---
+    if (new Date(loaForm.tgl_mulai) >= new Date(loaForm.tgl_berakhir)) {
+      alert("Tanggal berakhir harus setelah tanggal mulai!");
+      return;
+    }
+
+    if (!loaForm.link_loa.includes("drive.google.com")) {
+      alert("Mohon masukkan link Google Drive yang valid.");
+      return;
+    }
+
+    // --- 2. JIKA LOLOS VALIDASI, BARU UBAH TOMBOL JADI LOADING ---
     setIsSubmitting(true);
+
     try {
-      // Masukkan tgl_mulai dan tgl_berakhir ke payload
       const payload = {
-        perusahaan: loaForm.perusahaan, posisi: loaForm.posisi, link_loa: loaForm.link_loa,
+        perusahaan: loaForm.perusahaan, 
+        posisi: loaForm.posisi, 
+        link_loa: loaForm.link_loa,
         nama_mahasiswa: user?.name,
-        tgl_mulai: loaForm.tgl_mulai, tgl_berakhir: loaForm.tgl_berakhir
+        tgl_mulai: loaForm.tgl_mulai, 
+        tgl_berakhir: loaForm.tgl_berakhir
       };
-      const res = await fetch('/api/pengajuan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+
+      const res = await fetch('/api/pengajuan', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(payload) 
+      });
+
       if (!res.ok) throw new Error((await res.json()).message || 'Terjadi kesalahan sistem');
+
+      // Sukses
       showToast('LOA Berhasil Diajukan!', 'success');
       setShowLOAModal(false);
       setLoaForm({ perusahaan: '', posisi: '', link_loa: '', tgl_mulai: '', tgl_berakhir: '' });
-      fetchData();
-    } catch (err: any) { showToast(err.message, 'error'); } finally { setIsSubmitting(false); }
+      fetchData(); // Refresh UI
+
+    } catch (err: any) { 
+      showToast(err.message, 'error'); 
+    } finally { 
+      // --- 3. MATIKAN LOADING ---
+      setIsSubmitting(false); 
+    }
   };
   const generatePDF = () => {
     const doc = new jsPDF();
@@ -160,18 +216,54 @@ export default function DashboardMahasiswa() {
       showToast('Pengajuan Dihapus', 'success'); fetchData();
     } catch (error) { showToast('Gagal membatalkan pengajuan', 'error'); }
   };
-
+    // Fungsi untuk memicu mode Edit Logbook
+  const handleEditLogbook = (log: any) => {
+    setLogbookForm({
+      tanggal: log.tanggal,
+      jam_mulai: log.jam_mulai,
+      jam_selesai: log.jam_selesai,
+      kegiatan: log.kegiatan,
+      link_dokumen: log.link_dokumen || '' // Sesuaikan nama properti link_dokumen dengan milikmu
+    });
+    setEditingLogbookId(log.id); // Kunci ID-nya
+    setShowLogbookModal(true);   // Buka Modal
+  };
   const handleSubmitLogbook = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const payload = { judul: logbookForm.judul, tanggal: logbookForm.tanggal, kegiatan: logbookForm.kegiatan, link_bukti: logbookForm.link_bukti };
-      const res = await fetch('/api/logbook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      if (!res.ok) throw new Error((await res.json()).message || 'Gagal menyimpan logbook');
-      showToast('Logbook berhasil ditambahkan!', 'success'); setShowLogbookModal(false); setLogbookForm({ judul: 'Logbook Harian', tanggal: '', kegiatan: '', link_bukti: '' }); fetchData();
-    } catch (err: any) { showToast(err.message, 'error'); } finally { setIsSubmitting(false); }
-  };
+      // Tentukan metode: Kalau ada ID Edit berarti PUT, kalau tidak ada berarti POST
+      const method = editingLogbookId ? 'PUT' : 'POST';
+      
+      // Tentukan data yang dikirim
+      const payload = editingLogbookId 
+        ? { ...logbookForm, logbook_id: editingLogbookId } // Data untuk Revisi
+        : { ...logbookForm, pengajuan_id: pengajuan?.id }; // Data untuk Baru
 
+      const res = await fetch('/api/logbook', {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Gagal menyimpan logbook');
+
+      // Tampilkan pesan sukses sesuai jalurnya
+      alert(editingLogbookId ? 'Logbook berhasil diperbaiki!' : 'Logbook berhasil ditambahkan!');
+      
+      // Reset form dan tutup modal
+      setShowLogbookModal(false);
+      setEditingLogbookId(null); // Matikan mode edit
+      setLogbookForm({ tanggal: '', jam_mulai: '', jam_selesai: '', kegiatan: '', link_dokumen: '' });
+      fetchData(); // Refresh tabel
+
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   const handleLogout = async () => {
     try {
       await fetch('/api/logout', { method: 'POST' });
@@ -355,6 +447,7 @@ export default function DashboardMahasiswa() {
                     </div>
                   )}
                 </div>
+                
                 {/* Progress Bar - Bisa Digeser Kanan-Kiri di HP */}
                 <div className="bg-white dark:bg-slate-800 rounded-[32px] p-6 md:p-12 border border-gray-100 dark:border-slate-700 shadow-sm mb-8 md:mb-10 overflow-x-auto pb-10 transition-colors">
                   <div className="flex items-center min-w-max px-4">
@@ -415,7 +508,45 @@ export default function DashboardMahasiswa() {
                         <p className="font-black text-gray-900 dark:text-white text-sm md:text-base">{pengajuan.nama_dosen || 'Belum Ada'}</p>
                       </div>
                     </div>
+                    {/* --- PROGRESS BAR TARGET LOGBOOK MINGGUAN --- */}
+            {(pengajuan?.status === 'Aktif' || pengajuan?.status === 'Selesai') && (
+              <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm p-7 mb-8">
+                <div className="flex justify-between items-start mb-5">
+                  <div>
+                    <h3 className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em] mb-1">
+                      Kewajiban Logbook Mingguan
+                    </h3>
+                    <p className="text-2xl font-black text-gray-900 dark:text-white">
+                      {logStats.current} <span className="text-gray-400 font-medium text-lg">/ {logStats.target} Minggu</span>
+                    </p>
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-900/30 px-4 py-2 rounded-2xl">
+                    <span className="text-xl font-black text-[#1e3a8a] dark:text-blue-300">
+                      {logStats.percent}%
+                    </span>
+                  </div>
+                </div>
 
+                {/* Track Bar */}
+                <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-4 relative overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${logStats.percent}%` }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className="h-full bg-gradient-to-r from-blue-500 to-[#1e3a8a] rounded-full shadow-[0_0_10px_rgba(30,58,138,0.2)]"
+                  />
+                </div>
+
+                <div className="mt-4 flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${logStats.percent < 50 ? 'bg-orange-400 animate-pulse' : 'bg-emerald-500'}`}></div>
+                  <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                    {logStats.percent === 100 
+                      ? "Seluruh kewajiban logbook telah terpenuhi. Kerja bagus!" 
+                      : `Sisa ${logStats.target - logStats.current} logbook lagi untuk mencapai target akhir.`}
+                  </p>
+                </div>
+              </div>
+            )}
                     {/* --- TAMPILAN PROGRESS BAR MASA MAGANG --- */}
                     {pengajuan.status_dosen === 'Disetujui' && (
                       <div className="bg-slate-50 dark:bg-slate-900/40 rounded-[24px] p-6 border border-gray-100 dark:border-slate-700 mb-8 relative overflow-hidden transition-colors">
@@ -487,6 +618,7 @@ export default function DashboardMahasiswa() {
                 </div>
               </motion.div>
             )}
+            
             {/*  BAGIAN RIWAYAT LOGBOOK MAHASISWA --- */}
             <div className="mt-2 space-y-6">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 dark:border-slate-800 pb-6">
@@ -515,11 +647,13 @@ export default function DashboardMahasiswa() {
                         <p className="text-xs font-bold text-red-600 dark:text-red-300">{missingLogbookWarning}</p>
                       </div>
                     </div>
+                    
                     <button onClick={() => setShowLogbookModal(true)} disabled={pengajuan?.status === 'Selesai'} className={`px-4 py-2 font-bold rounded-xl text-sm transition-all shadow-sm flex items-center gap-2 ${pengajuan?.status === 'Selesai' ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[#1e3a8a] hover:bg-blue-800 text-white hover:-translate-y-0.5'}`}>
                       {pengajuan?.status === 'Selesai' ? '🔒 Data Dikunci' : '+ Tambah Logbook'}
                     </button>
                   </div>
                 )}
+                
                 {/* FILTER TABS (Desain Lebih Rapi) */}
                 <div className="inline-flex bg-gray-100 dark:bg-slate-800 p-1.5 rounded-2xl gap-1 overflow-x-auto max-w-full border border-gray-200 dark:border-slate-700">
                   {['Semua', 'Disetujui', 'Revisi', 'Pending'].map((status) => (
@@ -536,6 +670,61 @@ export default function DashboardMahasiswa() {
                   ))}
                 </div>
               </div>
+              
+              {/* --- ISI TAB LOGBOOK --- */}
+{activeTab === 'Logbook' && (
+  <div className="space-y-4">
+    {logbooks.length > 0 ? (
+      logbooks.map((log, index) => (
+        <div key={index} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
+          <div className="flex justify-between items-start mb-3">
+             {/* ... Kode Tanggal & Jam Logbook ... */}
+          </div>
+
+          <p className="text-gray-700 dark:text-gray-300 text-sm font-medium leading-relaxed">
+            {log.kegiatan}
+          </p>
+
+          {/* TARUH KODE UPDATE STATUS & KOMENTAR DI SINI! 
+             (Tepat di bawah teks kegiatan mahasiswa)
+          */}
+          <div className="mt-4 pt-4 border-t border-gray-50 dark:border-slate-700/50 flex flex-col gap-3">
+             {/* 1. Badge Status */}
+             <div className="flex items-center gap-2">
+               <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                 log.status === 'Disetujui' ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800' :
+                 log.status === 'Revisi' ? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/30 dark:border-red-800 animate-pulse' :
+                 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:border-amber-800'
+               }`}>
+                 {log.status || 'Menunggu'}
+               </span>
+             </div>
+
+             {/* 2. Kotak Komentar Jika Ada Revisi */}
+            {/* 2. Kotak Komentar Jika Ada Revisi */}
+             {log.status === 'Revisi' && log.komentar_dosen && (
+               <div className="p-3 bg-red-50 dark:bg-red-900/10 border-l-4 border-red-500 rounded-r-xl mt-3">
+                 <p className="text-[10px] font-black text-red-800 dark:text-red-400 uppercase mb-1">Catatan Dosen:</p>
+                 <p className="text-sm text-red-700 dark:text-red-300 italic">"{log.komentar_dosen}"</p>
+                 
+                 {/* ---> TOMBOL PERBAIKI DITARUH DI SINI <--- */}
+                 <button 
+                   onClick={() => handleEditLogbook(log)} 
+                   className="mt-3 px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
+                 >
+                   Perbaiki Sekarang →
+                 </button>
+                 {/* ----------------------------------------- */}
+               </div>
+             )}
+          </div>
+        </div>
+      ))
+    ) : (
+      <p className="text-center text-gray-400 py-10">Belum ada logbook.</p>
+    )}
+  </div>
+)}
               {/* MODAL UNGGAH LAPORAN AKHIR */}
               <AnimatePresence>
                 {showLaporanModal && (

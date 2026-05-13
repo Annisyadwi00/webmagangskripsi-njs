@@ -45,7 +45,12 @@ Pengajuan.init(
     status_dosen: { type: DataTypes.STRING, allowNull: true, defaultValue: 'Menunggu' },
     alasan_penolakan: { type: DataTypes.TEXT, allowNull: true }, 
   },
-  { sequelize, tableName: 'pengajuan', timestamps: true }
+  { 
+    sequelize, 
+    tableName: 'pengajuan', 
+    timestamps: true,
+    paranoid: true // <--- TAMBAHAN UNTUK SOFT DELETES
+  }
 );
 
 Pengajuan.sync({ alter: true }).catch((err) => console.log("Pesan Sync:", err.message));
