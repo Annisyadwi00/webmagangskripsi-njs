@@ -26,7 +26,7 @@ function getStatusBadgeClass(status?: string) {
   return 'app-badge app-badge-blue';
 }
 
-export default function DosenDashboardPage() {
+export default function AdminDashboardPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [pengajuans, setPengajuans] = useState<Pengajuan[]>([]);
   const [logbooks, setLogbooks] = useState<Logbook[]>([]);
@@ -51,9 +51,9 @@ export default function DosenDashboardPage() {
   return;
 }
 
-        setUser(currentUser);
-        setPengajuans(pengajuanData.items);
-        setLogbooks(logbookData);
+       setUser(currentUser);
+      setPengajuans(pengajuanData?.items || []);
+setLogbooks(logbookData || []);
       } catch (error) {
         const message =
           error instanceof Error

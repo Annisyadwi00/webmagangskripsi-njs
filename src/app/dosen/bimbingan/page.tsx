@@ -52,7 +52,7 @@ export default function DosenDashboardPage() {
 }
 
         setUser(currentUser);
-        setPengajuans(pengajuanData.items);
+        setPengajuans(pengajuanData?.items || []);
         setLogbooks(logbookData);
       } catch (error) {
         const message =

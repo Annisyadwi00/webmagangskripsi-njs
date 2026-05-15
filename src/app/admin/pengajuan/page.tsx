@@ -97,7 +97,7 @@ export default function AdminPengajuanPage() {
 }
 
       setCurrentUser(me);
-      setPengajuans(pengajuanData.items);
+      setPengajuans(pengajuanData?.items || []);
     } catch (error) {
       const errMessage =
         error instanceof Error
