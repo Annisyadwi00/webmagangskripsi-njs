@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { apiClient } from '@/lib/api-client';
 import Alert from '@/components/ui/Alert';
 
@@ -51,39 +50,6 @@ export default function RegisterPage() {
       ...formData,
       [field]: value.replace(/[^0-9]/g, ''),
     });
-  };
-
-  const handleGoogleSuccess = (credentialResponse: { credential?: string }) => {
-    try {
-      const token = credentialResponse.credential;
-
-      if (!token) {
-        setErrorMsg('Token Google tidak ditemukan.');
-        return;
-      }
-
-      const payload = JSON.parse(atob(token.split('.')[1]));
-
-      if (!payload.email?.endsWith('unsika.ac.id')) {
-        setErrorMsg(
-          'Registrasi wajib menggunakan email institusi resmi (@...unsika.ac.id).'
-        );
-        return;
-      }
-
-      setFormData((prev) => ({
-        ...prev,
-        name: payload.name || '',
-        email: payload.email || '',
-      }));
-
-      setErrorMsg('');
-      setSuccessMsg(
-        'Data akun Google berhasil ditarik. Silakan lengkapi NIM, program studi, nomor WhatsApp, dan password.'
-      );
-    } catch {
-      setErrorMsg('Gagal membaca data otomatis dari Google.');
-    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -168,7 +134,6 @@ export default function RegisterPage() {
   };
 
   return (
-    <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com">
       <main className="min-h-screen py-10">
         <div className="app-container">
           <div className="grid min-h-[calc(100vh-7rem)] grid-cols-1 items-center gap-8 lg:grid-cols-[1fr_680px]">
@@ -219,23 +184,6 @@ export default function RegisterPage() {
 
               {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
               {successMsg && <Alert variant="success">{successMsg}</Alert>}
-
-              <div className="mb-6 flex justify-center">
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => setErrorMsg('Gagal menarik data dari Google.')}
-                  text="signup_with"
-                  shape="rectangular"
-                />
-              </div>
-
-              <div className="my-6 flex items-center gap-4">
-                <div className="h-px flex-1 bg-slate-200" />
-                <span className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                  atau isi manual
-                </span>
-                <div className="h-px flex-1 bg-slate-200" />
-              </div>
 
               <form onSubmit={handleRegister} className="space-y-5">
                 <div>
@@ -402,6 +350,5 @@ export default function RegisterPage() {
           </div>
         </div>
       </main>
-    </GoogleOAuthProvider>
   );
 }

@@ -99,7 +99,7 @@ export default function Footer() {
           <p>
             © {new Date().getFullYear()} SI Magang Fasilkom UNSIKA.
           </p>
-          <p>Dikembangkan untuk keperluan skripsi/tugas akhir.</p>
+          <p>Dikembangkan oleh Annisya Dwi Chaerani dengan penuh perasaan</p>
         </div>
       </div>
     </footer>

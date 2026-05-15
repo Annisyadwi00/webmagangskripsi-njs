@@ -121,23 +121,24 @@ export default function LandingPage() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden">
-  <div className="app-bg-orb left-[-80px] top-24 h-72 w-72 bg-blue-400/40 dark:bg-blue-500/20" />
-  <div className="app-bg-orb right-[-90px] top-[520px] h-80 w-80 bg-sky-300/30 dark:bg-sky-500/10" />
-      <section className="py-16 md:py-24">
+    <main className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+      <div className="app-bg-orb left-[-80px] top-24 h-72 w-72 bg-blue-400/30 dark:bg-blue-500/20" />
+      <div className="app-bg-orb right-[-90px] top-[520px] h-80 w-80 bg-sky-300/25 dark:bg-sky-500/10" />
+
+      <section className="relative py-16 md:py-24">
         <div className="app-container">
           <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.22em] text-[#1e3a8a]">
+            <div className="animate-fade-up">
+              <p className="text-sm font-black uppercase tracking-[0.22em] text-[#1e3a8a] dark:text-blue-300">
                 SI Magang Fasilkom UNSIKA
               </p>
 
-              <h1 className="mt-5 max-w-4xl text-4xl font-black leading-tight tracking-tight text-slate-950 md:text-6xl">
+              <h1 className="mt-5 max-w-4xl text-4xl font-black leading-tight tracking-tight text-slate-950 dark:text-white md:text-6xl">
                 Sistem informasi magang yang rapi, terintegrasi, dan mudah
                 dipantau.
               </h1>
 
-              <p className="mt-6 max-w-2xl text-base leading-8 text-slate-500 md:text-lg">
+              <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300 md:text-lg">
                 Digitalisasi proses magang mulai dari pengajuan LOA, pengisian
                 logbook, bimbingan dosen, hingga evaluasi dan nilai akhir.
               </p>
@@ -155,42 +156,44 @@ export default function LandingPage() {
 
             <div className="app-card app-card-hover animate-fade-up animate-delay-200 p-6 md:p-8">
               <div className="mb-6">
-                <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a]">
+                <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
                   Ringkasan Sistem
                 </p>
-                <h2 className="mt-2 text-2xl font-black text-slate-950">
+
+                <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
                   Satu portal untuk seluruh proses magang.
                 </h2>
-                <p className="mt-3 text-sm leading-7 text-slate-500">
+
+                <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
                   Dirancang untuk memudahkan mahasiswa, dosen, dan admin dalam
                   menjalankan alur magang secara transparan.
                 </p>
               </div>
 
               <div className="space-y-3">
-                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
-                  <p className="font-black text-[#1e3a8a]">
+                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-400/20 dark:bg-blue-400/10">
+                  <p className="font-black text-[#1e3a8a] dark:text-blue-300">
                     Mahasiswa
                   </p>
-                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                  <p className="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-300">
                     Ajukan LOA, isi logbook, dan pantau hasil evaluasi.
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="font-black text-slate-950">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800/70">
+                  <p className="font-black text-slate-950 dark:text-white">
                     Dosen Pembimbing
                   </p>
-                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                  <p className="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-300">
                     Review logbook, terima bimbingan, dan beri nilai akhir.
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="font-black text-slate-950">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800/70">
+                  <p className="font-black text-slate-950 dark:text-white">
                     Admin
                   </p>
-                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                  <p className="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-300">
                     Verifikasi pengajuan, kelola pengguna, dan lowongan.
                   </p>
                 </div>
@@ -200,16 +203,18 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="faq" className="scroll-mt-24 py-12">
+      <section className="relative py-12">
         <div className="app-container">
           <div className="mb-8 text-center">
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a]">
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
               Fitur Utama
             </p>
-            <h2 className="mt-3 text-3xl font-black text-slate-950">
+
+            <h2 className="mt-3 text-3xl font-black text-slate-950 dark:text-white">
               Dibuat untuk alur magang yang lebih sederhana.
             </h2>
-            <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-500">
+
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
               Setiap fitur dirancang agar proses administrasi magang lebih rapi
               dan mudah ditelusuri.
             </p>
@@ -218,18 +223,18 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
             {features.map((feature, index) => (
               <article
-  key={feature.title}
-  className="app-card app-card-hover animate-fade-up p-6"
->
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-sm font-black text-[#1e3a8a]">
+                key={feature.title}
+                className="app-card app-card-hover animate-fade-up p-6"
+              >
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-sm font-black text-[#1e3a8a] dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
                   {String(index + 1).padStart(2, '0')}
                 </div>
 
-                <h3 className="mt-5 text-xl font-black text-slate-950">
+                <h3 className="mt-5 text-xl font-black text-slate-950 dark:text-white">
                   {feature.title}
                 </h3>
 
-                <p className="mt-3 text-sm leading-7 text-slate-500">
+                <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
                   {feature.description}
                 </p>
               </article>
@@ -238,17 +243,19 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="py-12">
+      <section className="relative py-12">
         <div className="app-container">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[0.8fr_1.2fr]">
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a]">
+            <div className="animate-fade-up">
+              <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
                 Alur Magang
               </p>
-              <h2 className="mt-3 text-3xl font-black text-slate-950">
+
+              <h2 className="mt-3 text-3xl font-black text-slate-950 dark:text-white">
                 Proses jelas dari awal sampai selesai.
               </h2>
-              <p className="mt-3 text-sm leading-7 text-slate-500">
+
+              <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
                 Mahasiswa, dosen, dan admin memiliki peran masing-masing dalam
                 satu alur yang saling terhubung.
               </p>
@@ -259,13 +266,13 @@ export default function LandingPage() {
                 {steps.map((step, index) => (
                   <div
                     key={step}
-                    className="flex gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                    className="flex gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70"
                   >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-sm font-black text-[#1e3a8a] ring-1 ring-blue-100">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-sm font-black text-[#1e3a8a] ring-1 ring-blue-100 dark:bg-blue-400/10 dark:text-blue-300 dark:ring-blue-400/20">
                       {index + 1}
                     </div>
 
-                    <p className="text-sm font-semibold leading-6 text-slate-700">
+                    <p className="text-sm font-semibold leading-6 text-slate-700 dark:text-slate-300">
                       {step}
                     </p>
                   </div>
@@ -276,34 +283,41 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="py-12">
+      <section id="faq" className="relative scroll-mt-24 py-12">
         <div className="app-container">
           <div className="mb-8 text-center">
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a]">
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
               FAQ
             </p>
-            <h2 className="mt-3 text-3xl font-black text-slate-950">
+
+            <h2 className="mt-3 text-3xl font-black text-slate-950 dark:text-white">
               Pertanyaan yang sering diajukan.
             </h2>
           </div>
 
           <div className="mx-auto max-w-4xl space-y-4">
             {faqs.map((faq, index) => (
-              <div key={faq.tanya} className="app-card app-card-hover overflow-hidden">
+              <div
+                key={faq.tanya}
+                className="app-card app-card-hover overflow-hidden"
+              >
                 <button
                   type="button"
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}
                   className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
                 >
-                  <span className="font-black text-slate-950">{faq.tanya}</span>
-                  <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-black text-[#1e3a8a]">
+                  <span className="font-black text-slate-950 dark:text-white">
+                    {faq.tanya}
+                  </span>
+
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-black text-[#1e3a8a] dark:bg-blue-400/10 dark:text-blue-300">
                     {openFaq === index ? '−' : '+'}
                   </span>
                 </button>
 
                 {openFaq === index && (
-                  <div className="border-t border-slate-100 px-6 pb-5 pt-4">
-                    <p className="text-sm leading-7 text-slate-500">
+                  <div className="animate-scale-in border-t border-slate-100 px-6 pb-5 pt-4 dark:border-slate-800">
+                    <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">
                       {faq.jawab}
                     </p>
                   </div>
@@ -314,18 +328,23 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="feedback" className="scroll-mt-24 py-12 pb-20">
+      <section
+        id="feedback"
+        className="relative scroll-mt-24 py-12 pb-20"
+      >
         <div className="app-container">
           <div className="mx-auto max-w-3xl">
             <div className="app-card app-card-hover animate-fade-up p-6 md:p-8">
               <div className="mb-8 text-center">
-                <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a]">
+                <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
                   Feedback
                 </p>
-                <h2 className="mt-3 text-3xl font-black text-slate-950">
+
+                <h2 className="mt-3 text-3xl font-black text-slate-950 dark:text-white">
                   Kirim pesan atau masukan.
                 </h2>
-                <p className="mt-3 text-sm leading-7 text-slate-500">
+
+                <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
                   Masukan pengguna membantu pengembangan SI Magang agar lebih
                   baik.
                 </p>
