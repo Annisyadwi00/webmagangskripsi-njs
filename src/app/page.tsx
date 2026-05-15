@@ -121,7 +121,9 @@ export default function LandingPage() {
   };
 
   return (
-    <main className="min-h-screen">
+    <main className="relative min-h-screen overflow-hidden">
+  <div className="app-bg-orb left-[-80px] top-24 h-72 w-72 bg-blue-400/40 dark:bg-blue-500/20" />
+  <div className="app-bg-orb right-[-90px] top-[520px] h-80 w-80 bg-sky-300/30 dark:bg-sky-500/10" />
       <section className="py-16 md:py-24">
         <div className="app-container">
           <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
@@ -151,7 +153,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="app-card p-6 md:p-8">
+            <div className="app-card app-card-hover animate-fade-up animate-delay-200 p-6 md:p-8">
               <div className="mb-6">
                 <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a]">
                   Ringkasan Sistem
@@ -215,7 +217,10 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
             {features.map((feature, index) => (
-              <article key={feature.title} className="app-card p-6">
+              <article
+  key={feature.title}
+  className="app-card app-card-hover animate-fade-up p-6"
+>
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-sm font-black text-[#1e3a8a]">
                   {String(index + 1).padStart(2, '0')}
                 </div>
@@ -284,7 +289,7 @@ export default function LandingPage() {
 
           <div className="mx-auto max-w-4xl space-y-4">
             {faqs.map((faq, index) => (
-              <div key={faq.tanya} className="app-card overflow-hidden">
+              <div key={faq.tanya} className="app-card app-card-hover overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}
@@ -312,7 +317,7 @@ export default function LandingPage() {
       <section id="feedback" className="scroll-mt-24 py-12 pb-20">
         <div className="app-container">
           <div className="mx-auto max-w-3xl">
-            <div className="app-card p-6 md:p-8">
+            <div className="app-card app-card-hover animate-fade-up p-6 md:p-8">
               <div className="mb-8 text-center">
                 <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a]">
                   Feedback

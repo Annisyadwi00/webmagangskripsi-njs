@@ -175,21 +175,21 @@ export default function MahasiswaDashboardPage() {
 
             {pengajuan ? (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="app-panel p-4">
                   <p className="text-sm font-bold text-slate-500">Perusahaan</p>
                   <p className="mt-1 font-black text-slate-950">
                     {pengajuan.perusahaan}
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="app-panel p-4">
                   <p className="text-sm font-bold text-slate-500">Posisi</p>
                   <p className="mt-1 font-black text-slate-950">
                     {pengajuan.posisi}
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="app-panel p-4">
                   <p className="text-sm font-bold text-slate-500">
                     Dosen Pembimbing
                   </p>
@@ -198,7 +198,7 @@ export default function MahasiswaDashboardPage() {
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="app-panel p-4">
                   <p className="text-sm font-bold text-slate-500">Nilai Akhir</p>
                   <p className="mt-1 font-black text-slate-950">
                     {pengajuan.nilai_dari_dosen || 'Belum dinilai'}

@@ -217,7 +217,7 @@ export default function LowonganPage() {
                 </p>
 
                 <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="app-panel p-4">
                     <p className="text-xs font-black uppercase tracking-wide text-slate-500">
                       Kategori
                     </p>
@@ -226,7 +226,7 @@ export default function LowonganPage() {
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="app-panel p-4">
                     <p className="text-xs font-black uppercase tracking-wide text-slate-500">
                       Konversi
                     </p>
@@ -235,7 +235,7 @@ export default function LowonganPage() {
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="app-panel p-4">
                     <p className="text-xs font-black uppercase tracking-wide text-slate-500">
                       Kuota
                     </p>
@@ -244,7 +244,7 @@ export default function LowonganPage() {
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="app-panel p-4">
                     <p className="text-xs font-black uppercase tracking-wide text-slate-500">
                       Batas Daftar
                     </p>

@@ -390,7 +390,7 @@ export default function PengajuanMahasiswaPage() {
                 </form>
               ) : (
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="app-panel p-4">
                     <p className="text-sm font-bold text-slate-500">
                       Nama Mahasiswa
                     </p>
@@ -399,7 +399,7 @@ export default function PengajuanMahasiswaPage() {
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="app-panel p-4">
                     <p className="text-sm font-bold text-slate-500">
                       Perusahaan
                     </p>
@@ -408,14 +408,14 @@ export default function PengajuanMahasiswaPage() {
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="app-panel p-4">
                     <p className="text-sm font-bold text-slate-500">Posisi</p>
                     <p className="mt-1 font-black text-slate-950">
                       {currentPengajuan.posisi}
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="app-panel p-4">
                     <p className="text-sm font-bold text-slate-500">
                       Tipe Konversi
                     </p>
@@ -424,7 +424,7 @@ export default function PengajuanMahasiswaPage() {
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="app-panel p-4">
                     <p className="text-sm font-bold text-slate-500">
                       Tanggal Mulai
                     </p>
@@ -433,7 +433,7 @@ export default function PengajuanMahasiswaPage() {
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="app-panel p-4">
                     <p className="text-sm font-bold text-slate-500">
                       Tanggal Berakhir
                     </p>

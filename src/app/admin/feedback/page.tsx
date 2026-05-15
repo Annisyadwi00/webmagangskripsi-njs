@@ -353,7 +353,7 @@ export default function AdminFeedbackPage() {
             onClick={() => setSelectedFeedback(null)}
           />
 
-          <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
+          <div className="animate-scale-in relative z-10 w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
             <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a]">

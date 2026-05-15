@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import ThemeIcon from '@/components/ui/ThemeIcon';
 
 type NavbarUser = {
   name?: string;
@@ -12,8 +13,20 @@ type NavbarUser = {
 
 export default function Navbar({ user: propUser }: { user?: NavbarUser | null }) {
   const pathname = usePathname();
+
   const [user, setUser] = useState<NavbarUser | null>(propUser || null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    const shouldUseDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+
+    document.documentElement.classList.toggle('dark', shouldUseDark);
+    setIsDarkMode(shouldUseDark);
+  }, []);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -46,6 +59,14 @@ export default function Navbar({ user: propUser }: { user?: NavbarUser | null })
     setIsOpen(false);
   }, [pathname]);
 
+  const toggleDarkMode = () => {
+    const nextMode = !isDarkMode;
+
+    document.documentElement.classList.toggle('dark', nextMode);
+    localStorage.setItem('theme', nextMode ? 'dark' : 'light');
+    setIsDarkMode(nextMode);
+  };
+
   const hideNavbar =
     pathname?.includes('/login') ||
     pathname?.includes('/register') ||
@@ -69,6 +90,7 @@ export default function Navbar({ user: propUser }: { user?: NavbarUser | null })
   const getDashboardPath = () => {
     if (user?.role === 'Admin') return '/admin/dashboard';
     if (user?.role === 'Dosen') return '/dosen/dashboard';
+
     return '/dashboard';
   };
 
@@ -76,24 +98,24 @@ export default function Navbar({ user: propUser }: { user?: NavbarUser | null })
     const isActive = href === '/' ? pathname === '/' : pathname?.startsWith(href);
 
     return isActive
-      ? 'text-[#1e3a8a] bg-blue-50'
-      : 'text-slate-600 hover:text-[#1e3a8a] hover:bg-slate-50';
+      ? 'bg-blue-50 text-[#1e3a8a] dark:bg-blue-400/10 dark:text-blue-300'
+      : 'text-slate-600 hover:bg-slate-50 hover:text-[#1e3a8a] dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-300';
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/90">
       <div className="app-container">
         <nav className="flex h-20 items-center justify-between gap-6">
           <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-sm font-black text-[#1e3a8a]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-sm font-black text-[#1e3a8a] dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
               SI
             </div>
 
             <div>
-              <p className="text-lg font-black leading-none text-slate-950">
+              <p className="text-lg font-black leading-none text-slate-950 dark:text-white">
                 SI Magang
               </p>
-              <p className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-400">
+              <p className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 Fasilkom UNSIKA
               </p>
             </div>
@@ -114,6 +136,16 @@ export default function Navbar({ user: propUser }: { user?: NavbarUser | null })
           </div>
 
           <div className="hidden items-center gap-3 md:flex">
+            <button
+              type="button"
+              onClick={toggleDarkMode}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 hover:border-[#1e3a8a] hover:text-[#1e3a8a] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-blue-300 dark:hover:text-blue-300"
+              aria-label="Ganti mode tema"
+              title={isDarkMode ? 'Ganti ke light mode' : 'Ganti ke dark mode'}
+            >
+              <ThemeIcon type={isDarkMode ? 'sun' : 'moon'} />
+            </button>
+
             {user ? (
               <Link href={getDashboardPath()} className="app-btn-primary px-5 py-3">
                 Dashboard
@@ -130,18 +162,29 @@ export default function Navbar({ user: propUser }: { user?: NavbarUser | null })
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsOpen(!isOpen)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 md:hidden"
-            aria-label="Buka menu navigasi"
-          >
-            <span className="text-xl font-black">{isOpen ? '×' : '≡'}</span>
-          </button>
+          <div className="flex items-center gap-2 md:hidden">
+            <button
+              type="button"
+              onClick={toggleDarkMode}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              aria-label="Ganti mode tema"
+            >
+              <ThemeIcon type={isDarkMode ? 'sun' : 'moon'} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsOpen(!isOpen)}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              aria-label="Buka menu navigasi"
+            >
+              <span className="text-xl font-black">{isOpen ? '×' : '≡'}</span>
+            </button>
+          </div>
         </nav>
 
         {isOpen && (
-          <div className="border-t border-slate-100 py-4 md:hidden">
+          <div className="border-t border-slate-100 py-4 dark:border-slate-800 md:hidden">
             <div className="space-y-2">
               {navItems.map((item) => (
                 <Link
