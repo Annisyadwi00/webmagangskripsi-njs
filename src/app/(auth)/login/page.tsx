@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import LogoSikarir from '@/components/LogoSikarir';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { apiClient } from '@/lib/api-client';
+import Alert from '@/components/ui/Alert';
+
 type LoginData = {
   role: 'Admin' | 'Mahasiswa' | 'Dosen';
   name: string;
@@ -20,7 +21,6 @@ export default function LoginPage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-
   const [showPassword, setShowPassword] = useState(false);
 
   const redirectByRole = (role?: string) => {
@@ -43,220 +43,186 @@ export default function LoginPage() {
   };
 
   const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsLoading(true);
-  setErrorMsg('');
+    e.preventDefault();
 
-  try {
-    const result = await apiClient<LoginData>('/api/auth/login', {
-      method: 'POST',
-      body: {
-        email: email.trim(),
-        password,
-      },
-    });
+    setIsLoading(true);
+    setErrorMsg('');
 
-    const role = result.data?.role;
+    try {
+      const result = await apiClient<LoginData>('/api/auth/login', {
+        method: 'POST',
+        body: {
+          email: email.trim(),
+          password,
+        },
+      });
 
-    if (role === 'Mahasiswa') {
-      router.push('/dashboard');
-      return;
+      redirectByRole(result.data?.role);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Terjadi kesalahan saat login.';
+
+      setErrorMsg(message);
+    } finally {
+      setIsLoading(false);
     }
-
-    if (role === 'Dosen') {
-      router.push('/dosen/dashboard');
-      return;
-    }
-
-    if (role === 'Admin') {
-      router.push('/admin/dashboard');
-      return;
-    }
-
-    throw new Error('Role pengguna tidak valid.');
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : 'Terjadi kesalahan saat login.';
-
-    setErrorMsg(message);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const handleGoogleSuccess = async (credentialResponse: {
-  credential?: string;
-}) => {
-  setIsLoading(true);
-  setErrorMsg('');
+    credential?: string;
+  }) => {
+    setIsLoading(true);
+    setErrorMsg('');
 
-  try {
-    const result = await apiClient<LoginData>('/api/auth/google', {
-      method: 'POST',
-      body: {
-        credential: credentialResponse.credential,
-      },
-    });
+    try {
+      const result = await apiClient<LoginData>('/api/auth/google', {
+        method: 'POST',
+        body: {
+          credential: credentialResponse.credential,
+        },
+      });
 
-    const role = result.data?.role;
+      redirectByRole(result.data?.role);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Terjadi kesalahan saat login Google.';
 
-    if (role === 'Mahasiswa') {
-      router.push('/dashboard');
-      return;
+      setErrorMsg(message);
+    } finally {
+      setIsLoading(false);
     }
-
-    if (role === 'Dosen') {
-      router.push('/dosen/dashboard');
-      return;
-    }
-
-    if (role === 'Admin') {
-      router.push('/admin/dashboard');
-      return;
-    }
-
-    throw new Error('Role pengguna tidak valid.');
-  } catch (err) {
-    const message =
-      err instanceof Error
-        ? err.message
-        : 'Terjadi kesalahan saat login Google.';
-
-    setErrorMsg(message);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   return (
     <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com">
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="flex items-center justify-center mb-4 scale-90">
-            <LogoSikarir />
-          </div>
+      <main className="min-h-screen py-10">
+        <div className="app-container">
+          <div className="grid min-h-[calc(100vh-7rem)] grid-cols-1 items-center gap-8 lg:grid-cols-[1fr_460px]">
+            <section className="hidden lg:block">
+              <div className="max-w-xl">
+                <p className="text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a]">
+                  SI Magang Fasilkom UNSIKA
+                </p>
 
-          <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900">
-            Selamat Datang Kembali
-          </h2>
+                <h1 className="mt-4 text-5xl font-black leading-tight tracking-tight text-slate-950">
+                  Masuk ke portal magang dengan mudah dan aman.
+                </h1>
 
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Masuk ke Sistem Informasi Magang Fasilkom UNSIKA
-          </p>
-        </div>
+                <p className="mt-5 text-base leading-7 text-slate-500">
+                  Kelola pengajuan, logbook, bimbingan, dan evaluasi magang
+                  dalam satu sistem yang terintegrasi.
+                </p>
 
-        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-4 shadow-xl sm:rounded-3xl sm:px-10 border border-gray-100">
-            {errorMsg && (
-              <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
-                <p className="text-sm text-red-700 font-medium">{errorMsg}</p>
+                <div className="mt-8 grid grid-cols-1 gap-4">
+                  <div className="rounded-3xl border border-blue-100 bg-blue-50 p-5">
+                    <p className="font-black text-[#1e3a8a]">
+                      Mahasiswa
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-slate-600">
+                      Ajukan LOA, isi logbook, dan pantau hasil evaluasi magang.
+                    </p>
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-200 bg-white p-5">
+                    <p className="font-black text-slate-950">
+                      Dosen & Admin
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-slate-600">
+                      Validasi, bimbing, dan kelola proses magang secara rapi.
+                    </p>
+                  </div>
+                </div>
               </div>
-            )}
+            </section>
 
-            <form className="space-y-6" onSubmit={handleLogin}>
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-bold text-gray-700"
-                >
-                  Email
-                </label>
+            <section className="app-card p-6 md:p-8">
+              <div className="mb-8 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-xl font-black text-[#1e3a8a]">
+                  SI
+                </div>
 
-                <div className="mt-1 relative">
+                <h2 className="mt-5 text-2xl font-black text-slate-950">
+                  Selamat Datang
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  Masuk menggunakan email institusi dan password akun Anda.
+                </p>
+              </div>
+
+              {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
+
+              <form onSubmit={handleLogin} className="space-y-5">
+                <div>
+                  <label htmlFor="email" className="app-label">
+                    Email
+                  </label>
                   <input
                     id="email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Masukkan email"
-                    className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-[#1e3a8a] focus:border-[#1e3a8a] sm:text-sm bg-gray-50 focus:bg-white text-gray-900 transition-colors outline-none"
+                    className="app-input"
+                    placeholder="nama@unsika.ac.id"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-bold text-gray-700"
-                >
-                  Password
-                </label>
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label htmlFor="password" className="app-label mb-0">
+                      Password
+                    </label>
 
-                <div className="mt-1 relative">
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="appearance-none block w-full pl-4 pr-12 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-[#1e3a8a] focus:border-[#1e3a8a] sm:text-sm bg-gray-50 focus:bg-white text-gray-900 transition-colors outline-none"
-                  />
+                    <a
+                      href="#"
+                      className="text-sm font-bold text-[#1e3a8a] hover:underline"
+                    >
+                      Lupa password?
+                    </a>
+                  </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-[#1e3a8a] transition-colors"
-                    aria-label={
-                      showPassword ? 'Sembunyikan password' : 'Tampilkan password'
-                    }
-                  >
-                    {showPassword ? '🙈' : '👁️'}
-                  </button>
-                </div>
-              </div>
+                  <div className="relative">
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="app-input pr-24"
+                      placeholder="Masukkan password"
+                    />
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 text-[#1e3a8a] focus:ring-[#1e3a8a] border-gray-300 rounded"
-                  />
-                  <label
-                    htmlFor="remember-me"
-                    className="ml-2 block text-sm text-gray-900 font-medium"
-                  >
-                    Ingat saya
-                  </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1 text-xs font-black text-[#1e3a8a] hover:bg-blue-50"
+                    >
+                      {showPassword ? 'Sembunyikan' : 'Lihat'}
+                    </button>
+                  </div>
                 </div>
 
-                <div className="text-sm">
-                  <a
-                    href="#"
-                    className="font-bold text-[#1e3a8a] hover:text-blue-800"
-                  >
-                    Lupa password?
-                  </a>
-                </div>
-              </div>
-
-              <div className="pt-2">
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-gradient-to-r from-[#1e3a8a] to-blue-700 hover:from-blue-800 hover:to-blue-900 focus:outline-none transition-all hover:-translate-y-0.5 disabled:opacity-70"
+                  className="app-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isLoading ? 'Memproses...' : 'Masuk Dashboard'}
                 </button>
-              </div>
-            </form>
+              </form>
 
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200" />
-                </div>
-
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-3 bg-white text-gray-500 font-medium">
-                    Atau masuk menggunakan
-                  </span>
-                </div>
+              <div className="my-6 flex items-center gap-4">
+                <div className="h-px flex-1 bg-slate-200" />
+                <span className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                  atau
+                </span>
+                <div className="h-px flex-1 bg-slate-200" />
               </div>
 
-              <div className="mt-6 flex justify-center">
+              <div className="flex justify-center">
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
                   onError={() =>
@@ -265,20 +231,20 @@ export default function LoginPage() {
                   useOneTap
                 />
               </div>
-            </div>
 
-            <div className="mt-8 text-center text-sm">
-              <span className="text-gray-600">Belum punya akun? </span>
-              <Link
-                href="/register"
-                className="font-bold text-[#1e3a8a] hover:text-blue-800"
-              >
-                Daftar sekarang
-              </Link>
-            </div>
+              <p className="mt-8 text-center text-sm text-slate-500">
+                Belum punya akun?{' '}
+                <Link
+                  href="/register"
+                  className="font-black text-[#1e3a8a] hover:underline"
+                >
+                  Daftar sekarang
+                </Link>
+              </p>
+            </section>
           </div>
         </div>
-      </div>
+      </main>
     </GoogleOAuthProvider>
   );
 }

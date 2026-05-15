@@ -29,7 +29,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="id" data-scroll-behavior="smooth" className="scroll-smooth">
       {/* TAMBAHKAN suppressHydrationWarning DI SINI */}
-      <body suppressHydrationWarning className="font-sans antialiased text-slate-900 bg-slate-50 selection:bg-blue-200 selection:text-[#1e3a8a] flex flex-col min-h-screen">
+      <body
+  suppressHydrationWarning
+  className="min-h-screen bg-background text-foreground antialiased selection:bg-blue-200 selection:text-[#1e3a8a]"
+>
         <Navbar user={user} />
         
         <div className="flex-grow">

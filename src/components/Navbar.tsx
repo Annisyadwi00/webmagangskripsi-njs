@@ -1,151 +1,180 @@
 "use client";
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
-export default function Navbar({ user: propUser }: { user?: any }) {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+type NavbarUser = {
+  name?: string;
+  role?: string;
+  photo?: string;
+};
+
+export default function Navbar({ user: propUser }: { user?: NavbarUser | null }) {
   const pathname = usePathname();
-  const [user, setUser] = useState<{name: string, role: string, photo: string} | null>(propUser || null);
+  const [user, setUser] = useState<NavbarUser | null>(propUser || null);
+  const [isOpen, setIsOpen] = useState(false);
 
-  // Efek untuk memantau Dark Mode
   useEffect(() => {
-    if (document.documentElement.classList.contains('dark')) {
-      setIsDarkMode(true);
-    }
-  }, []);
+    const fetchUser = async () => {
+      if (propUser) {
+        setUser(propUser);
+        return;
+      }
 
-  const toggleDarkMode = () => {
-    document.documentElement.classList.toggle('dark');
-    setIsDarkMode(!isDarkMode);
-  };
+      try {
+        const res = await fetch('/api/auth/me', {
+          cache: 'no-store',
+        });
 
-  // Efek untuk mendeteksi Scroll
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Efek untuk mengambil data User
-  // Efek untuk mengambil data User
-  useEffect(() => {
-    if (!propUser) {
-      const fetchUser = async () => {
-        try {
-          // Tambahkan cache: 'no-store' agar selalu meminta data terbaru, bukan sisa cache
-          const res = await fetch('/api/auth/me', { cache: 'no-store' });
-          if (res.ok) {
-            const data = (await res.json()).data;
-            setUser({ name: data.name, role: data.role, photo: data.photo });
-          } else {
-            // WAJIB ADA: Jika token tidak ada / sudah logout, paksa hapus tampilan user
-            setUser(null);
-          }
-        } catch (error) {
+        if (!res.ok) {
           setUser(null);
+          return;
         }
-      };
-      fetchUser();
-    } else {
-      setUser(propUser);
-    }
+
+        const result = await res.json();
+        setUser(result.data || null);
+      } catch {
+        setUser(null);
+      }
+    };
+
+    fetchUser();
   }, [pathname, propUser]);
 
-  // ---> PENGECEKAN SUPER KETAT <---
-  // Navbar 100% disembunyikan jika URL mengandung kata-kata di bawah ini
-  const hideNavbar = pathname && (
-    pathname.toLowerCase().includes('/login') || 
-    pathname.toLowerCase().includes('/register') || 
-    pathname.toLowerCase().includes('/dashboard') || 
-    pathname.toLowerCase().includes('/admin') || 
-    pathname.toLowerCase().includes('/dosen') ||
-    pathname.toLowerCase().includes('/pilih-dosen') ||
-    pathname.toLowerCase().includes('/settings')
-  );
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
+
+  const hideNavbar =
+    pathname?.includes('/login') ||
+    pathname?.includes('/register') ||
+    pathname?.includes('/dashboard') ||
+    pathname?.includes('/admin') ||
+    pathname?.includes('/dosen') ||
+    pathname?.includes('/pilih-dosen') ||
+    pathname?.includes('/settings');
 
   if (hideNavbar) {
     return null;
   }
 
-  const isDarkHero = pathname === '/lowongan' || pathname === '/mitra';
+  const navItems = [
+    { label: 'Beranda', href: '/' },
+    { label: 'Lowongan', href: '/lowongan' },
+    { label: 'FAQ', href: '/#faq' },
+    { label: 'Feedback', href: '/#feedback' },
+  ];
 
-  const getLinkClass = (path: string) => {
-    const isActive = pathname === path;
-    if (isScrolled) {
-      return isActive ? 'text-[#1e3a8a]' : 'text-gray-500 hover:text-[#1e3a8a]';
-    } else {
-      if (isDarkHero) {
-        return isActive ? 'text-white drop-shadow-md' : 'text-blue-200 hover:text-white drop-shadow-sm';
-      } else {
-        return isActive ? 'text-[#1e3a8a]' : 'text-gray-500 hover:text-[#1e3a8a]';
-      }
-    }
+  const getDashboardPath = () => {
+    if (user?.role === 'Admin') return '/admin/dashboard';
+    if (user?.role === 'Dosen') return '/dosen/dashboard';
+    return '/dashboard';
   };
 
-  const logoTextColor = isScrolled ? 'text-gray-900' : (isDarkHero ? 'text-white drop-shadow-md' : 'text-[#1e3a8a]');
-  
-  const loginBtnClass = isScrolled || !isDarkHero 
-    ? 'bg-[#1e3a8a] text-white shadow-blue-900/20 hover:bg-blue-900' 
-    : 'bg-white text-[#1e3a8a] shadow-black/10 hover:bg-blue-50';
+  const getLinkClass = (href: string) => {
+    const isActive = href === '/' ? pathname === '/' : pathname?.startsWith(href);
+
+    return isActive
+      ? 'text-[#1e3a8a] bg-blue-50'
+      : 'text-slate-600 hover:text-[#1e3a8a] hover:bg-slate-50';
+  };
 
   return (
-    <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100 py-3' : 'bg-transparent py-5'}`}>
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 flex justify-between items-center relative">
-        
-        {/* KIRI: Logo */}
-        <Link href="/" className="flex items-center gap-3 group shrink-0">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all group-hover:-translate-y-0.5 ${isScrolled || !isDarkHero ? 'bg-gradient-to-br from-[#1e3a8a] to-blue-500 group-hover:shadow-blue-500/30' : 'bg-white text-[#1e3a8a]'}`}>
-            <span className={`font-black text-xl ${isScrolled || !isDarkHero ? 'text-white' : 'text-[#1e3a8a]'}`}>S</span>
-          </div>
-          <span className={`font-extrabold text-xl tracking-tight hidden sm:block transition-colors ${logoTextColor}`}>
-            SI Magang
-          </span>
-        </Link>
-
-        {/* TENGAH: Menu Navigasi */}
-        <div className="hidden lg:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
-          <Link href="/lowongan" className={`text-sm font-bold transition-all hover:-translate-y-0.5 ${getLinkClass('/lowongan')}`}>Bursa Magang</Link>
-          <Link href="/mitra" className={`text-sm font-bold transition-all hover:-translate-y-0.5 ${getLinkClass('/mitra')}`}>Kemitraan Industri</Link>
-          <Link href="/#faq" className={`text-sm font-bold transition-all hover:-translate-y-0.5 ${getLinkClass('/#faq')}`}>FAQ</Link>
-        </div>
-        
-        {/* KANAN: Tombol Dark Mode & Profil/Login */}
-        <div className="flex items-center shrink-0 gap-3 md:gap-4">
-          <button 
-            onClick={toggleDarkMode} 
-            className="p-2 md:p-2.5 flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-yellow-400 rounded-full border border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700 transition-all text-sm md:text-base"
-            aria-label="Toggle Dark Mode"
-          >
-            {isDarkMode ? '☀️' : '🌙'}
-          </button>
-
-          {user ? (
-            <div className={`flex items-center gap-4 px-2 py-1.5 rounded-full border backdrop-blur-sm shadow-sm hover:shadow-md transition-all ${isScrolled ? 'bg-white/60 border-gray-200/60' : (isDarkHero ? 'bg-black/20 border-white/10' : 'bg-white/60 border-gray-200/60')}`}>
-              <div className="text-right hidden md:block pl-3">
-                <p className={`text-sm font-black leading-none ${isScrolled || !isDarkHero ? 'text-gray-900' : 'text-white'}`}>{user.name.split(" ")[0]}</p>
-                <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isScrolled || !isDarkHero ? 'text-blue-600' : 'text-blue-300'}`}>{user.role}</p>
-              </div>
-              
-              <Link href={user.role === 'Admin' ? '/admin/dashboard' : user.role === 'Dosen' ? '/dosen/dashboard' : '/dashboard'} 
-                    className="w-10 h-10 rounded-full bg-gray-100 border-2 border-white shadow-sm flex items-center justify-center text-white font-black hover:scale-105 transition-transform overflow-hidden group relative">
-                {user.photo ? (
-                  <img src={user.photo} alt="Profil" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-gray-400 group-hover:text-[#1e3a8a]">{user.name.charAt(0).toUpperCase()}</span>
-                )}
-              </Link>
+    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+      <div className="app-container">
+        <nav className="flex h-20 items-center justify-between gap-6">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-sm font-black text-[#1e3a8a]">
+              SI
             </div>
-          ) : (
-            <Link href="/login" className={`px-6 py-2.5 font-bold rounded-xl shadow-lg transition-all hover:-translate-y-0.5 ${loginBtnClass}`}>
-              Masuk
-            </Link>
-          )}
-        </div>
-        
+
+            <div>
+              <p className="text-lg font-black leading-none text-slate-950">
+                SI Magang
+              </p>
+              <p className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-400">
+                Fasilkom UNSIKA
+              </p>
+            </div>
+          </Link>
+
+          <div className="hidden items-center gap-2 md:flex">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`rounded-xl px-4 py-2 text-sm font-bold ${getLinkClass(
+                  item.href
+                )}`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+
+          <div className="hidden items-center gap-3 md:flex">
+            {user ? (
+              <Link href={getDashboardPath()} className="app-btn-primary px-5 py-3">
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="app-btn-secondary px-5 py-3">
+                  Masuk
+                </Link>
+                <Link href="/register" className="app-btn-primary px-5 py-3">
+                  Daftar
+                </Link>
+              </>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 md:hidden"
+            aria-label="Buka menu navigasi"
+          >
+            <span className="text-xl font-black">{isOpen ? '×' : '≡'}</span>
+          </button>
+        </nav>
+
+        {isOpen && (
+          <div className="border-t border-slate-100 py-4 md:hidden">
+            <div className="space-y-2">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`block rounded-xl px-4 py-3 text-sm font-bold ${getLinkClass(
+                    item.href
+                  )}`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+
+              <div className="grid grid-cols-1 gap-2 pt-3">
+                {user ? (
+                  <Link href={getDashboardPath()} className="app-btn-primary">
+                    Dashboard
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/login" className="app-btn-secondary">
+                      Masuk
+                    </Link>
+                    <Link href="/register" className="app-btn-primary">
+                      Daftar
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </nav>
+    </header>
   );
 }
