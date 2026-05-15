@@ -11,15 +11,6 @@ type LoginData = {
   name: string;
   prodi?: string | null;
 };
-type LoginResponse = {
-  success: boolean;
-  message: string;
-  data?: {
-    role?: 'Admin' | 'Mahasiswa' | 'Dosen';
-    name?: string;
-    prodi?: string;
-  };
-};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -60,7 +51,7 @@ export default function LoginPage() {
     const result = await apiClient<LoginData>('/api/auth/login', {
       method: 'POST',
       body: {
-        email: identifier.trim(),
+        email: email.trim(),
         password,
       },
     });

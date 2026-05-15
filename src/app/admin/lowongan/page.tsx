@@ -14,7 +14,7 @@ export default function LowonganPage() {
         setIsLoading(true);
         setErrorMsg('');
 
-        const data = await getAllLowonganList();
+        const data = await getLowonganList();
         setLowongan(data);
       } catch (error) {
         const message =

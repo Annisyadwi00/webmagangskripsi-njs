@@ -44,3 +44,17 @@ export function optionalTrimString(value: unknown) {
 
   return trimmed || null;
 }
+
+export function isValidDate(value: unknown) {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  const date = new Date(value);
+
+  return !Number.isNaN(date.getTime());
+}
+
+export function isStartDateBeforeEndDate(startDate: string, endDate: string) {
+  return new Date(startDate) <= new Date(endDate);
+}
