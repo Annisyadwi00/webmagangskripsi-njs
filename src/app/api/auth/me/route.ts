@@ -1,69 +1,141 @@
-import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import { cookies } from 'next/headers';
+import bcrypt from 'bcryptjs';
 import User from '@/models/User';
 import { connectDB } from '@/lib/db';
-import bcrypt from 'bcryptjs';
+import { getCurrentUser } from '@/lib/auth';
+import { isValidUrl, optionalTrimString, trimString } from '@/lib/validators';
+import {
+  successResponse,
+  messageResponse,
+  errorResponse,
+  unauthorizedResponse,
+  badRequestResponse,
+  notFoundResponse,
+} from '@/lib/api-response';
 
 export async function GET() {
   try {
     await connectDB();
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
-    if (!token) return NextResponse.json({ message: 'Tidak ada token' }, { status: 401 });
-    
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-    const user = await User.findByPk(decoded.id, { attributes: { exclude: ['password'] } });
-    if (!user) return NextResponse.json({ message: 'User tidak ditemukan' }, { status: 404 });
-    
-    return NextResponse.json({ data: user }, { status: 200 });
+
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser) {
+      return unauthorizedResponse('Akses ditolak. Silakan login kembali.');
+    }
+
+    const user = await User.findByPk(currentUser.id, {
+      attributes: { exclude: ['password'] },
+    });
+
+    if (!user) {
+      return notFoundResponse('User tidak ditemukan.');
+    }
+
+    return successResponse(user, 'Data profil berhasil diambil.');
   } catch (error) {
-    return NextResponse.json({ message: 'Token tidak valid' }, { status: 401 });
+    console.error('GET_ME_ERROR:', error);
+
+    return errorResponse('Terjadi kesalahan server.');
   }
 }
 
 export async function PUT(request: Request) {
   try {
     await connectDB();
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
-    if (!token) return NextResponse.json({ message: 'Tidak ada token' }, { status: 401 });
-    
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+
+    const currentUser = await getCurrentUser();
+
+    if (!currentUser) {
+      return unauthorizedResponse('Akses ditolak. Silakan login kembali.');
+    }
+
     const body = await request.json();
-    
-    // UPDATE PROFIL (Ditambah field "photo")
-    if (body.action === 'update_profile') {
-      await User.update({ 
-        name: body.name, 
-        phone: body.phone,
-        photo: body.photo  // <--- INI TAMBAHANNYA
-      }, { where: { id: decoded.id } });
-      const { name, phone, photo, semester, kategori_dosen } = await request.json();
+    const action = body.action;
 
-      // 2. Siapkan objek update (hanya update yang dikirim)
-      const updateData: any = { name, phone, photo };
-      if (semester !== undefined) updateData.semester = semester;
-      if (kategori_dosen !== undefined) updateData.kategori_dosen = kategori_dosen;
-
-      // 3. Simpan ke database
-      await User.update(updateData, { where: { id: decoded.id } });
-      return NextResponse.json({ message: 'Profil berhasil diperbarui di database!' }, { status: 200 });
+    if (!action) {
+      return badRequestResponse('Aksi wajib dikirim.');
     }
 
-    // UPDATE PASSWORD
-    if (body.action === 'update_password') {
-      const user: any = await User.findByPk(decoded.id);
-      const isMatch = await bcrypt.compare(body.currentPassword, user.password);
-      if (!isMatch) return NextResponse.json({ message: 'Kata sandi saat ini salah!' }, { status: 400 });
+    const user = await User.findByPk(currentUser.id);
 
-      const hashedNewPassword = await bcrypt.hash(body.newPassword, 10);
-      await User.update({ password: hashedNewPassword }, { where: { id: decoded.id } });
-      return NextResponse.json({ message: 'Kata sandi berhasil diubah!' }, { status: 200 });
+    if (!user) {
+      return notFoundResponse('User tidak ditemukan.');
     }
 
-    return NextResponse.json({ message: 'Aksi tidak valid' }, { status: 400 });
-  } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    if (action === 'update_profile') {
+      const name = trimString(body.name);
+      const phone = optionalTrimString(body.phone);
+      const photo = optionalTrimString(body.photo);
+      const semester = optionalTrimString(body.semester);
+      const kategori_dosen = optionalTrimString(body.kategori_dosen);
+
+      if (!name) {
+        return badRequestResponse('Nama wajib diisi.');
+      }
+
+      if (photo && !isValidUrl(photo)) {
+        return badRequestResponse('Format URL foto tidak valid.');
+      }
+
+      const updateData: Record<string, string | null> = {
+        name,
+        phone,
+        photo,
+      };
+
+      if (currentUser.role === 'Mahasiswa') {
+        updateData.semester = semester;
+      }
+
+      if (currentUser.role === 'Dosen') {
+        updateData.kategori_dosen = kategori_dosen;
+      }
+
+      await user.update(updateData);
+
+      return messageResponse('Profil berhasil diperbarui.');
+    }
+
+    if (action === 'update_password') {
+      const currentPassword = trimString(body.currentPassword);
+      const newPassword = trimString(body.newPassword);
+      const confirmPassword = trimString(body.confirmPassword);
+
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        return badRequestResponse(
+          'Password lama, password baru, dan konfirmasi password wajib diisi.'
+        );
+      }
+
+      if (newPassword.length < 8) {
+        return badRequestResponse('Password baru minimal 8 karakter.');
+      }
+
+      if (newPassword !== confirmPassword) {
+        return badRequestResponse('Konfirmasi password tidak sesuai.');
+      }
+
+      const isMatch = await bcrypt.compare(
+        currentPassword,
+        user.getDataValue('password')
+      );
+
+      if (!isMatch) {
+        return badRequestResponse('Kata sandi saat ini salah.');
+      }
+
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+      await user.update({
+        password: hashedNewPassword,
+      });
+
+      return messageResponse('Kata sandi berhasil diubah.');
+    }
+
+    return badRequestResponse('Aksi tidak valid.');
+  } catch (error) {
+    console.error('UPDATE_ME_ERROR:', error);
+
+    return errorResponse('Terjadi kesalahan server.');
   }
 }

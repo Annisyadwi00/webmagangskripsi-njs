@@ -1,92 +1,185 @@
-import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import User from '@/models/User';
+import User, { UserRole } from '@/models/User';
 import { connectDB } from '@/lib/db';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { requireAdmin } from '@/lib/auth';
+import { isValidEmail, trimString, optionalTrimString } from '@/lib/validators';
+import {
+  successResponse,
+  messageResponse,
+  errorResponse,
+  forbiddenResponse,
+  badRequestResponse,
+  notFoundResponse,
+} from '@/lib/api-response';
 
-// Fungsi Helper untuk Cek Admin
-const checkAdmin = async () => {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('auth_token')?.value;
-  if (!token) return null;
-  try {
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-    return decoded.role === 'Admin' ? decoded : null;
-  } catch {
-    return null;
-  }
-};
+const allowedRoles: UserRole[] = ['Admin', 'Mahasiswa', 'Dosen'];
 
-// GET: Ambil semua user
+function generateDefaultPassword() {
+  return `SImagang${new Date().getFullYear()}`;
+}
+
 export async function GET() {
   try {
     await connectDB();
-    const isAdmin = await checkAdmin();
-    if (!isAdmin) return NextResponse.json({ message: 'Akses Ditolak' }, { status: 403 });
 
-    const users = await User.findAll({ 
+    const admin = await requireAdmin();
+
+    if (!admin) {
+      return forbiddenResponse(
+        'Akses ditolak. Hanya Admin yang dapat melihat data pengguna.'
+      );
+    }
+
+    const users = await User.findAll({
       attributes: { exclude: ['password'] },
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
     });
-    return NextResponse.json({ data: users }, { status: 200 });
+
+    return successResponse(
+      users,
+      'Data pengguna berhasil diambil.'
+    );
   } catch (error) {
-    return NextResponse.json({ message: 'Error server' }, { status: 500 });
+    console.error('GET_USERS_ERROR:', error);
+
+    return errorResponse('Terjadi kesalahan server.');
   }
 }
 
-// POST: Admin menambah user baru
 export async function POST(request: Request) {
   try {
     await connectDB();
-    const isAdmin = await checkAdmin();
-    if (!isAdmin) return NextResponse.json({ message: 'Akses Ditolak' }, { status: 403 });
+
+    const admin = await requireAdmin();
+
+    if (!admin) {
+      return forbiddenResponse(
+        'Akses ditolak. Hanya Admin yang dapat menambahkan pengguna.'
+      );
+    }
 
     const body = await request.json();
-    const { name, email, password, role, nim_nidn, prodi,semester, kategori_dosen } = body;
 
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) return NextResponse.json({ message: 'Email sudah terdaftar!' }, { status: 400 });
+    const name = trimString(body.name);
+    const email = trimString(body.email);
+    const password = optionalTrimString(body.password);
+    const role = body.role as UserRole;
+    const nim_nidn = trimString(body.nim_nidn) || '-';
+    const prodi = optionalTrimString(body.prodi);
+    const semester = optionalTrimString(body.semester);
+    const kategori_dosen = optionalTrimString(body.kategori_dosen);
 
-    const hashedPassword = await bcrypt.hash(password || 'unsika123', 10); // Default pass jika kosong
+    if (!name || !email || !role) {
+      return badRequestResponse('Nama, email, dan role wajib diisi.');
+    }
+
+    if (!isValidEmail(email)) {
+      return badRequestResponse('Format email tidak valid.');
+    }
+
+    if (!allowedRoles.includes(role)) {
+      return badRequestResponse('Role tidak valid.');
+    }
+
+    if (password && password.length < 8) {
+      return badRequestResponse('Password minimal 8 karakter.');
+    }
+
+    if (role === 'Mahasiswa' && !prodi) {
+      return badRequestResponse('Program studi wajib diisi untuk Mahasiswa.');
+    }
+
+    if (role === 'Dosen' && !kategori_dosen) {
+      return badRequestResponse('Kategori dosen wajib diisi untuk Dosen.');
+    }
+
+    const existingUser = await User.findOne({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return badRequestResponse('Email sudah terdaftar.');
+    }
+
+    const finalPassword = password || generateDefaultPassword();
+    const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
     await User.create({
       name,
       email,
       password: hashedPassword,
       role,
-      nim_nidn: nim_nidn || '-',
+      nim_nidn,
       prodi: role === 'Mahasiswa' ? prodi : null,
-      semester: role === 'Mahasiswa' ? semester : null, // <-- Tambahkan ini
-      kategori_dosen: role === 'Dosen' ? kategori_dosen : null // <-- Tambahkan ini
+      semester: role === 'Mahasiswa' ? semester : null,
+      kategori_dosen: role === 'Dosen' ? kategori_dosen : null,
     });
 
-    return NextResponse.json({ message: 'Pengguna berhasil ditambahkan!' }, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return successResponse(
+      {
+        defaultPassword: password ? null : finalPassword,
+      },
+      'Pengguna berhasil ditambahkan.',
+      201
+    );
+  } catch (error) {
+    console.error('CREATE_USER_ERROR:', error);
+
+    return errorResponse('Terjadi kesalahan server.');
   }
 }
 
-// PUT: Reset Password / Hapus
 export async function PUT(request: Request) {
   try {
     await connectDB();
-    const isAdmin = await checkAdmin();
-    if (!isAdmin) return NextResponse.json({ message: 'Akses Ditolak' }, { status: 403 });
 
-    const { id, action } = await request.json();
+    const admin = await requireAdmin();
 
-    if (action === 'delete') {
-      await User.destroy({ where: { id } });
-      return NextResponse.json({ message: 'Pengguna dihapus permanen' }, { status: 200 });
-    } else if (action === 'reset_password') {
-      const hashedPassword = await bcrypt.hash('123456', 10);
-      await User.update({ password: hashedPassword }, { where: { id } });
-      return NextResponse.json({ message: 'Password direset menjadi: 123456' }, { status: 200 });
+    if (!admin) {
+      return forbiddenResponse(
+        'Akses ditolak. Hanya Admin yang dapat mengubah pengguna.'
+      );
     }
 
-    return NextResponse.json({ message: 'Aksi tidak valid' }, { status: 400 });
+    const body = await request.json();
+    const { id, action } = body;
+
+    if (!id || !action) {
+      return badRequestResponse('ID pengguna dan aksi wajib dikirim.');
+    }
+
+    const user = await User.findByPk(id);
+
+    if (!user) {
+      return notFoundResponse('Pengguna tidak ditemukan.');
+    }
+
+    if (action === 'delete') {
+      await user.destroy();
+
+      return messageResponse('Pengguna berhasil dihapus.');
+    }
+
+    if (action === 'reset_password') {
+      const defaultPassword = generateDefaultPassword();
+      const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+      await user.update({
+        password: hashedPassword,
+      });
+
+      return successResponse(
+        {
+          defaultPassword,
+        },
+        'Password berhasil direset.'
+      );
+    }
+
+    return badRequestResponse('Aksi tidak valid.');
   } catch (error) {
-    return NextResponse.json({ message: 'Error server' }, { status: 500 });
+    console.error('UPDATE_USER_ERROR:', error);
+
+    return errorResponse('Terjadi kesalahan server.');
   }
 }

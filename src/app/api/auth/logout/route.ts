@@ -14,14 +14,14 @@ export async function POST() {
     });
 
     return NextResponse.json(
-      { success: true, message: 'Logout berhasil.' },
+      { message: 'Logout berhasil.' },
       { status: 200 }
     );
   } catch (error) {
     console.error('LOGOUT_ERROR:', error);
 
     return NextResponse.json(
-      { success: false, message: 'Terjadi kesalahan server.' },
+      { message: 'Terjadi kesalahan server.' },
       { status: 500 }
     );
   }

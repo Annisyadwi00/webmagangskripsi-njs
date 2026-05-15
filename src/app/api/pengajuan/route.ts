@@ -1,184 +1,458 @@
 import { NextResponse } from 'next/server';
+import { Op } from 'sequelize';
 import Pengajuan from '@/models/Pengajuan';
 import { connectDB } from '@/lib/db';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { getCurrentUser } from '@/lib/auth';
+
+function isValidUrl(url: string) {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function parsePositiveNumber(value: string | null, fallback: number) {
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
+function isValidScore(value: unknown) {
+  const score = Number(value);
+  return Number.isInteger(score) && score >= 0 && score <= 100;
+}
 
 export async function GET(request: Request) {
   try {
     await connectDB();
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
-    
-    if (!token) {
-      return NextResponse.json({ message: 'Akses ditolak' }, { status: 401 });
+
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { message: 'Akses ditolak.' },
+        { status: 401 }
+      );
     }
-    
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-   
-    // --- FITUR PAGINASI ---
-    // Menerima query URL seperti ?page=1&limit=50
+
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50'); // Batasi maksimal 50 data per tarikan
+
+    const page = parsePositiveNumber(searchParams.get('page'), 1);
+    const requestedLimit = parsePositiveNumber(searchParams.get('limit'), 10);
+    const limit = Math.min(requestedLimit, 50);
     const offset = (page - 1) * limit;
 
-    let data: any[] = [];
-    let totalData = 0;
-    
-    if (decoded.role === 'Admin' || decoded.role === 'Dosen') {
-      // Menggunakan findAndCountAll untuk mendapatkan data beserta total keseluruhannya
-      const result = await Pengajuan.findAndCountAll({ 
-        limit: limit,
-        offset: offset,
-        order: [['createdAt', 'DESC']] 
-      });
-      data = result.rows;
-      totalData = result.count;
-    } else if (decoded.role === 'Mahasiswa') {
-      const result = await Pengajuan.findAndCountAll({ 
-        where: { user_id: decoded.id }, 
-        limit: limit,
-        offset: offset,
-        order: [['createdAt', 'DESC']] 
-      });
-      data = result.rows;
-      totalData = result.count;
-    } 
-    
-    // Kembalikan data dengan format yang lebih lengkap
-    return NextResponse.json({ 
-      data: data, 
-      meta: {
-        total: totalData,
-        page: page,
-        totalPages: Math.ceil(totalData / limit)
-      }
-    }, { status: 200 });
+    const where =
+      user.role === 'Mahasiswa'
+        ? { user_id: user.id }
+        : user.role === 'Dosen'
+          ? { dosenId: user.id }
+          : undefined;
 
-  } catch (error: any) {
-    // --- KEAMANAN ERROR HANDLING ---
-    // Log error asli hanya di console server (VS Code) untuk kebutuhan debugging
-    console.error("GET Pengajuan Error:", error);
-    
-    // Lempar pesan generik ke Frontend (Browser) agar struktur DB aman
-    return NextResponse.json({ message: 'Terjadi kesalahan pada server.' }, { status: 500 });
+    if (!['Admin', 'Dosen', 'Mahasiswa'].includes(user.role)) {
+      return NextResponse.json(
+        { message: 'Role tidak valid.' },
+        { status: 403 }
+      );
+    }
+
+    const result = await Pengajuan.findAndCountAll({
+      where,
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']],
+    });
+
+    return NextResponse.json(
+      {
+        data: result.rows,
+        meta: {
+          total: result.count,
+          page,
+          limit,
+          totalPages: Math.ceil(result.count / limit),
+        },
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('GET_PENGAJUAN_ERROR:', error);
+
+    return NextResponse.json(
+      { message: 'Terjadi kesalahan server.' },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(request: Request) {
   try {
     await connectDB();
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
-    
-    if (!token) {
-      return NextResponse.json({ message: 'Akses ditolak!' }, { status: 401 });
+
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { message: 'Akses ditolak.' },
+        { status: 401 }
+      );
     }
 
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-    if (decoded.role !== 'Mahasiswa') {
-      return NextResponse.json({ message: 'Hanya mahasiswa!' }, { status: 403 });
+    if (user.role !== 'Mahasiswa') {
+      return NextResponse.json(
+        { message: 'Hanya mahasiswa yang dapat mengajukan magang.' },
+        { status: 403 }
+      );
     }
 
-    const { perusahaan, posisi, link_loa, nama_mahasiswa, tgl_mulai, tgl_berakhir } = await request.json();
+    const body = await request.json();
+
+    const perusahaan = body.perusahaan?.trim();
+    const posisi = body.posisi?.trim();
+    const link_loa = body.link_loa?.trim();
+    const nama_mahasiswa = body.nama_mahasiswa?.trim() || user.name;
+    const tgl_mulai = body.tgl_mulai;
+    const tgl_berakhir = body.tgl_berakhir;
 
     if (!perusahaan || !posisi || !link_loa || !tgl_mulai || !tgl_berakhir) {
-      return NextResponse.json({ message: 'Semua data form (termasuk tanggal) wajib diisi!' }, { status: 400 });
+      return NextResponse.json(
+        { message: 'Perusahaan, posisi, link LOA, tanggal mulai, dan tanggal berakhir wajib diisi.' },
+        { status: 400 }
+      );
+    }
+
+    if (!isValidUrl(link_loa)) {
+      return NextResponse.json(
+        { message: 'Format link LOA tidak valid.' },
+        { status: 400 }
+      );
+    }
+
+    if (new Date(tgl_mulai) > new Date(tgl_berakhir)) {
+      return NextResponse.json(
+        { message: 'Tanggal mulai tidak boleh lebih besar dari tanggal berakhir.' },
+        { status: 400 }
+      );
     }
 
     const existingPengajuan = await Pengajuan.findOne({
-      where: { user_id: decoded.id, status: ['Menunggu_Verifikasi', 'Pilih_Dosen', 'Aktif'] }
+      where: {
+        user_id: user.id,
+        status: {
+          [Op.in]: ['Menunggu_Verifikasi', 'Pilih_Dosen', 'Aktif'],
+        },
+      },
     });
 
     if (existingPengajuan) {
-      return NextResponse.json({ message: 'Anda sudah memiliki proses magang yang sedang berjalan.' }, { status: 409 });
+      return NextResponse.json(
+        { message: 'Anda sudah memiliki proses magang yang sedang berjalan.' },
+        { status: 409 }
+      );
     }
 
-   const newPengajuan = await Pengajuan.create({
-      user_id: decoded.id,
-      nama_mahasiswa: nama_mahasiswa || 'Mahasiswa',
-      perusahaan: perusahaan,
-      posisi: posisi,
-      link_loa: link_loa,
-      tgl_mulai: tgl_mulai,         // <-- Tambahan Baru
-      tgl_berakhir: tgl_berakhir,   // <-- Tambahan Baru
+    const newPengajuan = await Pengajuan.create({
+      user_id: user.id,
+      nama_mahasiswa,
+      perusahaan,
+      posisi,
+      link_loa,
+      tgl_mulai,
+      tgl_berakhir,
       status: 'Menunggu_Verifikasi',
     });
 
-    return NextResponse.json({ message: 'LOA berhasil dikirim!', data: newPengajuan }, { status: 201 });
- } catch (error: any) {
-    return NextResponse.json({ message: `Gagal simpan ke database: ${error.message}` }, { status: 500 });
+    return NextResponse.json(
+      {
+        message: 'LOA berhasil dikirim!',
+        data: newPengajuan,
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('CREATE_PENGAJUAN_ERROR:', error);
+
+    return NextResponse.json(
+      { message: 'Terjadi kesalahan server.' },
+      { status: 500 }
+    );
   }
 }
 
 export async function PUT(request: Request) {
   try {
     await connectDB();
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
-    
-    if (!token) {
-      return NextResponse.json({ message: 'Akses ditolak!' }, { status: 401 });
+
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { message: 'Akses ditolak.' },
+        { status: 401 }
+      );
     }
-    
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+
     const body = await request.json();
-   
-    if (decoded.role === 'Mahasiswa') {
-      if (body.action === 'pilih_dosen') {
-        await Pengajuan.update({ dosenId: body.dosenId, nama_dosen: body.nama_dosen, status: 'Aktif' }, { where: { user_id: decoded.id, status: 'Pilih_Dosen' } });
-        return NextResponse.json({ message: 'Berhasil memilih dosen!' }, { status: 200 });
+    const action = body.action;
+
+    if (!action) {
+      return NextResponse.json(
+        { message: 'Aksi wajib dikirim.' },
+        { status: 400 }
+      );
+    }
+
+    if (user.role === 'Mahasiswa') {
+      if (action === 'pilih_dosen') {
+        if (!body.dosenId || !body.nama_dosen) {
+          return NextResponse.json(
+            { message: 'Dosen pembimbing wajib dipilih.' },
+            { status: 400 }
+          );
+        }
+
+        const pengajuan = await Pengajuan.findOne({
+          where: {
+            user_id: user.id,
+            status: 'Pilih_Dosen',
+          },
+        });
+
+        if (!pengajuan) {
+          return NextResponse.json(
+            { message: 'Pengajuan yang dapat memilih dosen tidak ditemukan.' },
+            { status: 404 }
+          );
+        }
+
+        await pengajuan.update({
+          dosenId: body.dosenId,
+          nama_dosen: body.nama_dosen,
+          status: 'Aktif',
+          status_dosen: 'Menunggu',
+        });
+
+        return NextResponse.json(
+          { message: 'Berhasil memilih dosen!' },
+          { status: 200 }
+        );
       }
-      if (body.link_laporan_akhir) {
-        await Pengajuan.update({ link_laporan_akhir: body.link_laporan_akhir }, { where: { user_id: decoded.id } });
-        return NextResponse.json({ message: 'Laporan disimpan!' }, { status: 200 });
+
+      if (action === 'upload_laporan_akhir') {
+        const link_laporan_akhir = body.link_laporan_akhir?.trim();
+
+        if (!link_laporan_akhir || !isValidUrl(link_laporan_akhir)) {
+          return NextResponse.json(
+            { message: 'Link laporan akhir tidak valid.' },
+            { status: 400 }
+          );
+        }
+
+        const pengajuan = await Pengajuan.findOne({
+          where: {
+            user_id: user.id,
+            status: 'Aktif',
+          },
+        });
+
+        if (!pengajuan) {
+          return NextResponse.json(
+            { message: 'Pengajuan aktif tidak ditemukan.' },
+            { status: 404 }
+          );
+        }
+
+        await pengajuan.update({ link_laporan_akhir });
+
+        return NextResponse.json(
+          { message: 'Laporan akhir berhasil disimpan!' },
+          { status: 200 }
+        );
       }
-      // ---> FIX BUG: Mahasiswa sekarang bisa menghapus pengajuannya jika ditolak/ingin batal <---
-      if (body.action === 'batal') {
-        await Pengajuan.destroy({ where: { user_id: decoded.id } });
-        return NextResponse.json({ message: 'Pengajuan dibatalkan.' }, { status: 200 });
+
+      if (action === 'batal') {
+        const pengajuan = await Pengajuan.findOne({
+          where: {
+            user_id: user.id,
+            status: {
+              [Op.in]: ['Menunggu_Verifikasi', 'Ditolak'],
+            },
+          },
+        });
+
+        if (!pengajuan) {
+          return NextResponse.json(
+            { message: 'Pengajuan tidak dapat dibatalkan.' },
+            { status: 400 }
+          );
+        }
+
+        await pengajuan.destroy();
+
+        return NextResponse.json(
+          { message: 'Pengajuan dibatalkan.' },
+          { status: 200 }
+        );
       }
     }
-    else if (decoded.role === 'Admin') {
-      if (body.action === 'setujui') {
-        await Pengajuan.update({ 
-          tipeKonversi: body.tipeKonversi, 
-          matkulKonversi: JSON.stringify(body.matkulKonversi), 
-          semester_konversi: body.semester_konversi, // <-- TAMBAHKAN BARIS INI
-          status: 'Pilih_Dosen' 
-        }, { where: { id: body.id } });
-        return NextResponse.json({ message: 'Pengajuan disetujui!' }, { status: 200 });
+
+    if (user.role === 'Admin') {
+      if (!body.id) {
+        return NextResponse.json(
+          { message: 'ID pengajuan wajib dikirim.' },
+          { status: 400 }
+        );
       }
-      // ---> ADMIN UPDATE STATUS & ALASAN, BUKAN HAPUS DATA <---
-      if (body.action === 'tolak') {
-        await Pengajuan.update({ status: 'Ditolak', alasan_penolakan: body.alasan }, { where: { id: body.id } });
-        return NextResponse.json({ message: 'Pengajuan ditolak.' }, { status: 200 });
+
+      const pengajuan = await Pengajuan.findByPk(body.id);
+
+      if (!pengajuan) {
+        return NextResponse.json(
+          { message: 'Pengajuan tidak ditemukan.' },
+          { status: 404 }
+        );
+      }
+
+      if (action === 'setujui') {
+        await pengajuan.update({
+          tipeKonversi: body.tipeKonversi || null,
+          matkulKonversi: body.matkulKonversi
+            ? JSON.stringify(body.matkulKonversi)
+            : null,
+          semester_konversi: body.semester_konversi || null,
+          status: 'Pilih_Dosen',
+          alasan_penolakan: null,
+        });
+
+        return NextResponse.json(
+          { message: 'Pengajuan disetujui!' },
+          { status: 200 }
+        );
+      }
+
+      if (action === 'tolak') {
+        const alasan = body.alasan?.trim();
+
+        if (!alasan) {
+          return NextResponse.json(
+            { message: 'Alasan penolakan wajib diisi.' },
+            { status: 400 }
+          );
+        }
+
+        await pengajuan.update({
+          status: 'Ditolak',
+          alasan_penolakan: alasan,
+        });
+
+        return NextResponse.json(
+          { message: 'Pengajuan ditolak.' },
+          { status: 200 }
+        );
       }
     }
-    else if (decoded.role === 'Dosen') {
-      if (body.action === 'terima') {
-        await Pengajuan.update({ status_dosen: 'Disetujui' }, { where: { id: body.id_pengajuan } });
-        return NextResponse.json({ message: 'Bimbingan disetujui!' }, { status: 200 });
-      } else if (body.action === 'tolak') {
-        await Pengajuan.update({ status_dosen: 'Ditolak', dosenId: null, nama_dosen: null, status: 'Pilih_Dosen' }, { where: { id: body.id_pengajuan } });
-        return NextResponse.json({ message: 'Bimbingan ditolak.' }, { status: 200 });
+
+    if (user.role === 'Dosen') {
+      if (!body.id_pengajuan) {
+        return NextResponse.json(
+          { message: 'ID pengajuan wajib dikirim.' },
+          { status: 400 }
+        );
       }
-     if (body.nilai_dari_dosen) {
-        await Pengajuan.update({ 
-          nilai_dari_dosen: body.nilai_dari_dosen,
-          // --- SIMPAN RINCIAN NILAI ---
-          nilai_kedisiplinan: body.nilai_kedisiplinan,
-          nilai_materi: body.nilai_materi,
-          nilai_koding: body.nilai_koding,
-          nilai_laporan: body.nilai_laporan,
-          // --- (Opsional: Jika ada kolom masukan_dosen di model, simpan juga) ---
-        }, { where: { id: body.id_pengajuan } });
-        return NextResponse.json({ message: 'Nilai dan rubrik evaluasi berhasil disimpan!' }, { status: 200 });
+
+      const pengajuan = await Pengajuan.findOne({
+        where: {
+          id: body.id_pengajuan,
+          dosenId: user.id,
+        },
+      });
+
+      if (!pengajuan) {
+        return NextResponse.json(
+          { message: 'Pengajuan bimbingan tidak ditemukan.' },
+          { status: 404 }
+        );
+      }
+
+      if (action === 'terima') {
+        await pengajuan.update({
+          status_dosen: 'Disetujui',
+        });
+
+        return NextResponse.json(
+          { message: 'Bimbingan disetujui!' },
+          { status: 200 }
+        );
+      }
+
+      if (action === 'tolak') {
+        await pengajuan.update({
+          status_dosen: 'Ditolak',
+          dosenId: null,
+          nama_dosen: null,
+          status: 'Pilih_Dosen',
+        });
+
+        return NextResponse.json(
+          { message: 'Bimbingan ditolak.' },
+          { status: 200 }
+        );
+      }
+
+      if (action === 'beri_nilai') {
+        const {
+          nilai_dari_dosen,
+          nilai_kedisiplinan,
+          nilai_materi,
+          nilai_koding,
+          nilai_laporan,
+        } = body;
+
+        if (
+          !nilai_dari_dosen ||
+          !isValidScore(nilai_kedisiplinan) ||
+          !isValidScore(nilai_materi) ||
+          !isValidScore(nilai_koding) ||
+          !isValidScore(nilai_laporan)
+        ) {
+          return NextResponse.json(
+            { message: 'Nilai wajib lengkap dan berada pada rentang 0-100.' },
+            { status: 400 }
+          );
+        }
+
+        await pengajuan.update({
+          nilai_dari_dosen,
+          nilai_kedisiplinan,
+          nilai_materi,
+          nilai_koding,
+          nilai_laporan,
+          status: 'Selesai',
+        });
+
+        return NextResponse.json(
+          { message: 'Nilai dan rubrik evaluasi berhasil disimpan!' },
+          { status: 200 }
+        );
       }
     }
-    return NextResponse.json({ message: 'Aksi tidak valid' }, { status: 400 });
- } catch (error: any) {
-    return NextResponse.json({ message: `Gagal simpan ke database: ${error.message}` }, { status: 500 });
+
+    return NextResponse.json(
+      { message: 'Aksi tidak valid.' },
+      { status: 400 }
+    );
+  } catch (error) {
+    console.error('UPDATE_PENGAJUAN_ERROR:', error);
+
+    return NextResponse.json(
+      { message: 'Terjadi kesalahan server.' },
+      { status: 500 }
+    );
   }
 }

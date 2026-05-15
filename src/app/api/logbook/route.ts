@@ -1,133 +1,268 @@
-import { NextResponse } from 'next/server';
-import Logbook from '@/models/Logbook';
+import Logbook, { LogbookStatus } from '@/models/Logbook';
+import Pengajuan from '@/models/Pengajuan';
 import { connectDB } from '@/lib/db';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { getCurrentUser } from '@/lib/auth';
+import { isValidUrl, trimString } from '@/lib/validators';
+import {
+  successResponse,
+  messageResponse,
+  errorResponse,
+  unauthorizedResponse,
+  forbiddenResponse,
+  badRequestResponse,
+  notFoundResponse,
+} from '@/lib/api-response';
 
+const allowedLogbookStatus: LogbookStatus[] = [
+  'Menunggu',
+  'Disetujui',
+  'Revisi',
+];
 
-
-export async function GET(request: Request) {
+export async function GET() {
   try {
     await connectDB();
-   
-    // ---> MANTRA SAKTI: Paksa sinkronisasi kolom baru ke MySQL <---
-    await Logbook.sync({ alter: true });
-   
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
-   
-    if (!token) {
-      return NextResponse.json({ message: 'Akses ditolak' }, { status: 401 });
+
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return unauthorizedResponse();
     }
 
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-   
-    // PERBAIKAN DI SINI: Deklarasi tipe eksplisit agar TypeScript tidak bingung
-    let data: any[] = []; 
-    
-    if (decoded.role === 'Admin' || decoded.role === 'Dosen') {
-      data = await Logbook.findAll({ order: [['tanggal', 'DESC']] });
-    } else if (decoded.role === 'Mahasiswa') {
-      data = await Logbook.findAll({ where: { mahasiswaId: decoded.id }, order: [['tanggal', 'DESC']] });
-    } else {
-      data = [];
+    if (user.role === 'Admin') {
+      const data = await Logbook.findAll({
+        order: [['tanggal', 'DESC']],
+      });
+
+      return successResponse(data, 'Data logbook berhasil diambil.');
     }
 
-    return NextResponse.json({ data }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    if (user.role === 'Dosen') {
+      const pengajuanBimbingan = await Pengajuan.findAll({
+        where: {
+          dosenId: user.id,
+        },
+        attributes: ['id'],
+      });
+
+      const pengajuanIds = pengajuanBimbingan.map((item) =>
+        item.getDataValue('id')
+      );
+
+      const data = await Logbook.findAll({
+        where: {
+          pengajuan_id: pengajuanIds,
+        },
+        order: [['tanggal', 'DESC']],
+      });
+
+      return successResponse(data, 'Data logbook bimbingan berhasil diambil.');
+    }
+
+    if (user.role === 'Mahasiswa') {
+      const data = await Logbook.findAll({
+        where: {
+          user_id: user.id,
+        },
+        order: [['tanggal', 'DESC']],
+      });
+
+      return successResponse(data, 'Data logbook berhasil diambil.');
+    }
+
+    return forbiddenResponse('Role tidak valid.');
+  } catch (error) {
+    console.error('GET_LOGBOOK_ERROR:', error);
+
+    return errorResponse('Terjadi kesalahan server.');
   }
 }
 
 export async function POST(request: Request) {
   try {
     await connectDB();
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
 
-    if (!token) {
-      return NextResponse.json({ message: 'Akses ditolak!' }, { status: 401 });
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return unauthorizedResponse();
     }
 
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-    if (decoded.role !== 'Mahasiswa') {
-      return NextResponse.json({ message: 'Hanya mahasiswa!' }, { status: 403 });
+    if (user.role !== 'Mahasiswa') {
+      return forbiddenResponse('Hanya mahasiswa yang dapat membuat logbook.');
     }
 
-    const { judul, tanggal, kegiatan, link_bukti } = await request.json();
+    const body = await request.json();
 
-    if (!judul || !tanggal || !kegiatan || !link_bukti) {
-      return NextResponse.json({ message: 'Semua data wajib diisi!' }, { status: 400 });
+    const pengajuan_id = body.pengajuan_id;
+    const tanggal = body.tanggal;
+    const kegiatan = trimString(body.kegiatan);
+    const jam_mulai = body.jam_mulai;
+    const jam_selesai = body.jam_selesai;
+    const bukti_kegiatan = trimString(body.bukti_kegiatan) || null;
+
+    if (!pengajuan_id || !tanggal || !kegiatan || !jam_mulai || !jam_selesai) {
+      return badRequestResponse(
+        'Pengajuan, tanggal, kegiatan, jam mulai, dan jam selesai wajib diisi.'
+      );
+    }
+
+    if (bukti_kegiatan && !isValidUrl(bukti_kegiatan)) {
+      return badRequestResponse('Format link bukti kegiatan tidak valid.');
+    }
+
+    if (jam_mulai >= jam_selesai) {
+      return badRequestResponse('Jam mulai harus lebih awal dari jam selesai.');
+    }
+
+    const pengajuan = await Pengajuan.findOne({
+      where: {
+        id: pengajuan_id,
+        user_id: user.id,
+        status: 'Aktif',
+      },
+    });
+
+    if (!pengajuan) {
+      return notFoundResponse('Pengajuan aktif tidak ditemukan.');
     }
 
     const newLogbook = await Logbook.create({
-      mahasiswaId: decoded.id,
-      judul: judul,
-      tanggal: tanggal,
-      kegiatan: kegiatan,
-      link_dokumen: link_bukti,
-      status: 'Pending',
+      user_id: user.id,
+      pengajuan_id,
+      tanggal,
+      kegiatan,
+      jam_mulai,
+      jam_selesai,
+      bukti_kegiatan,
+      status: 'Menunggu',
     });
 
-    return NextResponse.json({ message: 'Logbook berhasil disimpan!', data: newLogbook }, { status: 201 });
-  } catch (error: any) {
-    console.error("API POST Error:", error);
-    return NextResponse.json({ message: `Gagal simpan ke database: ${error.message}` }, { status: 500 });
+    return successResponse(
+      newLogbook,
+      'Logbook berhasil disimpan!',
+      201
+    );
+  } catch (error) {
+    console.error('CREATE_LOGBOOK_ERROR:', error);
+
+    return errorResponse('Terjadi kesalahan server.');
   }
 }
 
 export async function PUT(request: Request) {
   try {
     await connectDB();
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
-   
-    if (!token) {
-      return NextResponse.json({ message: 'Akses ditolak!' }, { status: 401 });
+
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return unauthorizedResponse();
     }
-   
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+
     const body = await request.json();
-   
-    // --- LOGIKA UNTUK DOSEN MEMBERIKAN KOMENTAR/ACC ---
-    if (decoded.role === 'Dosen') {
-      if (body.action === 'evaluasi') {
-        await Logbook.update({ 
-          status: body.status, // 'Disetujui' atau 'Revisi'
-          komentar_dosen: body.komentar_dosen 
-        }, { 
-          where: { id: body.logbook_id } 
-        });
-        return NextResponse.json({ message: 'Evaluasi logbook berhasil disimpan!' }, { status: 200 });
+    const action = body.action;
+
+    if (!action) {
+      return badRequestResponse('Aksi wajib dikirim.');
+    }
+
+    if (user.role === 'Dosen' && action === 'evaluasi') {
+      const logbook_id = body.logbook_id;
+      const status = body.status as LogbookStatus;
+      const komentar_dosen = trimString(body.komentar_dosen) || null;
+
+      if (!logbook_id || !status) {
+        return badRequestResponse('ID logbook dan status wajib dikirim.');
       }
-    }
 
-    // --- LOGIKA UNTUK MAHASISWA MEMPERBAIKI LOGBOOK ---
-    if (decoded.role === 'Mahasiswa') {
-      // Jika mahasiswa mengirim ulang logbook yang direvisi, ubah status kembali jadi 'Menunggu'
-      await Logbook.update({
-        kegiatan: body.kegiatan,
-        jam_mulai: body.jam_mulai,
-        jam_selesai: body.jam_selesai,
-        bukti_kegiatan: body.bukti_kegiatan || null,
-        status: 'Menunggu' // <--- Reset ke Menunggu agar dosen tahu sudah diperbaiki
-      }, {
-        where: { id: body.logbook_id, user_id: decoded.id }
+      if (!allowedLogbookStatus.includes(status)) {
+        return badRequestResponse('Status logbook tidak valid.');
+      }
+
+      if (status === 'Revisi' && !komentar_dosen) {
+        return badRequestResponse(
+          'Komentar dosen wajib diisi jika status Revisi.'
+        );
+      }
+
+      const logbook = await Logbook.findByPk(logbook_id);
+
+      if (!logbook) {
+        return notFoundResponse('Logbook tidak ditemukan.');
+      }
+
+      const pengajuan = await Pengajuan.findOne({
+        where: {
+          id: logbook.getDataValue('pengajuan_id'),
+          dosenId: user.id,
+        },
       });
-      return NextResponse.json({ message: 'Logbook berhasil diperbarui!' }, { status: 200 });
-    }
-   
-    // UPDATE DATA: Menyimpan status, catatan dari dosen, dan juga NILAI ANGKA
-    await Logbook.update({
-      status: body.status,
-      catatan_dosen: body.catatan_dosen || null,
-      nilai: body.nilai || null
-    }, {
-      where: { id: body.id }
-    });
 
-    return NextResponse.json({ message: 'Status dan nilai logbook diperbarui!' }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({ message: `Error server: ${error.message}` }, { status: 500 });
+      if (!pengajuan) {
+        return forbiddenResponse(
+          'Anda tidak memiliki akses untuk mengevaluasi logbook ini.'
+        );
+      }
+
+      await logbook.update({
+        status,
+        komentar_dosen,
+      });
+
+      return messageResponse('Evaluasi logbook berhasil disimpan!');
+    }
+
+    if (user.role === 'Mahasiswa' && action === 'update') {
+      const logbook_id = body.logbook_id;
+      const kegiatan = trimString(body.kegiatan);
+      const jam_mulai = body.jam_mulai;
+      const jam_selesai = body.jam_selesai;
+      const bukti_kegiatan = trimString(body.bukti_kegiatan) || null;
+
+      if (!logbook_id || !kegiatan || !jam_mulai || !jam_selesai) {
+        return badRequestResponse(
+          'ID logbook, kegiatan, jam mulai, dan jam selesai wajib diisi.'
+        );
+      }
+
+      if (bukti_kegiatan && !isValidUrl(bukti_kegiatan)) {
+        return badRequestResponse('Format link bukti kegiatan tidak valid.');
+      }
+
+      if (jam_mulai >= jam_selesai) {
+        return badRequestResponse(
+          'Jam mulai harus lebih awal dari jam selesai.'
+        );
+      }
+
+      const logbook = await Logbook.findOne({
+        where: {
+          id: logbook_id,
+          user_id: user.id,
+        },
+      });
+
+      if (!logbook) {
+        return notFoundResponse('Logbook tidak ditemukan.');
+      }
+
+      await logbook.update({
+        kegiatan,
+        jam_mulai,
+        jam_selesai,
+        bukti_kegiatan,
+        status: 'Menunggu',
+        komentar_dosen: null,
+      });
+
+      return messageResponse('Logbook berhasil diperbarui!');
+    }
+
+    return badRequestResponse('Aksi tidak valid.');
+  } catch (error) {
+    console.error('UPDATE_LOGBOOK_ERROR:', error);
+
+    return errorResponse('Terjadi kesalahan server.');
   }
 }

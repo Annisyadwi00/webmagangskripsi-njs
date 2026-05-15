@@ -1,5 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
-import sequelize from '../lib/db';
+import sequelize from '@/lib/db';
+
+export type LogbookStatus = 'Menunggu' | 'Disetujui' | 'Revisi';
 
 class Logbook extends Model {
   declare id: number;
@@ -10,40 +12,65 @@ class Logbook extends Model {
   declare jam_mulai: string;
   declare jam_selesai: string;
   declare bukti_kegiatan: string | null;
-  
-  // --- DUA KOLOM BARU UNTUK FITUR REVISI ---
-  declare status: string; 
+  declare status: LogbookStatus;
   declare komentar_dosen: string | null;
+  declare createdAt: Date;
+  declare updatedAt: Date;
 }
 
 Logbook.init(
   {
-    id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
-    user_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
-    pengajuan_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
-    tanggal: { type: DataTypes.DATEONLY, allowNull: false },
-    kegiatan: { type: DataTypes.TEXT, allowNull: false },
-    jam_mulai: { type: DataTypes.TIME, allowNull: false },
-    jam_selesai: { type: DataTypes.TIME, allowNull: false },
-    bukti_kegiatan: { type: DataTypes.STRING, allowNull: true },
-    
-    // --- PENAMBAHAN KOLOM ---
-    status: { 
-      type: DataTypes.STRING, 
-      allowNull: false, 
-      defaultValue: 'Menunggu' // Status: Menunggu, Disetujui, Revisi
+    id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      autoIncrement: true,
+      primaryKey: true,
     },
-    komentar_dosen: { 
-      type: DataTypes.TEXT, 
-      allowNull: true 
+    user_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: false,
+    },
+    pengajuan_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: false,
+    },
+    tanggal: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+    },
+    kegiatan: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    jam_mulai: {
+      type: DataTypes.TIME,
+      allowNull: false,
+    },
+    jam_selesai: {
+      type: DataTypes.TIME,
+      allowNull: false,
+    },
+    bukti_kegiatan: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        isUrl: true,
+      },
+    },
+    status: {
+      type: DataTypes.ENUM('Menunggu', 'Disetujui', 'Revisi'),
+      allowNull: false,
+      defaultValue: 'Menunggu',
+    },
+    komentar_dosen: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
   },
-  { 
-    sequelize, 
-    tableName: 'logbook', 
-    timestamps: true 
+  {
+    sequelize,
+    tableName: 'logbook',
+    timestamps: true,
   }
 );
-
 
 export default Logbook;

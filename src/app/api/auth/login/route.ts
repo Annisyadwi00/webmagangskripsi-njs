@@ -1,39 +1,88 @@
-import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import User from '@/models/User';
 import { connectDB } from '@/lib/db';
+import { isValidEmail, trimString } from '@/lib/validators';
+import {
+  successResponse,
+  errorResponse,
+  badRequestResponse,
+  unauthorizedResponse,
+} from '@/lib/api-response';
 
 export async function POST(request: Request) {
   try {
     await connectDB();
-    const { email, password } = await request.json();
 
-    const user: any = await User.findOne({ where: { email } });
-    if (!user) return NextResponse.json({ message: 'Email tidak terdaftar!' }, { status: 404 });
+    const body = await request.json();
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return NextResponse.json({ message: 'Password salah!' }, { status: 401 });
+    const email = trimString(body.email);
+    const password = trimString(body.password);
+
+    if (!email || !password) {
+      return badRequestResponse('Email dan password wajib diisi.');
+    }
+
+    if (!isValidEmail(email)) {
+      return badRequestResponse('Format email tidak valid.');
+    }
+
+    const user = await User.findOne({
+      where: { email },
+    });
+
+    if (!user) {
+      return unauthorizedResponse('Email atau password salah.');
+    }
+
+    const isMatch = await bcrypt.compare(
+      password,
+      user.getDataValue('password')
+    );
+
+    if (!isMatch) {
+      return unauthorizedResponse('Email atau password salah.');
+    }
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET belum dikonfigurasi.');
+    }
 
     const token = jwt.sign(
-      { id: user.id, role: user.role, name: user.name, prodi: user.prodi },
-      process.env.JWT_SECRET || 'fallback_secret'
+      {
+        id: user.getDataValue('id'),
+        role: user.getDataValue('role'),
+        name: user.getDataValue('name'),
+        prodi: user.getDataValue('prodi'),
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: '1d',
+      }
     );
 
     const cookieStore = await cookies();
-    
-    // REVISI: maxAge dihapus agar menjadi Session Cookie. 
-    // Otomatis terhapus dan minta login ulang saat browser ditutup.
+
     cookieStore.set('auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       path: '/',
+      maxAge: 60 * 60 * 24,
     });
 
-    return NextResponse.json({ message: 'Login berhasil', role: user.role }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({ message: `Error: ${error.message}` }, { status: 500 });
+    return successResponse(
+      {
+        role: user.getDataValue('role'),
+        name: user.getDataValue('name'),
+        prodi: user.getDataValue('prodi'),
+      },
+      'Login berhasil.'
+    );
+  } catch (error) {
+    console.error('LOGIN_ERROR:', error);
+
+    return errorResponse('Terjadi kesalahan server.');
   }
 }
