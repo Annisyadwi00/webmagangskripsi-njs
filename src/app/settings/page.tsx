@@ -1,274 +1,637 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-// Tambahkan import Variants dari framer-motion di sini
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+import PageHeader from '@/components/ui/PageHeader';
+import Alert from '@/components/ui/Alert';
+import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
+
+type ActiveTab = 'profil' | 'keamanan';
+
+type ProfileForm = {
+  name: string;
+  email: string;
+  role: string;
+  nim_nidn: string;
+  prodi: string;
+  phone: string;
+  photo: string;
+  semester: string;
+  kategori_dosen: string;
+};
+
+type PasswordForm = {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+};
+
+const initialProfileForm: ProfileForm = {
+  name: '',
+  email: '',
+  role: '',
+  nim_nidn: '',
+  prodi: '',
+  phone: '',
+  photo: '',
+  semester: '',
+  kategori_dosen: '',
+};
+
+const initialPasswordForm: PasswordForm = {
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+};
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'profil' | 'keamanan'>('profil');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [user, setUser] = useState({ 
-    name: '', email: '', role: '', nim_nidn: '', prodi: '', phone: '', photo: '', 
-    semester: '', kategori_dosen: '' // <-- Tambahan state baru
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('profil');
+
+  const [profileForm, setProfileForm] =
+    useState<ProfileForm>(initialProfileForm);
+
+  const [passwordForm, setPasswordForm] =
+    useState<PasswordForm>(initialPasswordForm);
+
+  const [showPassword, setShowPassword] = useState({
+    current: false,
+    new: false,
+    confirm: false,
   });
-  const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
 
-  // REVISI: State untuk tombol mata (show password)
-  const [showCurrentPw, setShowCurrentPw] = useState(false);
-  const [showNewPw, setShowNewPw] = useState(false);
-  const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
+  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
 
-  const showToast = (msg: string, type: 'success' | 'error') => {
-    setToast({ show: true, msg, type });
-    setTimeout(() => setToast({ show: false, msg: '', type: 'success' }), 3000);
+  const [message, setMessage] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const getBackPath = (role?: string) => {
+    if (role === 'Admin') return '/admin/dashboard';
+    if (role === 'Dosen') return '/dosen/dashboard';
+
+    return '/dashboard';
+  };
+
+  const fetchUser = async () => {
+    try {
+      setIsLoading(true);
+      setErrorMsg('');
+
+      const user = await getCurrentUserClient();
+
+      setCurrentUser(user);
+      setProfileForm({
+        name: user.name || '',
+        email: user.email || '',
+        role: user.role || '',
+        nim_nidn: user.nim_nidn || '',
+        prodi: user.prodi || '',
+        phone: user.phone || '',
+        photo: user.photo || '',
+        semester: user.semester || '',
+        kategori_dosen: user.kategori_dosen || '',
+      });
+    } catch (error) {
+      const errMessage =
+        error instanceof Error ? error.message : 'Gagal mengambil data profil.';
+
+      setErrorMsg(errMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-          const data = (await res.json()).data;
-          setUser({
-            name: data.name || '', email: data.email || '', role: data.role || 'Pengguna',
-            nim_nidn: data.nim_nidn || '-', prodi: data.prodi || '-', phone: data.phone || '', photo: data.photo || '',
-            semester: data.semester || '', kategori_dosen: data.kategori_dosen || '' // <-- Tambahan mapping
-          });
-        } else {
-          router.push('/login');
-        }
-      } catch (error) {
-        showToast('Gagal memuat data akun.', 'error');
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchUser();
-  }, [router]);
+  }, []);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfileChange = (field: keyof ProfileForm, value: string) => {
+    setProfileForm({
+      ...profileForm,
+      [field]: value,
+    });
+  };
+
+  const handlePasswordChange = (field: keyof PasswordForm, value: string) => {
+    setPasswordForm({
+      ...passwordForm,
+      [field]: value,
+    });
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) return showToast("Ukuran foto terlalu besar! Maksimal 2MB.", "error");
+
+    if (file.size > 2 * 1024 * 1024) {
+      setErrorMsg('Ukuran foto maksimal 2MB.');
+      return;
+    }
+
+    if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+      setErrorMsg('Format foto harus JPG atau PNG.');
+      return;
+    }
 
     const reader = new FileReader();
-    reader.onloadend = () => setUser({ ...user, photo: reader.result as string });
+
+    reader.onloadend = () => {
+      setProfileForm({
+        ...profileForm,
+        photo: String(reader.result || ''),
+      });
+    };
+
     reader.readAsDataURL(file);
   };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault(); setIsSubmitting(true);
+    e.preventDefault();
+
+    setIsSubmittingProfile(true);
+    setMessage('');
+    setErrorMsg('');
+
     try {
       const res = await fetch('/api/auth/me', {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'update_profile', 
-          name: user.name, phone: user.phone, photo: user.photo,
-          semester: user.semester, kategori_dosen: user.kategori_dosen // <-- Tambahkan ini
-        })
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'update_profile',
+          name: profileForm.name,
+          phone: profileForm.phone,
+          photo: profileForm.photo || null,
+          semester: profileForm.semester,
+          kategori_dosen: profileForm.kategori_dosen,
+        }),
       });
-      if (!res.ok) throw new Error((await res.json()).message);
-      showToast('Profil berhasil diperbarui!', 'success');
-    } catch (err: any) { showToast(err.message, 'error'); } finally { setIsSubmitting(false); }
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.message || 'Gagal memperbarui profil.');
+      }
+
+      setMessage(result.message || 'Profil berhasil diperbarui.');
+      await fetchUser();
+    } catch (error) {
+      const errMessage =
+        error instanceof Error ? error.message : 'Gagal memperbarui profil.';
+
+      setErrorMsg(errMessage);
+    } finally {
+      setIsSubmittingProfile(false);
+    }
   };
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwords.new !== passwords.confirm) return showToast('Konfirmasi kata sandi tidak cocok!', 'error');
-    if (passwords.new.length < 8) return showToast('Kata sandi baru minimal 8 karakter!', 'error');
-   
-    setIsSubmitting(true);
+
+    setIsSubmittingPassword(true);
+    setMessage('');
+    setErrorMsg('');
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setErrorMsg('Konfirmasi password tidak sesuai.');
+      setIsSubmittingPassword(false);
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 8) {
+      setErrorMsg('Password baru minimal 8 karakter.');
+      setIsSubmittingPassword(false);
+      return;
+    }
+
     try {
       const res = await fetch('/api/auth/me', {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update_password', currentPassword: passwords.current, newPassword: passwords.new })
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'update_password',
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+          confirmPassword: passwordForm.confirmPassword,
+        }),
       });
-      if (!res.ok) throw new Error((await res.json()).message);
-      showToast('Kata sandi berhasil diubah!', 'success');
-      setPasswords({ current: '', new: '', confirm: '' });
-    } catch (err: any) { showToast(err.message, 'error'); } finally { setIsSubmitting(false); }
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.message || 'Gagal mengubah password.');
+      }
+
+      setMessage(result.message || 'Password berhasil diubah.');
+      setPasswordForm(initialPasswordForm);
+    } catch (error) {
+      const errMessage =
+        error instanceof Error ? error.message : 'Gagal mengubah password.';
+
+      setErrorMsg(errMessage);
+    } finally {
+      setIsSubmittingPassword(false);
+    }
   };
 
-  // Berikan tipe Variants agar TypeScript tidak memunculkan error
-  const fadeUp: Variants = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } } };
-
-  if (isLoading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center"><div className="w-12 h-12 border-4 border-[#1e3a8a] border-t-transparent rounded-full animate-spin"></div></div>;
-
-  return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-20 relative">
-      <AnimatePresence>
-        {toast.show && (
-          <motion.div initial={{ opacity: 0, y: -50, x: '-50%' }} animate={{ opacity: 1, y: 20, x: '-50%' }} exit={{ opacity: 0, y: -50, x: '-50%' }} className="fixed top-0 left-1/2 z-50">
-            <div className={`px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
-              {toast.msg}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <header className="bg-white/80 backdrop-blur-xl shadow-sm border-b border-gray-200 sticky top-0 z-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
-          <button onClick={() => router.back()} className="p-2 text-gray-400 hover:text-[#1e3a8a] hover:bg-blue-50 rounded-full transition-colors group">
-            <svg className="w-6 h-6 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-          </button>
-          <div className="w-px h-6 bg-gray-200"></div>
-          <h1 className="font-extrabold text-gray-900 text-lg">Pengaturan Akun</h1>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 flex flex-col md:flex-row gap-8">
-        <aside className="w-full md:w-72 shrink-0">
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 sticky top-24">
-            <div className="flex items-center gap-4 mb-8 pb-6 border-b border-gray-100">
-              <div className="w-14 h-14 rounded-full border-2 border-[#1e3a8a]/20 bg-linear-to-tr from-[#1e3a8a] to-blue-500 text-white flex items-center justify-center font-black text-xl overflow-hidden shrink-0">
-                {user.photo ? <img src={user.photo} alt="Profil" className="w-full h-full object-cover" /> : user.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="overflow-hidden">
-                <h3 className="font-bold text-gray-900 truncate">{user.name}</h3>
-                <p className="text-xs font-bold text-blue-600 bg-blue-50 inline-block px-2 py-0.5 rounded mt-1">{user.role}</p>
-              </div>
-            </div>
-            <nav className="space-y-2">
-              <button onClick={() => setActiveTab('profil')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold transition-all ${activeTab === 'profil' ? 'bg-blue-50 text-[#1e3a8a]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>Profil Personal</button>
-              <button onClick={() => setActiveTab('keamanan')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold transition-all ${activeTab === 'keamanan' ? 'bg-blue-50 text-[#1e3a8a]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>Keamanan & Sandi</button>
-            </nav>
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-slate-50 py-8 dark:bg-slate-950">
+        <div className="app-container">
+          <div className="app-card p-8">
+            <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+            <div className="mt-4 h-8 w-72 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+            <div className="mt-8 h-80 animate-pulse rounded-3xl bg-slate-100 dark:bg-slate-800" />
           </div>
-        </aside>
-
-        <div className="flex-1">
-          <AnimatePresence mode="wait">
-           
-            {activeTab === 'profil' && (
-              <motion.div key="profil" variants={fadeUp} initial="hidden" animate="show" exit={{ opacity: 0, y: -20 }}>
-                <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-                  <h2 className="text-2xl font-black text-gray-900 mb-2">Informasi Personal</h2>
-                  <p className="text-gray-500 mb-8 border-b pb-6">Kelola data diri Anda.</p>
-                 
-                  <form onSubmit={handleUpdateProfile} className="space-y-6">
-                    <div className="flex items-center gap-6 mb-8">
-                      <input type="file" accept="image/png, image/jpeg, image/jpg" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
-                      <div onClick={() => fileInputRef.current?.click()} className="w-24 h-24 rounded-full border-4 border-gray-100 bg-gray-100 flex items-center justify-center overflow-hidden cursor-pointer group relative shadow-inner">
-                        {user.photo ? <img src={user.photo} alt="Profil" className="w-full h-full object-cover" /> : <span className="text-3xl font-black text-gray-400">{user.name.charAt(0).toUpperCase()}</span>}
-                        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white">
-                          <span className="text-[10px] font-bold uppercase mt-1">Ubah Foto</span>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-gray-900 text-lg mb-1">Foto Profil</h4>
-                        <p className="text-sm text-gray-500">Format: JPG, PNG. (Maks 2MB).</p>
-                        <button type="button" onClick={() => setUser({...user, photo: ''})} className="text-xs font-bold text-red-500 mt-2 hover:underline">Hapus Foto</button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div><label className="block text-sm font-bold text-gray-700 mb-2">Nama Lengkap</label><input type="text" value={user.name} onChange={(e) => setUser({...user, name: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] text-gray-900 transition-all" /></div>
-                      <div><label className="block text-sm font-bold text-gray-700 mb-2">Email (Read Only)</label><input type="email" value={user.email} disabled className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-gray-100 text-gray-500 cursor-not-allowed outline-none" /></div>
-                      <div><label className="block text-sm font-bold text-gray-700 mb-2">{user.role === 'Dosen' ? 'NIDN' : 'NIM'} (Read Only)</label><input type="text" value={user.nim_nidn} disabled className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-gray-100 text-gray-500 cursor-not-allowed outline-none" /></div>
-                      <div><label className="block text-sm font-bold text-gray-700 mb-2">No WhatsApp</label><input type="text" value={user.phone} onChange={(e) => setUser({...user, phone: e.target.value.replace(/[^0-9]/g, '')})} className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] text-gray-900 transition-all" /></div>
-                      {/* TAMPIL JIKA MAHASISWA */}
-                      {user.role === 'Mahasiswa' && (
-                        <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-2">Semester Aktif</label>
-                          <select value={user.semester} onChange={(e) => setUser({...user, semester: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] text-gray-900 transition-all appearance-none cursor-pointer">
-                            <option value="">Pilih Semester</option>
-                            <option value="Semester 5">Semester 5</option>
-                            <option value="Semester 6">Semester 6</option>
-                            <option value="Semester 7">Semester 7</option>
-                            <option value="Semester 8">Semester 8</option>
-                            <option value="Lulus">Sudah Lulus / Alumni</option>
-                          </select>
-                        </div>
-                      )}
-
-                      {/* TAMPIL JIKA DOSEN */}
-                      {user.role === 'Dosen' && (
-                        <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-2">Kategori / Keahlian Utama</label>
-                          <select value={user.kategori_dosen} onChange={(e) => setUser({...user, kategori_dosen: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] text-gray-900 transition-all appearance-none cursor-pointer">
-                            <option value="">Pilih Keahlian Utama</option>
-                            <option value="💻 Web Development">💻 Web Development</option>
-                            <option value="🤖 AI & Machine Learning">🤖 AI & Machine Learning</option>
-                            <option value="📊 Data Science & Analytics">📊 Data Science & Analytics</option>
-                            <option value="📱 Mobile App Development">📱 Mobile App Development</option>
-                            <option value="🔒 Cyber Security">🔒 Cyber Security</option>
-                            <option value="☁️ Cloud & DevOps">☁️ Cloud & DevOps</option>
-                            <option value="🎨 UI/UX Design">🎨 UI/UX Design</option>
-                            <option value="🛠️ Rekayasa Perangkat Lunak">🛠️ Rekayasa Perangkat Lunak</option>
-                          </select>
-                        </div>
-                      )}
-                    </div>
-                   
-                    <div className="pt-6 mt-6 border-t border-gray-100 flex justify-end">
-                      <button type="submit" disabled={isSubmitting} className="px-8 py-3.5 bg-[#1e3a8a] text-white font-bold rounded-2xl hover:bg-blue-900 transition-all">{isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan'}</button>
-                    </div>
-                  </form>
-                </div>
-              </motion.div>
-            )}
-
-            {/* REVISI: TAB KEAMANAN DENGAN IKON MATA */}
-            {activeTab === 'keamanan' && (
-              <motion.div key="keamanan" variants={fadeUp} initial="hidden" animate="show" exit={{ opacity: 0, y: -20 }}>
-                <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-                  <h2 className="text-2xl font-black text-gray-900 mb-2">Ganti Kata Sandi</h2>
-                  <p className="text-gray-500 mb-8 border-b pb-6">Pastikan kata sandi baru Anda unik dan memiliki minimal 8 karakter demi keamanan akun Anda.</p>
-                 
-                  <form onSubmit={handleUpdatePassword} className="space-y-6 max-w-lg">
-                   
-                    {/* Password Saat Ini */}
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2">Kata Sandi Saat Ini</label>
-                      <div className="relative">
-                        <input type={showCurrentPw ? "text" : "password"} required value={passwords.current} onChange={(e) => setPasswords({...passwords, current: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] text-gray-900 transition-all" placeholder="••••••••" />
-                        <button type="button" onClick={() => setShowCurrentPw(!showCurrentPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                          {showCurrentPw ? '🙈' : '👁️'}
-                        </button>
-                      </div>
-                    </div>
-                   
-                    {/* Password Baru */}
-                    <div className="pt-2">
-                      <label className="block text-sm font-bold text-gray-700 mb-2">Kata Sandi Baru</label>
-                      <div className="relative">
-                        <input type={showNewPw ? "text" : "password"} required minLength={8} value={passwords.new} onChange={(e) => setPasswords({...passwords, new: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] text-gray-900 transition-all" placeholder="Minimal 8 karakter" />
-                        <button type="button" onClick={() => setShowNewPw(!showNewPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                          {showNewPw ? '🙈' : '👁️'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Konfirmasi Password */}
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2">Konfirmasi Kata Sandi Baru</label>
-                      <div className="relative">
-                        <input type={showConfirmPw ? "text" : "password"} required minLength={8} value={passwords.confirm} onChange={(e) => setPasswords({...passwords, confirm: e.target.value})} className="w-full px-5 py-4 border border-gray-200 rounded-2xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-[#1e3a8a] text-gray-900 transition-all" placeholder="Ulangi kata sandi baru" />
-                        <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                          {showConfirmPw ? '🙈' : '👁️'}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="pt-6 mt-6 border-t border-gray-100">
-                      <button type="submit" disabled={isSubmitting || !passwords.current || !passwords.new} className="px-8 py-3.5 bg-gray-900 text-white font-bold rounded-2xl shadow-lg hover:bg-black hover:-translate-y-0.5 transition-all w-full sm:w-auto">
-                        {isSubmitting ? 'Memproses...' : 'Perbarui Kata Sandi'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </motion.div>
-            )}
-
-          </AnimatePresence>
         </div>
       </main>
-    </div>
+    );
+  }
+
+  if (errorMsg && !currentUser) {
+    return (
+      <main className="min-h-screen bg-slate-50 py-8 dark:bg-slate-950">
+        <div className="app-container">
+          <Alert variant="error">{errorMsg}</Alert>
+          <button
+            type="button"
+            onClick={() => router.push('/login')}
+            className="app-btn-primary"
+          >
+            Kembali ke Login
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-50 py-8 text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+      <div className="app-container">
+        <PageHeader
+          eyebrow="Settings"
+          title="Pengaturan Akun"
+          description="Kelola profil pengguna, foto profil, dan kata sandi akun SI Magang."
+          action={
+            <button
+              type="button"
+              onClick={() => router.push(getBackPath(currentUser?.role))}
+              className="app-btn-secondary"
+            >
+              Kembali ke Dashboard
+            </button>
+          }
+        />
+
+        {message && <Alert variant="success">{message}</Alert>}
+        {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
+
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr]">
+          <aside className="app-card p-6">
+            <div className="flex items-center gap-4 border-b border-slate-100 pb-6 dark:border-slate-800">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-blue-100 bg-blue-50 text-xl font-black text-[#1e3a8a] dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
+                {profileForm.photo ? (
+                  <img
+                    src={profileForm.photo}
+                    alt="Foto profil"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  profileForm.name.charAt(0).toUpperCase() || 'U'
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <p className="truncate font-black text-slate-950 dark:text-white">
+                  {profileForm.name || '-'}
+                </p>
+                <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">
+                  {profileForm.role || '-'}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-3">
+              <button
+                type="button"
+                onClick={() => setActiveTab('profil')}
+                className={`w-full rounded-2xl px-4 py-3 text-left text-sm font-black ${
+                  activeTab === 'profil'
+                    ? 'bg-blue-50 text-[#1e3a8a] dark:bg-blue-400/10 dark:text-blue-300'
+                    : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800'
+                }`}
+              >
+                Profil User
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('keamanan')}
+                className={`w-full rounded-2xl px-4 py-3 text-left text-sm font-black ${
+                  activeTab === 'keamanan'
+                    ? 'bg-blue-50 text-[#1e3a8a] dark:bg-blue-400/10 dark:text-blue-300'
+                    : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800'
+                }`}
+              >
+                Ganti Kata Sandi
+              </button>
+            </div>
+          </aside>
+
+          {activeTab === 'profil' && (
+            <section className="app-card animate-fade-up p-6 md:p-8">
+              <div className="mb-6">
+                <h2 className="text-2xl font-black text-slate-950 dark:text-white">
+                  Profil User
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                  Perbarui nama, nomor WhatsApp, foto profil, dan informasi
+                  tambahan sesuai role.
+                </p>
+              </div>
+
+              <form onSubmit={handleUpdateProfile} className="space-y-6">
+                <div className="flex flex-col gap-5 rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/70 md:flex-row md:items-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                  />
+
+                  <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-3xl border border-blue-100 bg-blue-50 text-3xl font-black text-[#1e3a8a] dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
+                    {profileForm.photo ? (
+                      <img
+                        src={profileForm.photo}
+                        alt="Foto profil"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      profileForm.name.charAt(0).toUpperCase() || 'U'
+                    )}
+                  </div>
+
+                  <div className="flex-1">
+                    <p className="font-black text-slate-950 dark:text-white">
+                      Foto Profil
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                      Gunakan JPG atau PNG. Maksimal 2MB.
+                    </p>
+
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="app-btn-secondary"
+                      >
+                        Pilih Foto
+                      </button>
+
+                      {profileForm.photo && (
+                        <button
+                          type="button"
+                          onClick={() => handleProfileChange('photo', '')}
+                          className="app-btn-danger"
+                        >
+                          Hapus Foto
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="app-label">Nama Lengkap</label>
+                    <input
+                      type="text"
+                      required
+                      value={profileForm.name}
+                      onChange={(e) =>
+                        handleProfileChange('name', e.target.value)
+                      }
+                      className="app-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="app-label">Email</label>
+                    <input
+                      type="email"
+                      disabled
+                      value={profileForm.email}
+                      className="app-input cursor-not-allowed opacity-70"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="app-label">
+                      {profileForm.role === 'Dosen' ? 'NIDN' : 'NIM'}
+                    </label>
+                    <input
+                      type="text"
+                      disabled
+                      value={profileForm.nim_nidn}
+                      className="app-input cursor-not-allowed opacity-70"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="app-label">Nomor WhatsApp</label>
+                    <input
+                      type="text"
+                      value={profileForm.phone}
+                      onChange={(e) =>
+                        handleProfileChange(
+                          'phone',
+                          e.target.value.replace(/[^0-9]/g, '')
+                        )
+                      }
+                      className="app-input"
+                      placeholder="081234567890"
+                    />
+                  </div>
+
+                  {profileForm.role === 'Mahasiswa' && (
+                    <div>
+                      <label className="app-label">Semester</label>
+                      <select
+                        value={profileForm.semester}
+                        onChange={(e) =>
+                          handleProfileChange('semester', e.target.value)
+                        }
+                        className="app-input"
+                      >
+                        <option value="">Pilih Semester</option>
+                        <option value="5">Semester 5</option>
+                        <option value="6">Semester 6</option>
+                        <option value="7">Semester 7</option>
+                        <option value="8">Semester 8</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {profileForm.role === 'Dosen' && (
+                    <div>
+                      <label className="app-label">Kategori Dosen</label>
+                      <input
+                        type="text"
+                        value={profileForm.kategori_dosen}
+                        onChange={(e) =>
+                          handleProfileChange(
+                            'kategori_dosen',
+                            e.target.value
+                          )
+                        }
+                        className="app-input"
+                        placeholder="Contoh: Web Development"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmittingProfile}
+                  className="app-btn-primary disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSubmittingProfile ? 'Menyimpan...' : 'Simpan Profil'}
+                </button>
+              </form>
+            </section>
+          )}
+
+          {activeTab === 'keamanan' && (
+            <section className="app-card animate-fade-up p-6 md:p-8">
+              <div className="mb-6">
+                <h2 className="text-2xl font-black text-slate-950 dark:text-white">
+                  Ganti Kata Sandi
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                  Gunakan password baru minimal 8 karakter dan berbeda dari
+                  password lama.
+                </p>
+              </div>
+
+              <form
+                onSubmit={handleUpdatePassword}
+                className="max-w-xl space-y-5"
+              >
+                <div>
+                  <label className="app-label">Password Saat Ini</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword.current ? 'text' : 'password'}
+                      required
+                      value={passwordForm.currentPassword}
+                      onChange={(e) =>
+                        handlePasswordChange(
+                          'currentPassword',
+                          e.target.value
+                        )
+                      }
+                      className="app-input pr-24"
+                      placeholder="Masukkan password saat ini"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPassword({
+                          ...showPassword,
+                          current: !showPassword.current,
+                        })
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1 text-xs font-black text-[#1e3a8a] hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-400/10"
+                    >
+                      {showPassword.current ? 'Sembunyikan' : 'Lihat'}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="app-label">Password Baru</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword.new ? 'text' : 'password'}
+                      required
+                      value={passwordForm.newPassword}
+                      onChange={(e) =>
+                        handlePasswordChange('newPassword', e.target.value)
+                      }
+                      className="app-input pr-24"
+                      placeholder="Minimal 8 karakter"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPassword({
+                          ...showPassword,
+                          new: !showPassword.new,
+                        })
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1 text-xs font-black text-[#1e3a8a] hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-400/10"
+                    >
+                      {showPassword.new ? 'Sembunyikan' : 'Lihat'}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="app-label">Konfirmasi Password Baru</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword.confirm ? 'text' : 'password'}
+                      required
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) =>
+                        handlePasswordChange(
+                          'confirmPassword',
+                          e.target.value
+                        )
+                      }
+                      className="app-input pr-24"
+                      placeholder="Ulangi password baru"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPassword({
+                          ...showPassword,
+                          confirm: !showPassword.confirm,
+                        })
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1 text-xs font-black text-[#1e3a8a] hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-400/10"
+                    >
+                      {showPassword.confirm ? 'Sembunyikan' : 'Lihat'}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmittingPassword}
+                  className="app-btn-primary disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSubmittingPassword
+                    ? 'Menyimpan...'
+                    : 'Simpan Password'}
+                </button>
+              </form>
+            </section>
+          )}
+        </section>
+      </div>
+    </main>
   );
 }

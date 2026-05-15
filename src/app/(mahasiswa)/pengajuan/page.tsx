@@ -86,8 +86,12 @@ export default function PengajuanMahasiswaPage() {
         return;
       }
 
-      setUser(currentUser);
-      setPengajuan(pengajuanData.items[0] || null);
+      const pengajuanItems = Array.isArray(pengajuanData)
+  ? pengajuanData
+  : pengajuanData?.items || [];
+
+setUser(currentUser);
+setPengajuan(pengajuanItems[0] || null);
     } catch (error) {
       const errMessage =
         error instanceof Error

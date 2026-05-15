@@ -47,12 +47,18 @@ export default function MahasiswaDashboardPage() {
           getLogbookList(),
         ]);
 
-        if (currentUser.role !== 'Mahasiswa') {
-          window.location.href = getDashboardPathByRole(currentUser.role);
-          return;
-        }
+      if (currentUser.role !== 'Mahasiswa') {
+  window.location.href = getDashboardPathByRole(currentUser.role);
+  return;
+}
 
-        const pengajuanItems = pengajuanData?.items || [];
+const pengajuanItems = Array.isArray(pengajuanData)
+  ? pengajuanData
+  : pengajuanData?.items || [];
+
+setUser(currentUser);
+setPengajuan(pengajuanItems[0] || null);
+setLogbooks(logbookData || []);
 
 setUser(currentUser);
 setPengajuan(pengajuanItems[0] || null);

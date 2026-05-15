@@ -24,6 +24,7 @@ const navItems: Record<DashboardRole, NavItem[]> = {
     { label: 'Pengajuan', href: '/pengajuan' },
     { label: 'Logbook', href: '/logbook' },
     { label: 'Lowongan', href: '/lowongan' },
+    { label: 'Settings', href: '/settings' },
   ],
   Admin: [
     { label: 'Dashboard', href: '/admin/dashboard' },
@@ -37,6 +38,7 @@ const navItems: Record<DashboardRole, NavItem[]> = {
     { label: 'Bimbingan', href: '/dosen/bimbingan' },
     { label: 'Logbook', href: '/dosen/logbook' },
     { label: 'Penilaian', href: '/dosen/penilaian' },
+    { label: 'Settings', href: '/settings' },
   ],
 };
 

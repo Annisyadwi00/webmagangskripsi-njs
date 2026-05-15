@@ -73,6 +73,14 @@ User.init(
         min: 0,
       },
     },
+    phone: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+photo: {
+  type: DataTypes.TEXT('long'),
+  allowNull: true,
+},
   },
   {
     sequelize,

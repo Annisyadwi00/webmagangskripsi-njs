@@ -49,15 +49,44 @@ export type PengajuanListResponse = {
 };
 
 export async function getPengajuanList(page = 1, limit = 10) {
-  const result = await apiClient<PengajuanListResponse>(
+  const result = await apiClient<PengajuanListResponse | Pengajuan[]>(
     `/api/pengajuan?page=${page}&limit=${limit}`
   );
 
   if (!result.data) {
-    throw new Error('Data pengajuan tidak ditemukan.');
+    return {
+      items: [],
+      meta: {
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      },
+    };
   }
 
-  return result.data;
+  if (Array.isArray(result.data)) {
+    return {
+      items: result.data,
+      meta: {
+        total: result.data.length,
+        page,
+        limit,
+        totalPages: 1,
+      },
+    };
+  }
+
+  return {
+    items: result.data.items || [],
+    meta:
+      result.data.meta || {
+        total: result.data.items?.length || 0,
+        page,
+        limit,
+        totalPages: 1,
+      },
+  };
 }
 
 export async function createPengajuan(payload: {

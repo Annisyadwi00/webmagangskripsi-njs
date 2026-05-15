@@ -26,7 +26,7 @@ function getStatusBadgeClass(status?: string) {
   return 'app-badge app-badge-blue';
 }
 
-export default function DosenDashboardPage() {
+export default function DosenBimbinganPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [pengajuans, setPengajuans] = useState<Pengajuan[]>([]);
   const [logbooks, setLogbooks] = useState<Logbook[]>([]);

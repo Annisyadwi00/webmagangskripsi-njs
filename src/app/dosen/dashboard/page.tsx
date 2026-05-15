@@ -181,50 +181,6 @@ export default function DosenDashboard() {
         )}
       </AnimatePresence>
 
-      {/* SIDEBAR DOSEN */}
-      <aside className="w-72 bg-gradient-to-b from-indigo-900 to-indigo-950 text-white flex flex-col hidden md:flex h-screen sticky top-0 shadow-2xl z-20">
-        <div className="p-8 border-b border-white/10">
-          <h1 className="font-extrabold text-2xl tracking-wide">SI Magang</h1>
-          <p className="text-sm text-indigo-300 mt-1 font-medium">Portal Dosen Pembimbing</p>
-        </div>
-
-        <nav className="flex-1 py-8 px-5 space-y-3 overflow-y-auto custom-scrollbar">
-          <p className="px-2 text-[10px] font-black text-indigo-400 uppercase tracking-wider mb-2">Menu Utama</p>
-
-          <button onClick={() => setActiveTab('Permintaan')} className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl font-bold transition-all ${activeTab === 'Permintaan' ? 'bg-white text-indigo-900 shadow-lg scale-105' : 'text-slate-200 hover:bg-white/10 hover:translate-x-1'}`}>
-            <span>Permintaan Bimbingan</span>
-            {pendingBimbingan.length > 0 && <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full animate-pulse">{pendingBimbingan.length}</span>}
-          </button>
-
-          <button onClick={() => setActiveTab('Aktif')} className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl font-bold transition-all ${activeTab === 'Aktif' ? 'bg-white text-indigo-900 shadow-lg scale-105' : 'text-slate-200 hover:bg-white/10 hover:translate-x-1'}`}>
-            <span>Mahasiswa Aktif</span>
-          </button>
-
-          <button onClick={() => setActiveTab('Logbook')} className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl font-bold transition-all ${activeTab === 'Logbook' ? 'bg-white text-indigo-900 shadow-lg scale-105' : 'text-slate-200 hover:bg-white/10 hover:translate-x-1'}`}>
-            <span>Validasi Logbook</span>
-            {pendingLogbooks.length > 0 && <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full">{pendingLogbooks.length}</span>}
-          </button>
-
-          <button onClick={() => setActiveTab('Penilaian')} className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl font-bold transition-all ${activeTab === 'Penilaian' ? 'bg-white text-indigo-900 shadow-lg scale-105' : 'text-slate-200 hover:bg-white/10 hover:translate-x-1'}`}>
-            <span>Input Penilaian Akhir</span>
-          </button>
-
-          <Link href="/settings" className="w-full flex items-center px-5 py-4 rounded-2xl font-bold transition-all text-slate-200 hover:bg-white/10 hover:translate-x-1">
-            Pengaturan Profil
-          </Link>
-        </nav>
-
-        {/* TOMBOL BACK & LOGOUT */}
-        <div className="p-6 border-t border-white/10 mt-auto flex flex-col gap-3">
-          <Link href="/" className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white/5 text-white hover:bg-white/10 rounded-xl font-bold transition-all shadow-sm border border-white/10 hover:-translate-y-0.5">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg> Kembali ke Beranda
-          </Link>
-          <button onClick={() => setShowLogoutModal(true)} className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-red-500/20 text-red-100 hover:bg-red-500 hover:text-white rounded-xl font-bold transition-all border border-red-500/20 hover:-translate-y-0.5">
-            Logout Akun
-          </button>
-        </div>
-      </aside>
-
       {/* KONTEN UTAMA */}
       <main className="flex-1 flex flex-col h-screen overflow-y-auto bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
         <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-sm border-b border-gray-200 dark:border-slate-800 px-10 py-6 flex justify-between items-center sticky top-0 z-10 transition-colors duration-300">
