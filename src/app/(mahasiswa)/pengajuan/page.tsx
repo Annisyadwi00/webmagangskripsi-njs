@@ -191,360 +191,380 @@ export default function PengajuanMahasiswaPage() {
     }
   };
 
-  const sudahAdaPengajuan = Boolean(pengajuan);
-  const bisaUploadLaporan = pengajuan?.status === 'Aktif';
+  const currentPengajuan = pengajuan;
+
+  const bisaUploadLaporan = currentPengajuan?.status === 'Aktif';
+
   const bisaDibatalkan =
-    pengajuan?.status === 'Menunggu_Verifikasi' || pengajuan?.status === 'Ditolak';
+    currentPengajuan?.status === 'Menunggu_Verifikasi' ||
+    currentPengajuan?.status === 'Ditolak';
 
   if (isLoading) {
     return (
-        <DashboardShell role="Mahasiswa">
+      <DashboardShell role="Mahasiswa">
+        <main className="min-h-screen py-8">
+          <div className="app-container">
+            <div className="app-card p-8">
+              <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200" />
+              <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200" />
 
-      <main className="min-h-screen py-8">
-        <div className="app-container">
-          <div className="app-card p-8">
-            <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200" />
-            <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200" />
-            <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
-              {[1, 2, 3].map((item) => (
+              <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+                {[1, 2, 3].map((item) => (
                   <div
-                  key={item}
-                  className="h-36 animate-pulse rounded-2xl bg-slate-100"
+                    key={item}
+                    className="h-36 animate-pulse rounded-2xl bg-slate-100"
                   />
                 ))}
+              </div>
             </div>
           </div>
-        </div>
-      </main>
-    </DashboardShell>
+        </main>
+      </DashboardShell>
     );
   }
 
   if (errorMsg && !message) {
     return (
-      <main className="min-h-screen py-8">
-        <div className="app-container">
-          <Alert variant="error">{errorMsg}</Alert>
-        </div>
-      </main>
+      <DashboardShell role="Mahasiswa">
+        <main className="min-h-screen py-8">
+          <div className="app-container">
+            <Alert variant="error">{errorMsg}</Alert>
+          </div>
+        </main>
+      </DashboardShell>
     );
   }
 
   return (
-    <main className="min-h-screen py-8">
-      <div className="app-container">
-        <PageHeader
-          eyebrow="Pengajuan Magang"
-          title={`Pengajuan Magang ${user?.name || ''}`}
-          description="Kirim data LOA magang, pantau status verifikasi, dan unggah laporan akhir setelah magang aktif."
-          action={
-            <Link href="/dashboard" className="app-btn-secondary">
-              Kembali ke Dashboard
-            </Link>
-          }
-        />
-
-        {message && <Alert variant="success">{message}</Alert>}
-        {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
-
-        {pengajuan?.status === 'Ditolak' && pengajuan.alasan_penolakan && (
-          <Alert variant="error">
-            Pengajuan ditolak. Alasan: {pengajuan.alasan_penolakan}
-          </Alert>
-        )}
-
-        <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
-          <StatCard
-            title="Status Pengajuan"
-            value={getStatusLabel(pengajuan?.status)}
-            description="Status terakhir pengajuan magang."
-            icon="document"
+    <DashboardShell role="Mahasiswa">
+      <main className="min-h-screen py-8">
+        <div className="app-container">
+          <PageHeader
+            eyebrow="Pengajuan Magang"
+            title={`Pengajuan Magang ${user?.name || ''}`}
+            description="Kirim data LOA magang, pantau status verifikasi, dan unggah laporan akhir setelah magang aktif."
+            action={
+              <Link href="/dashboard" className="app-btn-secondary">
+                Kembali ke Dashboard
+              </Link>
+            }
           />
 
-          <StatCard
-            title="Dosen Pembimbing"
-            value={pengajuan?.nama_dosen || '-'}
-            description="Dosen pembimbing yang dipilih."
-            icon="users"
-          />
+          {message && <Alert variant="success">{message}</Alert>}
+          {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
 
-          <StatCard
-            title="Nilai Akhir"
-            value={pengajuan?.nilai_dari_dosen || '-'}
-            description="Nilai akhir dari dosen pembimbing."
-            icon="chart"
-          />
-        </section>
+          {currentPengajuan?.status === 'Ditolak' &&
+            currentPengajuan.alasan_penolakan && (
+              <Alert variant="error">
+                Pengajuan ditolak. Alasan:{' '}
+                {currentPengajuan.alasan_penolakan}
+              </Alert>
+            )}
 
-        <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="app-card p-6 lg:col-span-2">
-            <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-xl font-black text-slate-950">
-                  {sudahAdaPengajuan
-                    ? 'Detail Pengajuan'
-                    : 'Form Pengajuan LOA'}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  {sudahAdaPengajuan
-                    ? 'Informasi pengajuan magang yang sedang berjalan.'
-                    : 'Lengkapi data tempat magang dan link dokumen LOA.'}
-                </p>
-              </div>
+          <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+            <StatCard
+              title="Status Pengajuan"
+              value={getStatusLabel(currentPengajuan?.status)}
+              description="Status terakhir pengajuan magang."
+              icon="document"
+            />
 
-              {pengajuan && (
-                <span className={getStatusBadgeClass(pengajuan.status)}>
-                  {getStatusLabel(pengajuan.status)}
-                </span>
-              )}
-            </div>
+            <StatCard
+              title="Dosen Pembimbing"
+              value={currentPengajuan?.nama_dosen || '-'}
+              description="Dosen pembimbing yang dipilih."
+              icon="users"
+            />
 
-            {!sudahAdaPengajuan ? (
-              <form onSubmit={handleSubmitPengajuan} className="space-y-5">
+            <StatCard
+              title="Nilai Akhir"
+              value={currentPengajuan?.nilai_dari_dosen || '-'}
+              description="Nilai akhir dari dosen pembimbing."
+              icon="chart"
+            />
+          </section>
+
+          <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="app-card p-6 lg:col-span-2">
+              <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <label className="app-label">Nama Perusahaan</label>
-                  <input
-                    type="text"
-                    name="perusahaan"
-                    required
-                    value={form.perusahaan}
-                    onChange={handleChange}
-                    className="app-input"
-                    placeholder="Contoh: PT Teknologi Indonesia"
-                  />
-                </div>
+                  <h2 className="text-xl font-black text-slate-950">
+                    {currentPengajuan
+                      ? 'Detail Pengajuan'
+                      : 'Form Pengajuan LOA'}
+                  </h2>
 
-                <div>
-                  <label className="app-label">Posisi Magang</label>
-                  <input
-                    type="text"
-                    name="posisi"
-                    required
-                    value={form.posisi}
-                    onChange={handleChange}
-                    className="app-input"
-                    placeholder="Contoh: Frontend Developer Intern"
-                  />
-                </div>
-
-                <div>
-                  <label className="app-label">Link Dokumen LOA</label>
-                  <input
-                    type="url"
-                    name="link_loa"
-                    required
-                    value={form.link_loa}
-                    onChange={handleChange}
-                    className="app-input"
-                    placeholder="https://drive.google.com/..."
-                  />
-                  <p className="mt-2 text-xs text-slate-500">
-                    Pastikan link dapat diakses oleh admin untuk proses
-                    verifikasi.
+                  <p className="mt-1 text-sm text-slate-500">
+                    {currentPengajuan
+                      ? 'Informasi pengajuan magang yang sedang berjalan.'
+                      : 'Lengkapi data tempat magang dan link dokumen LOA.'}
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                {currentPengajuan && (
+                  <span className={getStatusBadgeClass(currentPengajuan.status)}>
+                    {getStatusLabel(currentPengajuan.status)}
+                  </span>
+                )}
+              </div>
+
+              {!currentPengajuan ? (
+                <form onSubmit={handleSubmitPengajuan} className="space-y-5">
                   <div>
-                    <label className="app-label">Tanggal Mulai</label>
+                    <label className="app-label">Nama Perusahaan</label>
                     <input
-                      type="date"
-                      name="tgl_mulai"
+                      type="text"
+                      name="perusahaan"
                       required
-                      value={form.tgl_mulai}
+                      value={form.perusahaan}
                       onChange={handleChange}
                       className="app-input"
+                      placeholder="Contoh: PT Teknologi Indonesia"
                     />
                   </div>
 
                   <div>
-                    <label className="app-label">Tanggal Berakhir</label>
+                    <label className="app-label">Posisi Magang</label>
                     <input
-                      type="date"
-                      name="tgl_berakhir"
+                      type="text"
+                      name="posisi"
                       required
-                      value={form.tgl_berakhir}
+                      value={form.posisi}
                       onChange={handleChange}
                       className="app-input"
+                      placeholder="Contoh: Frontend Developer Intern"
                     />
                   </div>
+
+                  <div>
+                    <label className="app-label">Link Dokumen LOA</label>
+                    <input
+                      type="url"
+                      name="link_loa"
+                      required
+                      value={form.link_loa}
+                      onChange={handleChange}
+                      className="app-input"
+                      placeholder="https://drive.google.com/..."
+                    />
+
+                    <p className="mt-2 text-xs text-slate-500">
+                      Pastikan link dapat diakses oleh admin untuk proses
+                      verifikasi.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <div>
+                      <label className="app-label">Tanggal Mulai</label>
+                      <input
+                        type="date"
+                        name="tgl_mulai"
+                        required
+                        value={form.tgl_mulai}
+                        onChange={handleChange}
+                        className="app-input"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="app-label">Tanggal Berakhir</label>
+                      <input
+                        type="date"
+                        name="tgl_berakhir"
+                        required
+                        value={form.tgl_berakhir}
+                        onChange={handleChange}
+                        className="app-input"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="app-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSubmitting ? 'Mengirim...' : 'Kirim Pengajuan'}
+                  </button>
+                </form>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-bold text-slate-500">
+                      Nama Mahasiswa
+                    </p>
+                    <p className="mt-1 font-black text-slate-950">
+                      {currentPengajuan.nama_mahasiswa}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-bold text-slate-500">
+                      Perusahaan
+                    </p>
+                    <p className="mt-1 font-black text-slate-950">
+                      {currentPengajuan.perusahaan}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-bold text-slate-500">Posisi</p>
+                    <p className="mt-1 font-black text-slate-950">
+                      {currentPengajuan.posisi}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-bold text-slate-500">
+                      Tipe Konversi
+                    </p>
+                    <p className="mt-1 font-black text-slate-950">
+                      {currentPengajuan.tipeKonversi || '-'}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-bold text-slate-500">
+                      Tanggal Mulai
+                    </p>
+                    <p className="mt-1 font-black text-slate-950">
+                      {currentPengajuan.tgl_mulai || '-'}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-bold text-slate-500">
+                      Tanggal Berakhir
+                    </p>
+                    <p className="mt-1 font-black text-slate-950">
+                      {currentPengajuan.tgl_berakhir || '-'}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
+                    <p className="text-sm font-bold text-slate-500">
+                      Dosen Pembimbing
+                    </p>
+                    <p className="mt-1 font-black text-slate-950">
+                      {currentPengajuan.nama_dosen || 'Belum memilih dosen'}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-3 md:col-span-2 sm:flex-row">
+                    {currentPengajuan.link_loa && (
+                      <a
+                        href={currentPengajuan.link_loa}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="app-btn-secondary flex-1"
+                      >
+                        Lihat Dokumen LOA
+                      </a>
+                    )}
+
+                    {bisaDibatalkan && (
+                      <button
+                        type="button"
+                        onClick={handleBatalPengajuan}
+                        disabled={isSubmitting}
+                        className="app-btn-danger flex-1 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Batalkan Pengajuan
+                      </button>
+                    )}
+                  </div>
                 </div>
+              )}
+            </div>
+
+            <div className="app-card p-6">
+              <h2 className="text-xl font-black text-slate-950">
+                Alur Pengajuan
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Tahapan proses magang mahasiswa.
+              </p>
+
+              <div className="mt-5 space-y-4">
+                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                  <p className="font-black text-[#1e3a8a]">1. Kirim LOA</p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Mahasiswa mengirim data perusahaan dan dokumen LOA.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="font-black text-slate-950">
+                    2. Verifikasi Admin
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Admin memeriksa kelengkapan dan validitas dokumen.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="font-black text-slate-950">3. Pilih Dosen</p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Setelah disetujui, mahasiswa memilih dosen pembimbing.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="font-black text-slate-950">
+                    4. Logbook & Nilai
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Mahasiswa mengisi logbook dan dosen memberi evaluasi akhir.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {bisaUploadLaporan && (
+            <section className="app-card mt-6 p-6">
+              <div className="mb-5">
+                <h2 className="text-xl font-black text-slate-950">
+                  Upload Laporan Akhir
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Kirim link laporan akhir setelah kegiatan magang selesai.
+                </p>
+              </div>
+
+              {currentPengajuan?.link_laporan_akhir && (
+                <Alert variant="info">
+                  Laporan akhir sudah tersimpan. Kamu tetap bisa memperbarui
+                  link jika diperlukan.
+                </Alert>
+              )}
+
+              <form
+                onSubmit={handleUploadLaporan}
+                className="flex flex-col gap-3 md:flex-row"
+              >
+                <input
+                  type="url"
+                  required
+                  value={linkLaporanAkhir}
+                  onChange={(e) => setLinkLaporanAkhir(e.target.value)}
+                  className="app-input flex-1"
+                  placeholder="https://drive.google.com/..."
+                />
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="app-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
+                  className="app-btn-primary disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isSubmitting ? 'Mengirim...' : 'Kirim Pengajuan'}
+                  Simpan Laporan
                 </button>
               </form>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm font-bold text-slate-500">
-                    Nama Mahasiswa
-                  </p>
-                  <p className="mt-1 font-black text-slate-950">
-                    {pengajuan.nama_mahasiswa}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm font-bold text-slate-500">Perusahaan</p>
-                  <p className="mt-1 font-black text-slate-950">
-                    {pengajuan.perusahaan}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm font-bold text-slate-500">Posisi</p>
-                  <p className="mt-1 font-black text-slate-950">
-                    {pengajuan.posisi}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm font-bold text-slate-500">
-                    Tipe Konversi
-                  </p>
-                  <p className="mt-1 font-black text-slate-950">
-                    {pengajuan.tipeKonversi || '-'}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm font-bold text-slate-500">
-                    Tanggal Mulai
-                  </p>
-                  <p className="mt-1 font-black text-slate-950">
-                    {pengajuan.tgl_mulai || '-'}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm font-bold text-slate-500">
-                    Tanggal Berakhir
-                  </p>
-                  <p className="mt-1 font-black text-slate-950">
-                    {pengajuan.tgl_berakhir || '-'}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
-                  <p className="text-sm font-bold text-slate-500">
-                    Dosen Pembimbing
-                  </p>
-                  <p className="mt-1 font-black text-slate-950">
-                    {pengajuan.nama_dosen || 'Belum memilih dosen'}
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-3 md:col-span-2 sm:flex-row">
-                  {pengajuan.link_loa && (
-                    <a
-                      href={pengajuan.link_loa}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="app-btn-secondary flex-1"
-                    >
-                      Lihat Dokumen LOA
-                    </a>
-                  )}
-
-                  {bisaDibatalkan && (
-                    <button
-                      type="button"
-                      onClick={handleBatalPengajuan}
-                      disabled={isSubmitting}
-                      className="app-btn-danger flex-1 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Batalkan Pengajuan
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="app-card p-6">
-            <h2 className="text-xl font-black text-slate-950">
-              Alur Pengajuan
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Tahapan proses magang mahasiswa.
-            </p>
-
-            <div className="mt-5 space-y-4">
-              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
-                <p className="font-black text-[#1e3a8a]">1. Kirim LOA</p>
-                <p className="mt-1 text-sm text-slate-600">
-                  Mahasiswa mengirim data perusahaan dan dokumen LOA.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="font-black text-slate-950">2. Verifikasi Admin</p>
-                <p className="mt-1 text-sm text-slate-600">
-                  Admin memeriksa kelengkapan dan validitas dokumen.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="font-black text-slate-950">3. Pilih Dosen</p>
-                <p className="mt-1 text-sm text-slate-600">
-                  Setelah disetujui, mahasiswa memilih dosen pembimbing.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="font-black text-slate-950">4. Logbook & Nilai</p>
-                <p className="mt-1 text-sm text-slate-600">
-                  Mahasiswa mengisi logbook dan dosen memberi evaluasi akhir.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {bisaUploadLaporan && (
-          <section className="app-card mt-6 p-6">
-            <div className="mb-5">
-              <h2 className="text-xl font-black text-slate-950">
-                Upload Laporan Akhir
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Kirim link laporan akhir setelah kegiatan magang selesai.
-              </p>
-            </div>
-
-            {pengajuan?.link_laporan_akhir && (
-              <Alert variant="info">
-                Laporan akhir sudah tersimpan. Kamu tetap bisa memperbarui link
-                jika diperlukan.
-              </Alert>
-            )}
-
-            <form onSubmit={handleUploadLaporan} className="flex flex-col gap-3 md:flex-row">
-              <input
-                type="url"
-                required
-                value={linkLaporanAkhir}
-                onChange={(e) => setLinkLaporanAkhir(e.target.value)}
-                className="app-input flex-1"
-                placeholder="https://drive.google.com/..."
-              />
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="app-btn-primary disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Simpan Laporan
-              </button>
-            </form>
-          </section>
-        )}
-      </div>
-    </main>
+            </section>
+          )}
+        </div>
+      </main>
+    </DashboardShell>
   );
 }
