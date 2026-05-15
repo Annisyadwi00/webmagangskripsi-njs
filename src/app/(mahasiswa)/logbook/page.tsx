@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { getDashboardPathByRole } from '@/lib/role-redirect';
 import Link from 'next/link';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
@@ -75,10 +76,9 @@ export default function LogbookMahasiswaPage() {
       ]);
 
       if (currentUser.role !== 'Mahasiswa') {
-        window.location.href = '/login';
-        return;
-      }
-
+  window.location.href = getDashboardPathByRole(currentUser.role);
+  return;
+}
       const activePengajuan =
         pengajuanData.items.find((item) => item.status === 'Aktif') || null;
 
@@ -197,24 +197,24 @@ export default function LogbookMahasiswaPage() {
 
   if (isLoading) {
     return (
-        <DashboardShell role="Mahasiswa">
+      <DashboardShell role="Mahasiswa">
 
-      <main className="min-h-screen py-8">
-        <div className="app-container">
-          <div className="app-card p-8">
-            <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200" />
-            <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200" />
-            <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
-              {[1, 2, 3].map((item) => (
-                <div
-                  key={item}
-                  className="h-36 animate-pulse rounded-2xl bg-slate-100"
-                />
-              ))}
+        <main className="min-h-screen py-8">
+          <div className="app-container">
+            <div className="app-card p-8">
+              <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200" />
+              <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200" />
+              <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+                {[1, 2, 3].map((item) => (
+                  <div
+                    key={item}
+                    className="h-36 animate-pulse rounded-2xl bg-slate-100"
+                  />
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
       </DashboardShell>
     );
   }
@@ -230,7 +230,7 @@ export default function LogbookMahasiswaPage() {
   }
 
   return (
-    
+
     <main className="min-h-screen py-8">
       <div className="app-container">
         <PageHeader
@@ -473,14 +473,14 @@ export default function LogbookMahasiswaPage() {
 
                       {(item.status === 'Revisi' ||
                         item.status === 'Menunggu') && (
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(item)}
-                          className="app-btn-primary flex-1"
-                        >
-                          Edit Logbook
-                        </button>
-                      )}
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(item)}
+                            className="app-btn-primary flex-1"
+                          >
+                            Edit Logbook
+                          </button>
+                        )}
                     </div>
                   </article>
                 ))}

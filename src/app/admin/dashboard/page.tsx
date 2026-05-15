@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { getDashboardPathByRole } from '@/lib/role-redirect';
 import Link from 'next/link';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
@@ -45,10 +46,10 @@ export default function DosenDashboardPage() {
           getLogbookList(),
         ]);
 
-        if (currentUser.role !== 'Dosen') {
-          window.location.href = '/login';
-          return;
-        }
+       if (currentUser.role !== 'Admin') {
+  window.location.href = getDashboardPathByRole(currentUser.role);
+  return;
+}
 
         setUser(currentUser);
         setPengajuans(pengajuanData.items);

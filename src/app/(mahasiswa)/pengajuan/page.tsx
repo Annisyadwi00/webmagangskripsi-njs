@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { getDashboardPathByRole } from '@/lib/role-redirect';
 import Link from 'next/link';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
@@ -81,7 +82,7 @@ export default function PengajuanMahasiswaPage() {
       ]);
 
       if (currentUser.role !== 'Mahasiswa') {
-        window.location.href = '/login';
+        window.location.href = getDashboardPathByRole(currentUser.role);
         return;
       }
 

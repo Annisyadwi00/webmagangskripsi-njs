@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
+import { getDashboardPathByRole } from '@/lib/role-redirect';
 import Link from 'next/link';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
@@ -91,9 +92,9 @@ export default function AdminPengajuanPage() {
       ]);
 
       if (me.role !== 'Admin') {
-        window.location.href = '/login';
-        return;
-      }
+  window.location.href = getDashboardPathByRole(me.role);
+  return;
+}
 
       setCurrentUser(me);
       setPengajuans(pengajuanData.items);
@@ -186,9 +187,9 @@ export default function AdminPengajuanPage() {
         verifikasiForm.tipeKonversi === 'Tidak'
           ? []
           : verifikasiForm.matkulInput
-              .split(',')
-              .map((item) => item.trim())
-              .filter(Boolean);
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
 
       const result = await setujuiPengajuan({
         id: verifikasiForm.id,

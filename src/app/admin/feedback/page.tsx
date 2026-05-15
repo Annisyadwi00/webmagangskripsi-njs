@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
+import { getDashboardPathByRole } from '@/lib/role-redirect';
 import Link from 'next/link';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
@@ -58,9 +59,9 @@ export default function AdminFeedbackPage() {
       ]);
 
       if (me.role !== 'Admin') {
-        window.location.href = '/login';
-        return;
-      }
+  window.location.href = getDashboardPathByRole(me.role);
+  return;
+}
 
       setCurrentUser(me);
       setFeedbacks(feedbackData);
