@@ -2,6 +2,7 @@ import Logbook, { LogbookStatus } from '@/models/Logbook';
 import Pengajuan from '@/models/Pengajuan';
 import { connectDB } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { createActivityLog } from '@/lib/activity-log';
 import { isValidUrl, trimString } from '@/lib/validators';
 import {
   successResponse,
@@ -18,6 +19,45 @@ const allowedLogbookStatus: LogbookStatus[] = [
   'Disetujui',
   'Revisi',
 ];
+
+type DateInput = string | Date | null | undefined;
+
+function isValidDate(value: DateInput) {
+  if (!value) return false;
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  return !Number.isNaN(date.getTime());
+}
+
+function normalizeDate(value: DateInput) {
+  if (!value) return null;
+
+  const date =
+    value instanceof Date
+      ? new Date(value)
+      : new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  date.setHours(0, 0, 0, 0);
+
+  return date;
+}
+
+function isDateBetween(target: DateInput, start: DateInput, end: DateInput) {
+  const targetDate = normalizeDate(target);
+  const startDate = normalizeDate(start);
+  const endDate = normalizeDate(end);
+
+  if (!targetDate || !startDate || !endDate) {
+    return false;
+  }
+
+  return targetDate >= startDate && targetDate <= endDate;
+}
 
 export async function GET() {
   try {
@@ -107,6 +147,14 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!isValidDate(tanggal)) {
+      return badRequestResponse('Format tanggal logbook tidak valid.');
+    }
+
+    if (kegiatan.length < 10) {
+      return badRequestResponse('Kegiatan minimal 10 karakter.');
+    }
+
     if (bukti_kegiatan && !isValidUrl(bukti_kegiatan)) {
       return badRequestResponse('Format link bukti kegiatan tidak valid.');
     }
@@ -127,6 +175,15 @@ export async function POST(request: Request) {
       return notFoundResponse('Pengajuan aktif tidak ditemukan.');
     }
 
+    const tglMulai = pengajuan.getDataValue('tgl_mulai');
+    const tglBerakhir = pengajuan.getDataValue('tgl_berakhir');
+
+    if (!isDateBetween(tanggal, tglMulai, tglBerakhir)) {
+      return badRequestResponse(
+        'Tanggal logbook harus berada dalam periode magang.'
+      );
+    }
+
     const newLogbook = await Logbook.create({
       user_id: user.id,
       pengajuan_id,
@@ -138,11 +195,15 @@ export async function POST(request: Request) {
       status: 'Menunggu',
     });
 
-    return successResponse(
-      newLogbook,
-      'Logbook berhasil disimpan!',
-      201
-    );
+    await createActivityLog({
+      actor: user,
+      action: 'CREATE_LOGBOOK',
+      description: `${user.name} membuat logbook tanggal ${tanggal}.`,
+      target_id: newLogbook.getDataValue('id'),
+      target_type: 'Logbook',
+    });
+
+    return successResponse(newLogbook, 'Logbook berhasil disimpan!', 201);
   } catch (error) {
     console.error('CREATE_LOGBOOK_ERROR:', error);
 
@@ -210,6 +271,16 @@ export async function PUT(request: Request) {
         komentar_dosen,
       });
 
+      await createActivityLog({
+        actor: user,
+        action: 'EVALUASI_LOGBOOK',
+        description: `${user.name} mengevaluasi logbook mahasiswa ${pengajuan.getDataValue(
+          'nama_mahasiswa'
+        )} dengan status ${status}.`,
+        target_id: logbook.getDataValue('id'),
+        target_type: 'Logbook',
+      });
+
       return messageResponse('Evaluasi logbook berhasil disimpan!');
     }
 
@@ -224,6 +295,10 @@ export async function PUT(request: Request) {
         return badRequestResponse(
           'ID logbook, kegiatan, jam mulai, dan jam selesai wajib diisi.'
         );
+      }
+
+      if (kegiatan.length < 10) {
+        return badRequestResponse('Kegiatan minimal 10 karakter.');
       }
 
       if (bukti_kegiatan && !isValidUrl(bukti_kegiatan)) {
@@ -247,6 +322,28 @@ export async function PUT(request: Request) {
         return notFoundResponse('Logbook tidak ditemukan.');
       }
 
+      const pengajuan = await Pengajuan.findOne({
+        where: {
+          id: logbook.getDataValue('pengajuan_id'),
+          user_id: user.id,
+          status: 'Aktif',
+        },
+      });
+
+      if (!pengajuan) {
+        return notFoundResponse('Pengajuan aktif tidak ditemukan.');
+      }
+
+      const tanggalLogbook = logbook.getDataValue('tanggal');
+      const tglMulai = pengajuan.getDataValue('tgl_mulai');
+      const tglBerakhir = pengajuan.getDataValue('tgl_berakhir');
+
+      if (!isDateBetween(tanggalLogbook, tglMulai, tglBerakhir)) {
+        return badRequestResponse(
+          'Tanggal logbook harus berada dalam periode magang.'
+        );
+      }
+
       await logbook.update({
         kegiatan,
         jam_mulai,
@@ -254,6 +351,14 @@ export async function PUT(request: Request) {
         bukti_kegiatan,
         status: 'Menunggu',
         komentar_dosen: null,
+      });
+
+      await createActivityLog({
+        actor: user,
+        action: 'UPDATE_LOGBOOK',
+        description: `${user.name} memperbarui logbook dan mengirim ulang untuk evaluasi.`,
+        target_id: logbook.getDataValue('id'),
+        target_type: 'Logbook',
       });
 
       return messageResponse('Logbook berhasil diperbarui!');

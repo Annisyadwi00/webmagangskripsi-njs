@@ -45,6 +45,7 @@ export const syncDatabase = async () => {
     await import('@/models/Logbook');
     await import('@/models/Job');
     await import('@/models/Feedback');
+    await import('@/models/ActivityLog');
 
     await sequelize.sync({ alter: true });
 

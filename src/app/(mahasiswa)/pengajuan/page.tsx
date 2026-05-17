@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { getDashboardPathByRole } from '@/lib/role-redirect';
 import Link from 'next/link';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import Alert from '@/components/ui/Alert';
+import ProgressStepper from '@/components/ui/ProgressStepper';
 import DashboardShell from '@/components/dashboard/DashboardShell';
+import { getDashboardPathByRole } from '@/lib/role-redirect';
 import {
   Pengajuan,
   createPengajuan,
@@ -58,6 +59,65 @@ function getStatusLabel(status?: string) {
   return 'Belum Ada';
 }
 
+function getMagangSteps(status?: string) {
+  const currentStatus = status || 'Belum_Ada';
+
+  const order = [
+    'Belum_Ada',
+    'Menunggu_Verifikasi',
+    'Pilih_Dosen',
+    'Aktif',
+    'Selesai',
+  ];
+
+  const currentIndex = order.indexOf(currentStatus);
+
+  const getStatus = (stepStatus: string) => {
+    if (currentStatus === 'Ditolak' && stepStatus === 'Menunggu_Verifikasi') {
+      return 'rejected' as const;
+    }
+
+    const stepIndex = order.indexOf(stepStatus);
+
+    if (currentStatus === 'Ditolak') {
+      return stepIndex < 1 ? ('done' as const) : ('pending' as const);
+    }
+
+    if (stepIndex < currentIndex) return 'done' as const;
+    if (stepIndex === currentIndex) return 'active' as const;
+
+    return 'pending' as const;
+  };
+
+  return [
+    {
+      title: 'Pengajuan LOA',
+      description: 'Mahasiswa mengirim data tempat magang dan dokumen LOA.',
+      status: getStatus('Belum_Ada'),
+    },
+    {
+      title: 'Verifikasi Admin',
+      description: 'Admin memeriksa kelengkapan dan validitas dokumen LOA.',
+      status: getStatus('Menunggu_Verifikasi'),
+    },
+    {
+      title: 'Pilih Dosen',
+      description: 'Mahasiswa memilih dosen pembimbing setelah LOA disetujui.',
+      status: getStatus('Pilih_Dosen'),
+    },
+    {
+      title: 'Magang Aktif',
+      description: 'Mahasiswa menjalankan magang dan mengisi logbook harian.',
+      status: getStatus('Aktif'),
+    },
+    {
+      title: 'Selesai',
+      description: 'Dosen memberi evaluasi dan nilai akhir magang.',
+      status: getStatus('Selesai'),
+    },
+  ];
+}
+
 export default function PengajuanMahasiswaPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [pengajuan, setPengajuan] = useState<Pengajuan | null>(null);
@@ -87,11 +147,11 @@ export default function PengajuanMahasiswaPage() {
       }
 
       const pengajuanItems = Array.isArray(pengajuanData)
-  ? pengajuanData
-  : pengajuanData?.items || [];
+        ? pengajuanData
+        : pengajuanData?.items || [];
 
-setUser(currentUser);
-setPengajuan(pengajuanItems[0] || null);
+      setUser(currentUser);
+      setPengajuan(pengajuanItems[0] || null);
     } catch (error) {
       const errMessage =
         error instanceof Error
@@ -124,9 +184,9 @@ setPengajuan(pengajuanItems[0] || null);
 
     try {
       const result = await createPengajuan({
-        perusahaan: form.perusahaan,
-        posisi: form.posisi,
-        link_loa: form.link_loa,
+        perusahaan: form.perusahaan.trim(),
+        posisi: form.posisi.trim(),
+        link_loa: form.link_loa.trim(),
         tgl_mulai: form.tgl_mulai,
         tgl_berakhir: form.tgl_berakhir,
         nama_mahasiswa: user?.name,
@@ -180,7 +240,7 @@ setPengajuan(pengajuanItems[0] || null);
     setErrorMsg('');
 
     try {
-      const result = await uploadLaporanAkhir(linkLaporanAkhir);
+      const result = await uploadLaporanAkhir(linkLaporanAkhir.trim());
       setMessage(result.message || 'Laporan akhir berhasil disimpan.');
       setLinkLaporanAkhir('');
       await fetchData();
@@ -210,14 +270,14 @@ setPengajuan(pengajuanItems[0] || null);
         <main className="min-h-screen py-8">
           <div className="app-container">
             <div className="app-card p-8">
-              <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200" />
-              <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200" />
+              <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+              <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
 
               <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
                 {[1, 2, 3].map((item) => (
                   <div
                     key={item}
-                    className="h-36 animate-pulse rounded-2xl bg-slate-100"
+                    className="h-36 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800"
                   />
                 ))}
               </div>
@@ -266,6 +326,31 @@ setPengajuan(pengajuanItems[0] || null);
               </Alert>
             )}
 
+          {currentPengajuan?.status === 'Menunggu_Verifikasi' && (
+            <Alert variant="warning">
+              Pengajuan kamu sedang menunggu verifikasi admin. Pastikan link LOA
+              dapat diakses.
+            </Alert>
+          )}
+
+          {currentPengajuan?.status === 'Pilih_Dosen' && (
+            <Alert variant="info">
+              Pengajuan kamu sudah disetujui. Silakan pilih dosen pembimbing
+              untuk melanjutkan proses magang.
+            </Alert>
+          )}
+
+          {!currentPengajuan && (
+            <Alert variant="info">
+              Kamu belum memiliki pengajuan magang. Silakan isi form pengajuan
+              LOA terlebih dahulu.
+            </Alert>
+          )}
+
+          <section className="mb-8">
+            <ProgressStepper steps={getMagangSteps(currentPengajuan?.status)} />
+          </section>
+
           <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
             <StatCard
               title="Status Pengajuan"
@@ -293,13 +378,13 @@ setPengajuan(pengajuanItems[0] || null);
             <div className="app-card p-6 lg:col-span-2">
               <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <h2 className="text-xl font-black text-slate-950">
+                  <h2 className="text-xl font-black text-slate-950 dark:text-white">
                     {currentPengajuan
                       ? 'Detail Pengajuan'
                       : 'Form Pengajuan LOA'}
                   </h2>
 
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                     {currentPengajuan
                       ? 'Informasi pengajuan magang yang sedang berjalan.'
                       : 'Lengkapi data tempat magang dan link dokumen LOA.'}
@@ -353,7 +438,7 @@ setPengajuan(pengajuanItems[0] || null);
                       placeholder="https://drive.google.com/..."
                     />
 
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                       Pastikan link dapat diakses oleh admin untuk proses
                       verifikasi.
                     </p>
@@ -396,62 +481,64 @@ setPengajuan(pengajuanItems[0] || null);
               ) : (
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="app-panel p-4">
-                    <p className="text-sm font-bold text-slate-500">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
                       Nama Mahasiswa
                     </p>
-                    <p className="mt-1 font-black text-slate-950">
+                    <p className="mt-1 font-black text-slate-950 dark:text-white">
                       {currentPengajuan.nama_mahasiswa}
                     </p>
                   </div>
 
                   <div className="app-panel p-4">
-                    <p className="text-sm font-bold text-slate-500">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
                       Perusahaan
                     </p>
-                    <p className="mt-1 font-black text-slate-950">
+                    <p className="mt-1 font-black text-slate-950 dark:text-white">
                       {currentPengajuan.perusahaan}
                     </p>
                   </div>
 
                   <div className="app-panel p-4">
-                    <p className="text-sm font-bold text-slate-500">Posisi</p>
-                    <p className="mt-1 font-black text-slate-950">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                      Posisi
+                    </p>
+                    <p className="mt-1 font-black text-slate-950 dark:text-white">
                       {currentPengajuan.posisi}
                     </p>
                   </div>
 
                   <div className="app-panel p-4">
-                    <p className="text-sm font-bold text-slate-500">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
                       Tipe Konversi
                     </p>
-                    <p className="mt-1 font-black text-slate-950">
+                    <p className="mt-1 font-black text-slate-950 dark:text-white">
                       {currentPengajuan.tipeKonversi || '-'}
                     </p>
                   </div>
 
                   <div className="app-panel p-4">
-                    <p className="text-sm font-bold text-slate-500">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
                       Tanggal Mulai
                     </p>
-                    <p className="mt-1 font-black text-slate-950">
+                    <p className="mt-1 font-black text-slate-950 dark:text-white">
                       {currentPengajuan.tgl_mulai || '-'}
                     </p>
                   </div>
 
                   <div className="app-panel p-4">
-                    <p className="text-sm font-bold text-slate-500">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
                       Tanggal Berakhir
                     </p>
-                    <p className="mt-1 font-black text-slate-950">
+                    <p className="mt-1 font-black text-slate-950 dark:text-white">
                       {currentPengajuan.tgl_berakhir || '-'}
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
-                    <p className="text-sm font-bold text-slate-500">
+                  <div className="app-panel p-4 md:col-span-2">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
                       Dosen Pembimbing
                     </p>
-                    <p className="mt-1 font-black text-slate-950">
+                    <p className="mt-1 font-black text-slate-950 dark:text-white">
                       {currentPengajuan.nama_dosen || 'Belum memilih dosen'}
                     </p>
                   </div>
@@ -484,42 +571,46 @@ setPengajuan(pengajuanItems[0] || null);
             </div>
 
             <div className="app-card p-6">
-              <h2 className="text-xl font-black text-slate-950">
+              <h2 className="text-xl font-black text-slate-950 dark:text-white">
                 Alur Pengajuan
               </h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Tahapan proses magang mahasiswa.
               </p>
 
               <div className="mt-5 space-y-4">
-                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
-                  <p className="font-black text-[#1e3a8a]">1. Kirim LOA</p>
-                  <p className="mt-1 text-sm text-slate-600">
+                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-400/20 dark:bg-blue-400/10">
+                  <p className="font-black text-[#1e3a8a] dark:text-blue-300">
+                    1. Kirim LOA
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                     Mahasiswa mengirim data perusahaan dan dokumen LOA.
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="font-black text-slate-950">
+                <div className="app-panel p-4">
+                  <p className="font-black text-slate-950 dark:text-white">
                     2. Verifikasi Admin
                   </p>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                     Admin memeriksa kelengkapan dan validitas dokumen.
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="font-black text-slate-950">3. Pilih Dosen</p>
-                  <p className="mt-1 text-sm text-slate-600">
+                <div className="app-panel p-4">
+                  <p className="font-black text-slate-950 dark:text-white">
+                    3. Pilih Dosen
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                     Setelah disetujui, mahasiswa memilih dosen pembimbing.
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="font-black text-slate-950">
+                <div className="app-panel p-4">
+                  <p className="font-black text-slate-950 dark:text-white">
                     4. Logbook & Nilai
                   </p>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                     Mahasiswa mengisi logbook dan dosen memberi evaluasi akhir.
                   </p>
                 </div>
@@ -530,10 +621,10 @@ setPengajuan(pengajuanItems[0] || null);
           {bisaUploadLaporan && (
             <section className="app-card mt-6 p-6">
               <div className="mb-5">
-                <h2 className="text-xl font-black text-slate-950">
+                <h2 className="text-xl font-black text-slate-950 dark:text-white">
                   Upload Laporan Akhir
                 </h2>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   Kirim link laporan akhir setelah kegiatan magang selesai.
                 </p>
               </div>

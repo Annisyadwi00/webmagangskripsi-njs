@@ -10,6 +10,7 @@ import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
 import { Pengajuan, getPengajuanList } from '@/lib/pengajuan-client';
 import { Logbook, getLogbookList } from '@/lib/logbook-client';
 import DashboardShell from '@/components/dashboard/DashboardShell';
+import ProgressStepper from '@/components/ui/ProgressStepper';
 
 function getStatusBadgeClass(status?: string) {
   if (status === 'Aktif' || status === 'Selesai') {
@@ -25,6 +26,64 @@ function getStatusBadgeClass(status?: string) {
   }
 
   return 'app-badge app-badge-blue';
+}
+function getMagangSteps(status?: string) {
+  const currentStatus = status || 'Belum_Ada';
+
+  const order = [
+    'Belum_Ada',
+    'Menunggu_Verifikasi',
+    'Pilih_Dosen',
+    'Aktif',
+    'Selesai',
+  ];
+
+  const currentIndex = order.indexOf(currentStatus);
+
+  const getStatus = (stepStatus: string) => {
+    if (currentStatus === 'Ditolak' && stepStatus === 'Menunggu_Verifikasi') {
+      return 'rejected' as const;
+    }
+
+    const stepIndex = order.indexOf(stepStatus);
+
+    if (currentStatus === 'Ditolak') {
+      return stepIndex < 1 ? ('done' as const) : ('pending' as const);
+    }
+
+    if (stepIndex < currentIndex) return 'done' as const;
+    if (stepIndex === currentIndex) return 'active' as const;
+
+    return 'pending' as const;
+  };
+
+  return [
+    {
+      title: 'Pengajuan LOA',
+      description: 'Mahasiswa mengirim data tempat magang dan dokumen LOA.',
+      status: getStatus('Belum_Ada'),
+    },
+    {
+      title: 'Verifikasi Admin',
+      description: 'Admin memeriksa kelengkapan dan validitas dokumen LOA.',
+      status: getStatus('Menunggu_Verifikasi'),
+    },
+    {
+      title: 'Pilih Dosen',
+      description: 'Mahasiswa memilih dosen pembimbing setelah LOA disetujui.',
+      status: getStatus('Pilih_Dosen'),
+    },
+    {
+      title: 'Magang Aktif',
+      description: 'Mahasiswa menjalankan magang dan mengisi logbook harian.',
+      status: getStatus('Aktif'),
+    },
+    {
+      title: 'Selesai',
+      description: 'Dosen memberi evaluasi dan nilai akhir magang.',
+      status: getStatus('Selesai'),
+    },
+  ];
 }
 
 export default function MahasiswaDashboardPage() {
@@ -60,9 +119,6 @@ setUser(currentUser);
 setPengajuan(pengajuanItems[0] || null);
 setLogbooks(logbookData || []);
 
-setUser(currentUser);
-setPengajuan(pengajuanItems[0] || null);
-setLogbooks(logbookData || []);
       } catch (error) {
         const message =
           error instanceof Error
@@ -117,7 +173,17 @@ setLogbooks(logbookData || []);
       </DashboardShell>
     );
   }
+const logbookMenunggu = logbooks.filter((item) => item.status === 'Menunggu');
 
+const sudahAdaNilai = Boolean(pengajuan?.nilai_dari_dosen);
+
+const belumPunyaPengajuan = !pengajuan;
+
+const pengajuanMenunggu = pengajuan?.status === 'Menunggu_Verifikasi';
+
+const pengajuanPilihDosen = pengajuan?.status === 'Pilih_Dosen';
+
+const pengajuanAktif = pengajuan?.status === 'Aktif';
   return (
   <DashboardShell role="Mahasiswa">
     <main className="min-h-screen py-8">
@@ -144,7 +210,9 @@ setLogbooks(logbookData || []);
             Ada {totalRevisi} logbook yang perlu direvisi. Segera perbaiki agar proses evaluasi tidak tertunda.
           </Alert>
         )}
-
+          <section className="mb-8">
+  <ProgressStepper steps={getMagangSteps(pengajuan?.status)} />
+</section>
         <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
           <StatCard
             title="Status Pengajuan"
@@ -184,7 +252,45 @@ setLogbooks(logbookData || []);
                 {pengajuan?.status || 'Belum Ada'}
               </span>
             </div>
+                  {belumPunyaPengajuan && (
+  <Alert variant="info">
+    Kamu belum memiliki pengajuan magang. Silakan ajukan LOA dan data tempat
+    magang terlebih dahulu.
+  </Alert>
+)}
 
+{pengajuanMenunggu && (
+  <Alert variant="warning">
+    Pengajuan kamu sedang menunggu verifikasi admin. Pastikan link LOA dapat
+    diakses.
+  </Alert>
+)}
+
+{pengajuanPilihDosen && (
+  <Alert variant="info">
+    Pengajuan kamu sudah disetujui. Silakan pilih dosen pembimbing untuk
+    memulai proses magang aktif.
+  </Alert>
+)}
+
+{pengajuanAktif && logbookMenunggu.length > 0 && (
+  <Alert variant="info">
+    Ada {logbookMenunggu.length} logbook yang sedang menunggu evaluasi dosen.
+  </Alert>
+)}
+
+{totalRevisi > 0 && (
+  <Alert variant="warning">
+    Ada {totalRevisi} logbook yang perlu direvisi. Segera perbaiki agar proses
+    evaluasi tidak tertunda.
+  </Alert>
+)}
+
+{sudahAdaNilai && (
+  <Alert variant="success">
+    Nilai akhir magang kamu sudah tersedia: {pengajuan?.nilai_dari_dosen}.
+  </Alert>
+)}
             {pengajuan ? (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="app-panel p-4">

@@ -32,6 +32,7 @@ const navItems: Record<DashboardRole, NavItem[]> = {
     { label: 'Pengguna', href: '/admin/users' },
     { label: 'Lowongan', href: '/admin/lowongan' },
     { label: 'Feedback', href: '/admin/feedback' },
+    { label: 'Activity Log', href: '/admin/activity' },
   ],
   Dosen: [
     { label: 'Dashboard', href: '/dosen/dashboard' },

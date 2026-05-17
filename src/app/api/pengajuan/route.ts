@@ -3,6 +3,7 @@ import { Op } from 'sequelize';
 import Pengajuan from '@/models/Pengajuan';
 import { connectDB } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { createActivityLog } from '@/lib/activity-log';
 
 function isValidUrl(url: string) {
   try {
@@ -27,7 +28,14 @@ function isValidScore(value: unknown) {
   const score = Number(value);
   return Number.isInteger(score) && score >= 0 && score <= 100;
 }
+function isValidDate(value: string) {
+  const date = new Date(value);
+  return !Number.isNaN(date.getTime());
+}
 
+function normalizeDate(value: string) {
+  return new Date(`${value}T00:00:00`);
+}
 export async function GET(request: Request) {
   try {
     await connectDB();
@@ -134,12 +142,22 @@ export async function POST(request: Request) {
       );
     }
 
-    if (new Date(tgl_mulai) > new Date(tgl_berakhir)) {
-      return NextResponse.json(
-        { message: 'Tanggal mulai tidak boleh lebih besar dari tanggal berakhir.' },
-        { status: 400 }
-      );
-    }
+    if (!isValidDate(tgl_mulai) || !isValidDate(tgl_berakhir)) {
+  return NextResponse.json(
+    { message: 'Format tanggal mulai atau tanggal berakhir tidak valid.' },
+    { status: 400 }
+  );
+}
+
+const tanggalMulai = normalizeDate(tgl_mulai);
+const tanggalBerakhir = normalizeDate(tgl_berakhir);
+
+if (tanggalMulai >= tanggalBerakhir) {
+  return NextResponse.json(
+    { message: 'Tanggal berakhir harus lebih besar dari tanggal mulai.' },
+    { status: 400 }
+  );
+}
 
     const existingPengajuan = await Pengajuan.findOne({
       where: {
@@ -167,6 +185,13 @@ export async function POST(request: Request) {
       tgl_berakhir,
       status: 'Menunggu_Verifikasi',
     });
+    await createActivityLog({
+  actor: user,
+  action: 'CREATE_PENGAJUAN',
+  description: `${user.name} mengajukan magang di ${perusahaan} sebagai ${posisi}.`,
+  target_id: newPengajuan.getDataValue('id'),
+  target_type: 'Pengajuan',
+});
 
     return NextResponse.json(
       {
@@ -237,7 +262,13 @@ export async function PUT(request: Request) {
           status: 'Aktif',
           status_dosen: 'Menunggu',
         });
-
+          await createActivityLog({
+  actor: user,
+  action: 'PILIH_DOSEN',
+  description: `${user.name} memilih ${body.nama_dosen} sebagai dosen pembimbing.`,
+  target_id: pengajuan.getDataValue('id'),
+  target_type: 'Pengajuan',
+});
         return NextResponse.json(
           { message: 'Berhasil memilih dosen!' },
           { status: 200 }
@@ -269,7 +300,13 @@ export async function PUT(request: Request) {
         }
 
         await pengajuan.update({ link_laporan_akhir });
-
+          await createActivityLog({
+  actor: user,
+  action: 'UPLOAD_LAPORAN_AKHIR',
+  description: `${user.name} mengunggah link laporan akhir magang.`,
+  target_id: pengajuan.getDataValue('id'),
+  target_type: 'Pengajuan',
+});
         return NextResponse.json(
           { message: 'Laporan akhir berhasil disimpan!' },
           { status: 200 }
@@ -292,9 +329,18 @@ export async function PUT(request: Request) {
             { status: 400 }
           );
         }
-
-        await pengajuan.destroy();
-
+        const pengajuanId = pengajuan.getDataValue('id');
+const perusahaanPengajuan = pengajuan.getDataValue('perusahaan');
+        
+await pengajuan.destroy();
+        
+        await createActivityLog({
+  actor: user,
+  action: 'BATAL_PENGAJUAN',
+  description: `${user.name} membatalkan pengajuan magang di ${perusahaanPengajuan}.`,
+  target_id: pengajuanId,
+  target_type: 'Pengajuan',
+});
         return NextResponse.json(
           { message: 'Pengajuan dibatalkan.' },
           { status: 200 }
@@ -329,7 +375,15 @@ export async function PUT(request: Request) {
           status: 'Pilih_Dosen',
           alasan_penolakan: null,
         });
-
+          await createActivityLog({
+  actor: user,
+  action: 'SETUJUI_PENGAJUAN',
+  description: `${user.name} menyetujui pengajuan magang ${pengajuan.getDataValue(
+    'nama_mahasiswa'
+  )}.`,
+  target_id: pengajuan.getDataValue('id'),
+  target_type: 'Pengajuan',
+});
         return NextResponse.json(
           { message: 'Pengajuan disetujui!' },
           { status: 200 }
@@ -350,7 +404,15 @@ export async function PUT(request: Request) {
           status: 'Ditolak',
           alasan_penolakan: alasan,
         });
-
+          await createActivityLog({
+  actor: user,
+  action: 'TOLAK_PENGAJUAN',
+  description: `${user.name} menolak pengajuan magang ${pengajuan.getDataValue(
+    'nama_mahasiswa'
+  )}. Alasan: ${alasan}`,
+  target_id: pengajuan.getDataValue('id'),
+  target_type: 'Pengajuan',
+});
         return NextResponse.json(
           { message: 'Pengajuan ditolak.' },
           { status: 200 }
@@ -384,7 +446,15 @@ export async function PUT(request: Request) {
         await pengajuan.update({
           status_dosen: 'Disetujui',
         });
-
+          await createActivityLog({
+  actor: user,
+  action: 'TERIMA_BIMBINGAN',
+  description: `${user.name} menerima bimbingan mahasiswa ${pengajuan.getDataValue(
+    'nama_mahasiswa'
+  )}.`,
+  target_id: pengajuan.getDataValue('id'),
+  target_type: 'Pengajuan',
+});
         return NextResponse.json(
           { message: 'Bimbingan disetujui!' },
           { status: 200 }
@@ -398,7 +468,15 @@ export async function PUT(request: Request) {
           nama_dosen: null,
           status: 'Pilih_Dosen',
         });
-
+await createActivityLog({
+  actor: user,
+  action: 'TOLAK_BIMBINGAN',
+  description: `${user.name} menolak bimbingan mahasiswa ${pengajuan.getDataValue(
+    'nama_mahasiswa'
+  )}.`,
+  target_id: pengajuan.getDataValue('id'),
+  target_type: 'Pengajuan',
+});
         return NextResponse.json(
           { message: 'Bimbingan ditolak.' },
           { status: 200 }
@@ -435,7 +513,15 @@ export async function PUT(request: Request) {
           nilai_laporan,
           status: 'Selesai',
         });
-
+await createActivityLog({
+  actor: user,
+  action: 'BERI_NILAI',
+  description: `${user.name} memberi nilai akhir ${nilai_dari_dosen} untuk ${pengajuan.getDataValue(
+    'nama_mahasiswa'
+  )}.`,
+  target_id: pengajuan.getDataValue('id'),
+  target_type: 'Pengajuan',
+});
         return NextResponse.json(
           { message: 'Nilai dan rubrik evaluasi berhasil disimpan!' },
           { status: 200 }

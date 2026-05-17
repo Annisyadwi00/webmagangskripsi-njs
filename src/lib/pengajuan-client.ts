@@ -88,7 +88,17 @@ export async function getPengajuanList(page = 1, limit = 10) {
       },
   };
 }
+export async function getPengajuanById(id: number) {
+  const result = await getPengajuanList(1, 100);
 
+  const pengajuan = result.items.find((item) => item.id === id);
+
+  if (!pengajuan) {
+    throw new Error('Data pengajuan tidak ditemukan.');
+  }
+
+  return pengajuan;
+}
 export async function createPengajuan(payload: {
   perusahaan: string;
   posisi: string;

@@ -1,489 +1,421 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import PageHeader from '@/components/ui/PageHeader';
+import StatCard from '@/components/ui/StatCard';
+import Alert from '@/components/ui/Alert';
+import { getDashboardPathByRole } from '@/lib/role-redirect';
+import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
+import { Pengajuan, getPengajuanList } from '@/lib/pengajuan-client';
+import { Logbook, getLogbookList } from '@/lib/logbook-client';
 
-export default function DosenDashboard() {
-  const router = useRouter();
-  const [showRevisiModal, setShowRevisiModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'Permintaan' | 'Aktif' | 'Logbook' | 'Penilaian'>('Permintaan');
+function getStatusBadgeClass(status?: string) {
+  if (status === 'Disetujui' || status === 'Aktif' || status === 'Selesai') {
+    return 'app-badge app-badge-green';
+  }
 
-  const [bimbinganList, setBimbinganList] = useState<any[]>([]);
-  const [logbooks, setLogbooks] = useState<any[]>([]);
+  if (status === 'Menunggu' || status === 'Menunggu_Verifikasi') {
+    return 'app-badge app-badge-yellow';
+  }
+
+  if (status === 'Ditolak' || status === 'Revisi') {
+    return 'app-badge app-badge-red';
+  }
+
+  return 'app-badge app-badge-blue';
+}
+
+export default function DosenDashboardPage() {
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [pengajuans, setPengajuans] = useState<Pengajuan[]>([]);
+  const [logbooks, setLogbooks] = useState<Logbook[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // ---> FUNGSI MEMUNCULKAN NOTIFIKASI TOAST <---
-  // ---> MESIN NOTIFIKASI TOAST (PASTIKAN KEDUANYA ADA DI SINI) <---
-  const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
-
-  const showToast = (msg: string, type: 'success' | 'error') => {
-    setToast({ show: true, msg, type });
-    setTimeout(() => setToast({ show: false, msg: '', type: 'success' }), 4000);
-  };
-
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-
-  // Modal Input Nilai
-  const [showNilaiModal, setShowNilaiModal] = useState(false);
-  const [nilaiForm, setNilaiForm] = useState({
-    id_pengajuan: 0,
-    nama: '',
-    perusahaan: '',
-    n_aktivitas: 0,
-    n_dokumen: 0,
-    n_kinerja: 0,
-    n_perusahaan: 0,
-    masukan_terakhir: '',
-    langkah_selanjutnya: '',
-    nilai: '' // Ditambahkan agar tidak error saat di-set
-  });
-
-  // ---> FITUR BARU: Modal Catatan Revisi Logbook <---
-  // ---> MODAL REVIEW LOGBOOK (NILAI, STATUS, CATATAN) <---
-  const [showReviewModal, setShowReviewModal] = useState(false);
-  const [reviewForm, setReviewForm] = useState({ id_logbook: 0, nama_mahasiswa: '', kegiatan: '', catatan_dosen: '', nilai: '', status: 'Disetujui' });
-
-  const handleSubmitReview = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      const res = await fetch('/api/logbook', {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: reviewForm.id_logbook,
-          status: reviewForm.status,
-          catatan_dosen: reviewForm.catatan_dosen,
-          nilai: reviewForm.nilai ? Number(reviewForm.nilai) : null
-        })
-      });
-      if (!res.ok) throw new Error("Gagal mengirim review logbook");
-      showToast(`Review dan Nilai berhasil disimpan!`, "success");
-      setShowReviewModal(false);
-      fetchData();
-    } catch (err: any) {
-      showToast(err.message, "error");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    // Cek tema saat halaman dosen dimuat
-    if (document.documentElement.classList.contains('dark')) {
-      setIsDarkMode(true);
-    }
+    const fetchDashboard = async () => {
+      try {
+        setIsLoading(true);
+        setErrorMsg('');
+
+        const [currentUser, pengajuanData, logbookData] = await Promise.all([
+          getCurrentUserClient(),
+          getPengajuanList(1, 50),
+          getLogbookList(),
+        ]);
+
+        if (currentUser.role !== 'Dosen') {
+          window.location.href = getDashboardPathByRole(currentUser.role);
+          return;
+        }
+
+        setUser(currentUser);
+        setPengajuans(pengajuanData?.items || []);
+        setLogbooks(logbookData || []);
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Gagal memuat dashboard dosen.';
+
+        setErrorMsg(message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboard();
   }, []);
 
-  const toggleDarkMode = () => {
-    document.documentElement.classList.toggle('dark');
-    setIsDarkMode(!isDarkMode);
-  };
+  const permintaanBimbingan = pengajuans.filter(
+    (item) => item.status_dosen === 'Menunggu'
+  );
 
-  
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      const [resBimbingan, resLogbook] = await Promise.all([
-        fetch('/api/pengajuan'),
-        fetch('/api/logbook')
-      ]);
-      if (resBimbingan.ok) setBimbinganList((await resBimbingan.json()).data || []);
-      if (resLogbook.ok) setLogbooks((await resLogbook.json()).data || []);
-    } catch (error) {
-      console.error("Gagal memuat data", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const mahasiswaAktif = pengajuans.filter(
+    (item) => item.status_dosen === 'Disetujui' && item.status === 'Aktif'
+  );
 
-  useEffect(() => { fetchData(); }, []);
+  const mahasiswaSelesai = pengajuans.filter(
+    (item) => item.status === 'Selesai'
+  );
 
-  const handlePersetujuan = async (id_pengajuan: number, action: 'terima' | 'tolak', nama: string) => {
-    if (!confirm(`Yakin ingin ${action.toUpperCase()} bimbingan dari ${nama}?`)) return;
-    setIsSubmitting(true);
-    try {
-      const res = await fetch('/api/pengajuan', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, id_pengajuan }) });
-      if (!res.ok) throw new Error((await res.json()).message);
-      showToast(`Berhasil ${action} mahasiswa.`, "success"); fetchData();
-    } catch (err: any) { showToast(err.message, "error"); } finally { setIsSubmitting(false); }
-  };
+  const logbookMenunggu = logbooks.filter(
+    (item) => item.status === 'Menunggu'
+  );
 
-  const hitungNilaiHuruf = () => {
-    const total = (Number(nilaiForm.n_aktivitas) + Number(nilaiForm.n_dokumen) + Number(nilaiForm.n_kinerja) + Number(nilaiForm.n_perusahaan)) / 4;
-    if (total >= 80) return 'A';
-    if (total >= 70) return 'B';
-    if (total >= 60) return 'C';
-    return 'D';
-  };
+  const logbookRevisi = logbooks.filter((item) => item.status === 'Revisi');
 
-  const handleSubmitNilai = async (e: React.FormEvent) => {
-    e.preventDefault(); setIsSubmitting(true);
-    try {
-      const nilaiAkhir = hitungNilaiHuruf();
-      const res = await fetch('/api/pengajuan', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id_pengajuan: nilaiForm.id_pengajuan,
-          nilai_dari_dosen: nilaiAkhir,
-          nilai_kedisiplinan: nilaiForm.n_aktivitas,
-          nilai_materi: nilaiForm.n_dokumen,
-          nilai_koding: nilaiForm.n_kinerja,
-          nilai_laporan: nilaiForm.n_perusahaan,
-          masukan_dosen: nilaiForm.masukan_terakhir, 
-          saran_dosen: nilaiForm.langkah_selanjutnya    // Kolom langkah selanjutnya
-        })
-      });
-      if (!res.ok) throw new Error((await res.json()).message);
-      showToast(`Evaluasi & Nilai ${nilaiAkhir} Berhasil Disimpan!`, "success");
-      setShowNilaiModal(false);
-      fetchData();
-    } catch (err: any) { showToast(err.message, "error"); } finally { setIsSubmitting(false); }
-  };
-  // ---> FUNGSI BARU: Submit Form Revisi Dosen <---
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/logout', { method: 'POST' });
-      window.location.href = '/';
-    } catch (error) {
-      console.error("Gagal logout:", error);
-    }
-  };
+  const belumDinilai = pengajuans.filter(
+    (item) =>
+      item.status_dosen === 'Disetujui' &&
+      item.status === 'Aktif' &&
+      !item.nilai_dari_dosen
+  );
 
-  const pendingBimbingan = bimbinganList.filter(b => b.status_dosen !== 'Disetujui' && b.status_dosen !== 'Ditolak');
-  const activeBimbingan = bimbinganList.filter(b => b.status_dosen === 'Disetujui');
-  // Kita tambahkan 'Pending' agar logbook yang baru diisi mahasiswa bisa terbaca
-  const pendingLogbooks = logbooks.filter(l => l.status === 'Pending' || l.status === 'Menunggu Validasi' || !l.status);
-  // FILTER LOGBOOK YANG TERTUNDA > 3 HARI
-  const logbooksTertunda = pendingLogbooks.filter(log => {
-    const logDate = new Date(log.createdAt || log.tanggal);
-    const diffTime = Math.abs(new Date().getTime() - logDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 3;
-  });
+  const latestLogbooks = logbooks.slice(0, 5);
+  const latestBimbingan = mahasiswaAktif.slice(0, 5);
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen py-8">
+        <div className="app-container">
+          <div className="app-card p-8">
+            <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+            <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+
+            <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-4">
+              {[1, 2, 3, 4].map((item) => (
+                <div
+                  key={item}
+                  className="h-36 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800"
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (errorMsg) {
+    return (
+      <main className="min-h-screen py-8">
+        <div className="app-container">
+          <Alert variant="error">{errorMsg}</Alert>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 flex font-sans relative overflow-hidden">
+    <main className="min-h-screen py-8">
+      <div className="app-container">
+        <PageHeader
+          eyebrow="Dashboard Dosen"
+          title={`Halo, ${user?.name || 'Dosen'}`}
+          description="Pantau permintaan bimbingan, mahasiswa aktif, logbook yang perlu dievaluasi, dan penilaian akhir dari satu halaman."
+          action={
+            <Link href="/dosen/logbook" className="app-btn-primary">
+              Evaluasi Logbook
+            </Link>
+          }
+        />
 
-      {/* CUSTOM TOAST */}
-      <AnimatePresence>
-        {toast.show && (
-          <motion.div initial={{ opacity: 0, y: -50, x: '-50%' }} animate={{ opacity: 1, y: 20, x: '-50%' }} exit={{ opacity: 0, y: -50, x: '-50%' }} className="fixed top-0 left-1/2 z-70">
-            <div className={`px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 text-white ${toast.type === 'error' ? 'bg-red-500 shadow-red-500/30' : 'bg-emerald-500 shadow-emerald-500/30'}`}>
-              {toast.msg}
-            </div>
-          </motion.div>
+        {permintaanBimbingan.length > 0 && (
+          <Alert variant="warning">
+            Ada {permintaanBimbingan.length} permintaan bimbingan baru yang
+            perlu diterima atau ditolak.
+          </Alert>
         )}
-      </AnimatePresence>
 
-      {/* KONTEN UTAMA */}
-      <main className="flex-1 flex flex-col h-screen overflow-y-auto bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
-        <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-sm border-b border-gray-200 dark:border-slate-800 px-10 py-6 flex justify-between items-center sticky top-0 z-10 transition-colors duration-300">
-          <h2 className="text-2xl font-black text-gray-900 dark:text-white">
-            {activeTab === 'Permintaan' ? 'Validasi Permintaan Bimbingan' :
-              activeTab === 'Aktif' ? 'Daftar Mahasiswa Bimbingan' :
-                activeTab === 'Logbook' ? 'Validasi Laporan Logbook' :
-                  'Evaluasi & Penilaian Akhir'}
-          </h2>
+        {logbookMenunggu.length > 0 && (
+          <Alert variant="info">
+            Ada {logbookMenunggu.length} logbook mahasiswa yang menunggu
+            evaluasi.
+          </Alert>
+        )}
 
-          {/* TOMBOL DARK MODE */}
-          <button onClick={toggleDarkMode} className="p-2 md:p-3 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-yellow-400 rounded-full border border-gray-200 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-700 transition-all text-xl" title="Ganti Tema">
-            {isDarkMode ? '☀️' : '🌙'}
-          </button>
-        </header>
+        {logbookRevisi.length > 0 && (
+          <Alert variant="warning">
+            Ada {logbookRevisi.length} logbook berstatus revisi yang perlu
+            dipantau.
+          </Alert>
+        )}
 
-        <div className="p-10 max-w-7xl mx-auto w-full">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <svg className="w-12 h-12 animate-spin text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+        {belumDinilai.length > 0 && (
+          <Alert variant="info">
+            Ada {belumDinilai.length} mahasiswa aktif yang belum memiliki nilai
+            akhir.
+          </Alert>
+        )}
+
+        {permintaanBimbingan.length === 0 &&
+          logbookMenunggu.length === 0 &&
+          belumDinilai.length === 0 && (
+            <Alert variant="success">
+              Tidak ada tugas mendesak saat ini. Semua proses bimbingan berjalan
+              normal.
+            </Alert>
+          )}
+
+        <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-4">
+          <StatCard
+            title="Permintaan Bimbingan"
+            value={permintaanBimbingan.length}
+            description="Mahasiswa yang menunggu persetujuan."
+            icon="users"
+          />
+
+          <StatCard
+            title="Mahasiswa Aktif"
+            value={mahasiswaAktif.length}
+            description="Mahasiswa bimbingan yang sedang magang."
+            icon="briefcase"
+          />
+
+          <StatCard
+            title="Logbook Menunggu"
+            value={logbookMenunggu.length}
+            description="Logbook yang perlu dievaluasi."
+            icon="document"
+          />
+
+          <StatCard
+            title="Belum Dinilai"
+            value={belumDinilai.length}
+            description="Mahasiswa aktif tanpa nilai akhir."
+            icon="warning"
+          />
+        </section>
+
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="app-card p-6 lg:col-span-2">
+            <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-xl font-black text-slate-950 dark:text-white">
+                  Mahasiswa Bimbingan Aktif
+                </h2>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  Daftar mahasiswa yang sedang menjalankan proses magang.
+                </p>
+              </div>
+
+              <Link
+                href="/dosen/bimbingan"
+                className="text-sm font-black text-[#1e3a8a] dark:text-blue-300"
+              >
+                Lihat semua
+              </Link>
             </div>
-          ) : (
-            <AnimatePresence mode="wait">
 
-              {/* TAB 1: PERMINTAAN BIMBINGAN */}
-              {activeTab === 'Permintaan' && (
-                <motion.div key="permintaan" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {pendingBimbingan.length === 0 ? <p className="col-span-full p-10 text-center text-gray-500 dark:text-gray-400 font-bold bg-white dark:bg-slate-800 rounded-3xl border border-gray-200 dark:border-slate-700 transition-colors">Belum ada permintaan bimbingan baru.</p> : pendingBimbingan.map((item) => (
-                    <div key={item.id} className="bg-white dark:bg-slate-800 rounded-3xl p-8 border border-gray-200 dark:border-slate-700 shadow-sm flex flex-col h-full hover:shadow-lg transition-all">
-                      <h4 className="font-black text-gray-900 dark:text-white text-xl">{item.nama_mahasiswa}</h4>
-                      <p className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-6">{item.perusahaan} - {item.posisi}</p>
-                      <div className="flex gap-3 mt-auto">
-                        <button onClick={() => handlePersetujuan(item.id, 'tolak', item.nama_mahasiswa)} className="flex-1 py-3 bg-white dark:bg-slate-700 border-2 border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 font-bold rounded-xl hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">Tolak</button>
-                        <button onClick={() => handlePersetujuan(item.id, 'terima', item.nama_mahasiswa)} className="flex-1 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-bold rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all shadow-md">Terima Bimbingan</button>
-                      </div>
-                    </div>
-                  ))}
-                </motion.div>
-              )}
-
-              {/* TAB 2: MAHASISWA AKTIF */}
-              {activeTab === 'Aktif' && (
-                <motion.div key="aktif" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {activeBimbingan.length === 0 ? <p className="col-span-full p-10 text-center text-gray-500 dark:text-gray-400 font-bold bg-white dark:bg-slate-800 rounded-3xl border border-gray-200 dark:border-slate-700 transition-colors">Belum ada mahasiswa yang aktif dibimbing.</p> : activeBimbingan.map((b) => (
-                    <div key={b.id} className="bg-white dark:bg-slate-800 rounded-3xl p-8 border border-gray-200 dark:border-slate-700 shadow-sm transition-colors">
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center font-black text-xl">{b.nama_mahasiswa.charAt(0)}</div>
-                        <div>
-                          <h4 className="font-black text-gray-900 dark:text-white text-lg">{b.nama_mahasiswa}</h4>
-                          <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{b.perusahaan}</p>
-                        </div>
-                      </div>
-                      <div className="bg-gray-50 dark:bg-slate-700/50 rounded-xl p-4 border border-gray-100 dark:border-slate-600 flex justify-between items-center transition-colors">
-                        <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Sistem Konversi</span>
-                        <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-3 py-1.5 rounded-lg font-bold">{b.tipeKonversi}</span>
-                      </div>
-                    </div>
-                  ))}
-                </motion.div>
-              )}
-
-              {/* TAB 3: VALIDASI LOGBOOK */}
-              {activeTab === 'Logbook' && (
-                <motion.div key="logbook" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden transition-colors">
-                  {logbooksTertunda.length > 0 && (
-                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl flex items-center gap-4 animate-pulse shadow-sm mx-1">
-                      <span className="text-3xl">⚠️</span>
+            {latestBimbingan.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/70">
+                <p className="font-bold text-slate-700 dark:text-slate-300">
+                  Belum ada mahasiswa bimbingan aktif.
+                </p>
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                  Mahasiswa yang diterima sebagai bimbingan akan muncul di sini.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {latestBimbingan.map((item) => (
+                  <article
+                    key={item.id}
+                    className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900"
+                  >
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                       <div>
-                        <h4 className="text-sm font-black text-red-800 dark:text-red-400">Tindakan Mendesak!</h4>
-                        <p className="text-xs font-bold text-red-600 dark:text-red-300">
-                          Ada <strong className="text-lg">{logbooksTertunda.length}</strong> laporan mahasiswa yang telah lewat 3 hari dan belum Anda evaluasi.
+                        <h3 className="font-black text-slate-950 dark:text-white">
+                          {item.nama_mahasiswa}
+                        </h3>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                          {item.perusahaan} - {item.posisi}
+                        </p>
+                      </div>
+
+                      <span className={getStatusBadgeClass(item.status)}>
+                        {item.status}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                      <div className="app-panel p-3">
+                        <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Mulai
+                        </p>
+                        <p className="mt-1 font-bold text-slate-950 dark:text-white">
+                          {item.tgl_mulai || '-'}
+                        </p>
+                      </div>
+
+                      <div className="app-panel p-3">
+                        <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Berakhir
+                        </p>
+                        <p className="mt-1 font-bold text-slate-950 dark:text-white">
+                          {item.tgl_berakhir || '-'}
+                        </p>
+                      </div>
+
+                      <div className="app-panel p-3">
+                        <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Nilai
+                        </p>
+                        <p className="mt-1 font-bold text-slate-950 dark:text-white">
+                          {item.nilai_dari_dosen || 'Belum dinilai'}
                         </p>
                       </div>
                     </div>
-                  )}
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50 dark:bg-slate-900/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-bold border-b border-gray-100 dark:border-slate-700 transition-colors">
-                        <th className="p-5 pl-8">Mahasiswa & Tanggal</th>
-                        <th className="p-5">Deskripsi Kegiatan</th>
-                        <th className="p-5 text-center">Bukti / Dokumen</th>
-                        <th className="p-5 pr-8 text-center">Aksi Validasi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-slate-700 text-sm">
-                      {pendingLogbooks.length === 0 ? (
-                        <tr><td colSpan={4} className="p-16 text-center text-gray-400 dark:text-gray-500 font-bold">Semua laporan harian sudah divalidasi. Laporan yang masuk akan muncul di sini.</td></tr>
-                      ) : pendingLogbooks.map((log) => (
-                        <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                          <td className="p-5 pl-8 align-top">
-                            <p className="font-bold text-gray-900 dark:text-white text-base mb-1">{log.nama_mahasiswa || 'Mahasiswa'}</p>
-                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded">{log.tanggal}</span>
-                          </td>
-                          <td className="p-5 align-top">
-                            <p className="text-gray-700 dark:text-gray-300 font-medium leading-relaxed whitespace-pre-wrap max-w-sm">{log.kegiatan}</p>
-                          </td>
-                          <td className="p-5 align-top text-center">
-                            <a href={log.link_dokumen} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xs bg-blue-50 dark:bg-blue-900/30 px-3 py-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                              Lihat Bukti
-                            </a>
-                          </td>
-                          <td className="p-5 pr-8 align-top text-center">
-                            <button
-                              onClick={() => {
-                                setReviewForm({ id_logbook: log.id, nama_mahasiswa: log.nama_mahasiswa, kegiatan: log.kegiatan, catatan_dosen: '', nilai: '', status: 'Disetujui' });
-                                setShowReviewModal(true);
-                              }}
-                              className="w-full px-3 py-2 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 font-bold rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/60 transition-colors text-xs shadow-sm"
-                            >
-                              📝 Beri Review & Nilai
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </motion.div>
-              )}
-
-              {/* TAB 4: INPUT PENILAIAN */}
-              {activeTab === 'Penilaian' && (
-                <motion.div key="penilaian" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {activeBimbingan.length === 0 ? <p className="col-span-full p-10 text-center text-gray-500 dark:text-gray-400 font-bold bg-white dark:bg-slate-800 rounded-3xl border border-gray-200 dark:border-slate-700 transition-colors">Belum ada mahasiswa yang bisa dinilai.</p> : activeBimbingan.map((item) => (
-                    <div key={item.id} className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-gray-200 dark:border-slate-700 shadow-sm flex flex-col h-full hover:shadow-lg transition-all">
-                      <h4 className="font-black text-gray-900 dark:text-white text-lg mb-1">{item.nama_mahasiswa}</h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-6">{item.perusahaan}</p>
-
-                      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-4 border border-gray-100 dark:border-slate-600 mb-6 flex justify-between items-center transition-colors">
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Nilai Akhir</span>
-                        <span className={`text-3xl font-black ${item.nilai_dari_dosen ? 'text-green-500 dark:text-green-400' : 'text-gray-300 dark:text-gray-600'}`}>{item.nilai_dari_dosen || '-'}</span>
-                      </div>
-
-                      <button onClick={() => {
-                        // Perbaikan dilakukan disini agar tidak ada error di form yang kehilangan variabel
-                        setNilaiForm(prev => ({
-                          ...prev,
-                          id_pengajuan: item.id,
-                          nama: item.nama_mahasiswa,
-                          perusahaan: item.perusahaan,
-                          nilai: item.nilai_dari_dosen || ''
-                        }));
-                        setShowNilaiModal(true);
-                      }} className={`mt-auto w-full py-3.5 rounded-xl text-sm font-bold transition-all shadow-sm ${item.nilai_dari_dosen ? 'bg-white dark:bg-slate-700 border-2 border-indigo-100 dark:border-indigo-900/50 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-600' : 'bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 hover:-translate-y-0.5'}`}>
-                        {item.nilai_dari_dosen ? 'Edit Nilai' : 'Input Nilai Sekarang'}
-                      </button>
-                    </div>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          )}
-        </div>
-      </main>
-
-      {/* MODAL INPUT PENILAIAN (YANG LAMA TETAP ADA) */}
-      <AnimatePresence>
-        {showNilaiModal && (
-          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white dark:bg-slate-800 w-full max-w-xl rounded-3xl shadow-2xl p-8 z-10 transition-colors">
-            <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Evaluasi Akhir Mahasiswa</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm border-b dark:border-slate-700 pb-4">Input skor (1-100) untuk masing-masing kriteria <strong>{nilaiForm.nama}</strong>.</p>
-
-            <form onSubmit={handleSubmitNilai} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Nilai Aktivitas</label>
-                  <input type="number" min="0" max="100" required value={nilaiForm.n_aktivitas} onChange={(e) => setNilaiForm({ ...nilaiForm, n_aktivitas: Number(e.target.value) })} className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0-100" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Nilai Dokumen</label>
-                  <input type="number" min="0" max="100" required value={nilaiForm.n_dokumen} onChange={(e) => setNilaiForm({ ...nilaiForm, n_dokumen: Number(e.target.value) })} className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0-100" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Nilai Kinerja</label>
-                  <input type="number" min="0" max="100" required value={nilaiForm.n_kinerja} onChange={(e) => setNilaiForm({ ...nilaiForm, n_kinerja: Number(e.target.value) })} className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0-100" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Nilai Perusahaan</label>
-                  <input type="number" min="0" max="100" required value={nilaiForm.n_perusahaan} onChange={(e) => setNilaiForm({ ...nilaiForm, n_perusahaan: Number(e.target.value) })} className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0-100" />
-                </div>
+                  </article>
+                ))}
               </div>
-
-              {/* LIVE PREVIEW HASIL */}
-              <div className="mt-6 p-5 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800 flex justify-between items-center transition-colors">
-                <div>
-                  <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Estimasi Nilai Akhir</p>
-                  <p className="text-xs text-indigo-600 dark:text-indigo-300 font-medium italic">* Rata-rata otomatis</p>
-                </div>
-                <div className="text-center">
-                  <span className="text-4xl font-black text-indigo-600 dark:text-indigo-400">{hitungNilaiHuruf()}</span>
-                </div>
-                {/* FORM KALIMAT MASUKAN & LANGKAH SELANJUTNYA */}
-                <div className="space-y-4 mt-6 pt-6 border-t dark:border-slate-700">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Masukan Terakhir untuk Mahasiswa</label>
-                    <textarea required rows={3} value={nilaiForm.masukan_terakhir} onChange={(e) => setNilaiForm({ ...nilaiForm, masukan_terakhir: e.target.value })} className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="Berikan evaluasi menyeluruh tentang kinerjanya..."></textarea>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Langkah yang Harus Dilakukan Selanjutnya</label>
-                    <textarea required rows={2} value={nilaiForm.langkah_selanjutnya} onChange={(e) => setNilaiForm({ ...nilaiForm, langkah_selanjutnya: e.target.value })} className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="Contoh: Segera kumpulkan laporan akhir ke prodi..."></textarea>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-4 pt-4">
-                <button type="button" onClick={() => setShowNilaiModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">Batal</button>
-                <button type="submit" disabled={isSubmitting} className="flex-1 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg transition-all">Simpan Nilai</button>
-              </div>
-            </form>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ---> FITUR BARU: MODAL CATATAN REVISI LOGBOOK <--- */}
-      {/* ---> MODAL REVIEW LOGBOOK (NILAI, STATUS & CATATAN) <--- */}
-      <AnimatePresence>
-        {showReviewModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowReviewModal(false)}></div>
-            <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="relative bg-white dark:bg-slate-800 w-full max-w-lg rounded-3xl shadow-2xl p-8 z-10 transition-colors max-h-[90vh] overflow-y-auto custom-scrollbar">
-
-              <button onClick={() => setShowReviewModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-
-              <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Review Logbook</h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm border-b dark:border-slate-700 pb-4">Berikan persetujuan, nilai, dan catatan untuk <strong className="text-gray-900 dark:text-white">{reviewForm.nama_mahasiswa}</strong>.</p>
-
-              <div className="mb-6 bg-gray-50 dark:bg-slate-700/50 p-4 rounded-xl border border-gray-100 dark:border-slate-600 transition-colors">
-                <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase mb-1">Kegiatan yang Direview:</p>
-                <p className="text-sm text-gray-700 dark:text-gray-300 italic line-clamp-2">"{reviewForm.kegiatan}"</p>
-              </div>
-
-              <form onSubmit={handleSubmitReview} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Persetujuan *</label>
-                    <select required value={reviewForm.status} onChange={(e) => setReviewForm({ ...reviewForm, status: e.target.value })} className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm cursor-pointer font-bold">
-                      <option value="Disetujui">✅ Disetujui</option>
-                      <option value="Revisi">❌ Minta Revisi</option>
-                      <option value="Ditolak">⛔ Ditolak</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Nilai (1-100)</label>
-                    <input type="number" min="0" max="100" value={reviewForm.nilai} onChange={(e) => setReviewForm({ ...reviewForm, nilai: e.target.value })} className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm font-bold" placeholder="Contoh: 85" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Catatan / Pesan Dosen</label>
-                  <textarea rows={3} value={reviewForm.catatan_dosen} onChange={(e) => setReviewForm({ ...reviewForm, catatan_dosen: e.target.value })} className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm" placeholder="Berikan evaluasi atau detail revisi (opsional)..."></textarea>
-                </div>
-
-                <div className="flex gap-4 pt-4 mt-2">
-                  <button type="submit" disabled={isSubmitting} className="w-full py-4 bg-indigo-600 dark:bg-indigo-500 text-white font-black rounded-xl hover:bg-indigo-700 dark:bg-indigo-600 shadow-lg shadow-indigo-600/30 transition-all hover:-translate-y-1">
-                    {isSubmitting ? 'Menyimpan...' : 'Simpan Review & Nilai'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+            )}
           </div>
-        )}
-      </AnimatePresence>
-      {/* MODAL LOGOUT POP-OUT */}
-      <AnimatePresence>
-        {showLogoutModal && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowLogoutModal(false)}></div>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl shadow-2xl p-8 z-10 transition-colors text-center overflow-hidden">
-              {/* Dekorasi Background */}
-              <div className="absolute top-0 left-0 w-full h-32 bg-linear-to-b from-red-50 dark:from-red-900/20 to-transparent -z-10"></div>
 
-              <div className="w-20 h-20 bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-inner border-4 border-white dark:border-slate-800 z-10 relative">
-                🚪
-              </div>
+          <div className="app-card p-6">
+            <h2 className="text-xl font-black text-slate-950 dark:text-white">
+              Menu Cepat
+            </h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Akses fitur utama dosen pembimbing.
+            </p>
 
-              <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Yakin Ingin Keluar?</h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm font-medium leading-relaxed">
-                Sesi kamu akan diakhiri. Kamu harus login kembali untuk mengakses portal mahasiswa.
+            <div className="mt-5 space-y-3">
+              <Link
+                href="/dosen/bimbingan"
+                className="flex items-center justify-between rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 font-bold text-[#1e3a8a] hover:bg-blue-100 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300 dark:hover:bg-blue-400/20"
+              >
+                Permintaan Bimbingan
+                <span>→</span>
+              </Link>
+
+              <Link
+                href="/dosen/logbook"
+                className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                Evaluasi Logbook
+                <span>→</span>
+              </Link>
+
+              <Link
+                href="/dosen/penilaian"
+                className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                Penilaian Akhir
+                <span>→</span>
+              </Link>
+
+              <Link
+                href="/settings"
+                className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                Settings Akun
+                <span>→</span>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <section className="app-card mt-6 p-6">
+          <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-xl font-black text-slate-950 dark:text-white">
+                Logbook Terbaru
+              </h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Aktivitas mahasiswa terbaru yang masuk ke sistem.
               </p>
+            </div>
 
-              <div className="flex gap-3">
-                <button onClick={() => setShowLogoutModal(false)} className="flex-1 py-3.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
-                  Batal
-                </button>
-                <button onClick={handleLogout} className="flex-1 py-3.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-lg shadow-red-200 dark:shadow-none transition-all">
-                  Ya, Keluar
-                </button>
-              </div>
-            </motion.div>
+            <Link
+              href="/dosen/logbook"
+              className="text-sm font-black text-[#1e3a8a] dark:text-blue-300"
+            >
+              Lihat semua
+            </Link>
           </div>
-        )}
-      </AnimatePresence>
 
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
-      `}</style>
-    </div>
+          {latestLogbooks.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/70">
+              <p className="font-bold text-slate-700 dark:text-slate-300">
+                Belum ada logbook.
+              </p>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                Logbook mahasiswa akan muncul setelah mahasiswa mengisi
+                aktivitas magang.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {latestLogbooks.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:flex-row md:items-center md:justify-between"
+                >
+                  <div>
+                    <p className="font-black text-slate-950 dark:text-white">
+                      {item.tanggal}
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
+                      {item.kegiatan}
+                    </p>
+                  </div>
+
+                  <span className={getStatusBadgeClass(item.status)}>
+                    {item.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+          <div className="app-card p-6">
+            <h2 className="text-xl font-black text-slate-950 dark:text-white">
+              Ringkasan Bimbingan
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+              Total mahasiswa selesai bimbingan: {mahasiswaSelesai.length}.
+              Gunakan halaman penilaian untuk mengisi nilai akhir mahasiswa yang
+              sudah menyelesaikan proses magang.
+            </p>
+          </div>
+
+          <div className="app-card p-6">
+            <h2 className="text-xl font-black text-slate-950 dark:text-white">
+              Prioritas Hari Ini
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+              Fokus utama: evaluasi logbook menunggu dan proses permintaan
+              bimbingan baru agar mahasiswa tidak menunggu terlalu lama.
+            </p>
+          </div>
+        </section>
+      </div>
+    </main>
   );
 }
