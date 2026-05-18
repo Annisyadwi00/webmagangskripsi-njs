@@ -88,10 +88,10 @@ export default function DashboardShell({ role, children }: DashboardShellProps) 
         method: 'POST',
       });
 
-      router.push('/login');
+      router.push('/');
       router.refresh();
     } catch {
-      router.push('/login');
+      router.push('/');
       router.refresh();
     } finally {
       setIsLoggingOut(false);

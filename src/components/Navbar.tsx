@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import ThemeIcon from '@/components/ui/ThemeIcon';
+import { apiClient } from '@/lib/api-client';
 
 type NavbarUser = {
   name?: string;
@@ -17,6 +18,7 @@ export default function Navbar({ user: propUser }: { user?: NavbarUser | null })
   const [user, setUser] = useState<NavbarUser | null>(propUser || null);
   const [isOpen, setIsOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -66,6 +68,22 @@ export default function Navbar({ user: propUser }: { user?: NavbarUser | null })
     localStorage.setItem('theme', nextMode ? 'dark' : 'light');
     setIsDarkMode(nextMode);
   };
+
+  const handleLogout = async () => {
+  setIsLoggingOut(true);
+
+  try {
+    await apiClient<null>('/api/auth/logout', {
+      method: 'POST',
+    });
+  } catch {
+    // Tetap arahkan ke landing page meskipun request logout gagal.
+  } finally {
+    setUser(null);
+    setIsLoggingOut(false);
+    window.location.href = '/';
+  }
+};
 
   const hideNavbar =
     pathname?.includes('/login') ||
@@ -146,11 +164,22 @@ export default function Navbar({ user: propUser }: { user?: NavbarUser | null })
               <ThemeIcon type={isDarkMode ? 'sun' : 'moon'} />
             </button>
 
-            {user ? (
-              <Link href={getDashboardPath()} className="app-btn-primary px-5 py-3">
-                Dashboard
-              </Link>
-            ) : (
+           {user ? (
+  <>
+    <Link href={getDashboardPath()} className="app-btn-primary px-5 py-3">
+      Dashboard
+    </Link>
+
+    <button
+      type="button"
+      onClick={handleLogout}
+      disabled={isLoggingOut}
+      className="app-btn-danger px-5 py-3 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {isLoggingOut ? 'Keluar...' : 'Logout'}
+    </button>
+  </>
+) : (
               <>
                 <Link href="/login" className="app-btn-secondary px-5 py-3">
                   Masuk
@@ -199,11 +228,23 @@ export default function Navbar({ user: propUser }: { user?: NavbarUser | null })
               ))}
 
               <div className="grid grid-cols-1 gap-2 pt-3">
-                {user ? (
-                  <Link href={getDashboardPath()} className="app-btn-primary">
-                    Dashboard
-                  </Link>
-                ) : (
+              
+               {user ? (
+  <>
+    <Link href={getDashboardPath()} className="app-btn-primary">
+      Dashboard
+    </Link>
+
+    <button
+      type="button"
+      onClick={handleLogout}
+      disabled={isLoggingOut}
+      className="app-btn-danger disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {isLoggingOut ? 'Keluar...' : 'Logout'}
+    </button>
+  </>
+) : (
                   <>
                     <Link href="/login" className="app-btn-secondary">
                       Masuk
