@@ -162,6 +162,7 @@ export default function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="off"
                     className="app-input pr-24"
                     placeholder="Masukkan password"
                   />

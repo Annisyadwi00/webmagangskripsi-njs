@@ -7,6 +7,7 @@ import StatCard from '@/components/ui/StatCard';
 import Alert from '@/components/ui/Alert';
 import { getDashboardPathByRole } from '@/lib/role-redirect';
 import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
+import { User, getUsers } from '@/lib/users-client';
 import {
   Pengajuan,
   getPengajuanList,
@@ -21,11 +22,15 @@ type VerifikasiForm = {
   tipeKonversi: string;
   matkulInput: string;
   semester_konversi: string;
+  dosenId: string;
+  nama_dosen: string;
 };
 
 const initialVerifikasiForm: VerifikasiForm = {
   id: 0,
   nama_mahasiswa: '',
+  dosenId: '',
+nama_dosen: '',
   perusahaan: '',
   tipeKonversi: 'Full',
   matkulInput: '',
@@ -65,7 +70,7 @@ function getStatusLabel(status?: string | null) {
 export default function AdminPengajuanPage() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [pengajuans, setPengajuans] = useState<Pengajuan[]>([]);
-
+const [dosens, setDosens] = useState<User[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
 
@@ -89,10 +94,11 @@ export default function AdminPengajuanPage() {
       setIsLoading(true);
       setErrorMsg('');
 
-      const [me, pengajuanData] = await Promise.all([
-        getCurrentUserClient(),
-        getPengajuanList(1, 100),
-      ]);
+     const [me, pengajuanData, usersData] = await Promise.all([
+  getCurrentUserClient(),
+  getPengajuanList(1, 100),
+  getUsers(),
+]);
 
       if (me.role !== 'Admin') {
         window.location.href = getDashboardPathByRole(me.role);
@@ -101,6 +107,7 @@ export default function AdminPengajuanPage() {
 
       setCurrentUser(me);
       setPengajuans(pengajuanData?.items || []);
+      setDosens(usersData.filter((item) => item.role === 'Dosen'));
     } catch (error) {
       const errMessage =
         error instanceof Error
@@ -151,13 +158,15 @@ export default function AdminPengajuanPage() {
     setRejectReason('');
 
     setVerifikasiForm({
-      id: pengajuan.id,
-      nama_mahasiswa: pengajuan.nama_mahasiswa,
-      perusahaan: pengajuan.perusahaan,
-      tipeKonversi: pengajuan.tipeKonversi || 'Full',
-      matkulInput: pengajuan.matkulKonversi || '',
-      semester_konversi: pengajuan.semester_konversi || 'Semester 6',
-    });
+  id: pengajuan.id,
+  nama_mahasiswa: pengajuan.nama_mahasiswa,
+  perusahaan: pengajuan.perusahaan,
+  tipeKonversi: pengajuan.tipeKonversi || 'Full',
+  matkulInput: pengajuan.matkulKonversi || '',
+  semester_konversi: pengajuan.semester_konversi || 'Semester 6',
+  dosenId: pengajuan.dosenId ? String(pengajuan.dosenId) : '',
+  nama_dosen: pengajuan.nama_dosen || '',
+});
   };
 
   const closeApproveModal = () => {
@@ -185,6 +194,11 @@ export default function AdminPengajuanPage() {
     setMessage('');
     setErrorMsg('');
 
+      if (!verifikasiForm.dosenId || !verifikasiForm.nama_dosen) {
+      setErrorMsg('Dosen pembimbing wajib dipilih.');
+      setIsSubmitting(false);
+      return;
+    }
     try {
       const matkulKonversi =
         verifikasiForm.tipeKonversi === 'Tidak'
@@ -195,11 +209,13 @@ export default function AdminPengajuanPage() {
               .filter(Boolean);
 
       const result = await setujuiPengajuan({
-        id: verifikasiForm.id,
-        tipeKonversi: verifikasiForm.tipeKonversi,
-        matkulKonversi,
-        semester_konversi: verifikasiForm.semester_konversi,
-      });
+  id: verifikasiForm.id,
+  tipeKonversi: verifikasiForm.tipeKonversi,
+  matkulKonversi,
+  semester_konversi: verifikasiForm.semester_konversi,
+  dosenId: Number(verifikasiForm.dosenId),
+  nama_dosen: verifikasiForm.nama_dosen,
+});
 
       setMessage(result.message || 'Pengajuan berhasil disetujui.');
       closeApproveModal();
@@ -573,14 +589,43 @@ export default function AdminPengajuanPage() {
                   placeholder="Contoh: Semester 6"
                 />
               </div>
+                    <div>
+  <label className="app-label">Dosen Pembimbing</label>
+  <select
+    required
+    value={verifikasiForm.dosenId}
+    onChange={(e) => {
+      const selectedDosen = dosens.find(
+        (dosen) => dosen.id === Number(e.target.value)
+      );
 
+      setVerifikasiForm({
+        ...verifikasiForm,
+        dosenId: e.target.value,
+        nama_dosen: selectedDosen?.name || '',
+      });
+    }}
+    className="app-input"
+  >
+    <option value="">Pilih Dosen Pembimbing</option>
+    {dosens.map((dosen) => (
+      <option key={dosen.id} value={dosen.id}>
+        {dosen.name}
+        {dosen.kategori_dosen ? ` - ${dosen.kategori_dosen}` : ''}
+      </option>
+    ))}
+  </select>
+
+  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+    Dosen yang dipilih akan langsung menjadi dosen pembimbing mahasiswa.
+  </p>
+</div>
               <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-400/20 dark:bg-blue-400/10">
                 <p className="text-sm font-bold text-[#1e3a8a] dark:text-blue-300">
                   Setelah disetujui
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  Status pengajuan akan berubah menjadi “Pilih Dosen”, sehingga
-                  mahasiswa dapat memilih dosen pembimbing.
+                  Status pengajuan akan langsung menjadi “Aktif”, dan dosen pembimbing ditentukan oleh admin.
                 </p>
               </div>
 

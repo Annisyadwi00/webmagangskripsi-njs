@@ -152,6 +152,8 @@ export async function setujuiPengajuan(payload: {
   tipeKonversi?: string;
   matkulKonversi?: unknown;
   semester_konversi?: string;
+  dosenId: number;
+  nama_dosen: string;
 }) {
   return apiClient<null>('/api/pengajuan', {
     method: 'PUT',

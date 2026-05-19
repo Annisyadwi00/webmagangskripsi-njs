@@ -285,6 +285,7 @@ export default function RegisterPage() {
                         minLength={8}
                         value={formData.password}
                         onChange={handleChange}
+                        autoComplete="off"
                         className="app-input pr-24"
                         placeholder="Minimal 8 karakter"
                       />
@@ -311,6 +312,7 @@ export default function RegisterPage() {
                         minLength={8}
                         value={formData.confirmPassword}
                         onChange={handleChange}
+                        autoComplete="off"
                         className="app-input pr-24"
                         placeholder="Ulangi password"
                       />

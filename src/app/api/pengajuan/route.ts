@@ -366,29 +366,41 @@ await pengajuan.destroy();
       }
 
       if (action === 'setujui') {
-        await pengajuan.update({
-          tipeKonversi: body.tipeKonversi || null,
-          matkulKonversi: body.matkulKonversi
-            ? JSON.stringify(body.matkulKonversi)
-            : null,
-          semester_konversi: body.semester_konversi || null,
-          status: 'Pilih_Dosen',
-          alasan_penolakan: null,
-        });
-          await createActivityLog({
-  actor: user,
-  action: 'SETUJUI_PENGAJUAN',
-  description: `${user.name} menyetujui pengajuan magang ${pengajuan.getDataValue(
-    'nama_mahasiswa'
-  )}.`,
-  target_id: pengajuan.getDataValue('id'),
-  target_type: 'Pengajuan',
-});
-        return NextResponse.json(
-          { message: 'Pengajuan disetujui!' },
-          { status: 200 }
-        );
-      }
+  if (!body.dosenId || !body.nama_dosen) {
+    return NextResponse.json(
+      { message: 'Dosen pembimbing wajib dipilih oleh admin.' },
+      { status: 400 }
+    );
+  }
+
+  await pengajuan.update({
+    tipeKonversi: body.tipeKonversi || null,
+    matkulKonversi: body.matkulKonversi
+      ? JSON.stringify(body.matkulKonversi)
+      : null,
+    semester_konversi: body.semester_konversi || null,
+    dosenId: body.dosenId,
+    nama_dosen: body.nama_dosen,
+    status: 'Aktif',
+    status_dosen: 'Disetujui',
+    alasan_penolakan: null,
+  });
+
+  await createActivityLog({
+    actor: user,
+    action: 'SETUJUI_PENGAJUAN',
+    description: `${user.name} menyetujui pengajuan magang ${pengajuan.getDataValue(
+      'nama_mahasiswa'
+    )} dan menetapkan ${body.nama_dosen} sebagai dosen pembimbing.`,
+    target_id: pengajuan.getDataValue('id'),
+    target_type: 'Pengajuan',
+  });
+
+  return NextResponse.json(
+    { message: 'Pengajuan disetujui dan dosen pembimbing berhasil ditentukan!' },
+    { status: 200 }
+  );
+}
 
       if (action === 'tolak') {
         const alasan = body.alasan?.trim();
