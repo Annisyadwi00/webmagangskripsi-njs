@@ -16,25 +16,25 @@ export type Pengajuan = {
   perusahaan: string;
   posisi: string;
   link_loa: string | null;
+
+  jenis_magang: string | null;
+  no_hp_mahasiswa: string | null;
+  foto_diri: string | null;
+  bukti_penerimaan: string | null;
+  alamat_tempat_magang: string | null;
+  nama_penanggung_jawab: string | null;
+  kontak_penanggung_jawab: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  rencana_magang: string | null;
+  npm: string | null;
+  program_studi: string | null;
+  angkatan: string | null;
+  kelas: string | null;
+
   tipeKonversi: string | null;
   tgl_mulai: string | null;
   tgl_berakhir: string | null;
-  matkulKonversi: string | null;
-  link_laporan_akhir: string | null;
-  nilai_dari_dosen: string | null;
-  dosenId: number | null;
-  nama_dosen: string | null;
-  nilai_kedisiplinan: number | null;
-  nilai_materi: number | null;
-  nilai_koding: number | null;
-  nilai_laporan: number | null;
-  status: PengajuanStatus;
-  status_dosen: StatusDosen | null;
-  semester_konversi: string | null;
-  alasan_penolakan: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
 
 export type PengajuanMeta = {
   total: number;
@@ -99,14 +99,33 @@ export async function getPengajuanById(id: number) {
 
   return pengajuan;
 }
-export async function createPengajuan(payload: {
-  perusahaan: string;
-  posisi: string;
-  link_loa: string;
+export type CreatePengajuanPayload = {
   nama_mahasiswa?: string;
+  npm: string;
+  program_studi: string;
+  angkatan?: string | null;
+  kelas?: string | null;
+
+  jenis_magang: string;
+  no_hp_mahasiswa: string;
+  foto_diri?: string | null;
+  bukti_penerimaan: string;
+
+  perusahaan: string;
+  posisi?: string;
+  link_loa?: string | null;
+
+  alamat_tempat_magang: string;
+  nama_penanggung_jawab: string;
+  kontak_penanggung_jawab: string;
+  latitude?: string | null;
+  longitude?: string | null;
+
   tgl_mulai: string;
   tgl_berakhir: string;
-}) {
+  rencana_magang: string;
+};
+export async function createPengajuan(payload: CreatePengajuanPayload) {
   const result = await apiClient<Pengajuan>('/api/pengajuan', {
     method: 'POST',
     body: payload,
@@ -114,7 +133,7 @@ export async function createPengajuan(payload: {
 
   return result;
 }
-
+// Deprecated: alur terbaru dosen pembimbing ditentukan oleh admin/koorprodi.
 export async function pilihDosen(payload: {
   dosenId: number;
   nama_dosen: string;

@@ -17,6 +17,22 @@ export type PengajuanAttributes = {
   perusahaan: string;
   posisi: string;
   link_loa: string | null;
+
+  jenis_magang: string | null;
+  no_hp_mahasiswa: string | null;
+  foto_diri: string | null;
+  bukti_penerimaan: string | null;
+  alamat_tempat_magang: string | null;
+  nama_penanggung_jawab: string | null;
+  kontak_penanggung_jawab: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  rencana_magang: string | null;
+  npm: string | null;
+  program_studi: string | null;
+  angkatan: string | null;
+  kelas: string | null;
+
   tipeKonversi: string | null;
   tgl_mulai: Date | string | null;
   tgl_berakhir: Date | string | null;
@@ -59,6 +75,20 @@ export type PengajuanCreationAttributes = Optional<
   | 'alasan_penolakan'
   | 'createdAt'
   | 'updatedAt'
+  | 'jenis_magang'
+| 'no_hp_mahasiswa'
+| 'foto_diri'
+| 'bukti_penerimaan'
+| 'alamat_tempat_magang'
+| 'nama_penanggung_jawab'
+| 'kontak_penanggung_jawab'
+| 'latitude'
+| 'longitude'
+| 'rencana_magang'
+| 'npm'
+| 'program_studi'
+| 'angkatan'
+| 'kelas'
 >;
 
 class Pengajuan extends Model<
@@ -71,6 +101,20 @@ class Pengajuan extends Model<
   declare perusahaan: string;
   declare posisi: string;
   declare link_loa: string | null;
+  declare jenis_magang: string | null;
+declare no_hp_mahasiswa: string | null;
+declare foto_diri: string | null;
+declare bukti_penerimaan: string | null;
+declare alamat_tempat_magang: string | null;
+declare nama_penanggung_jawab: string | null;
+declare kontak_penanggung_jawab: string | null;
+declare latitude: string | null;
+declare longitude: string | null;
+declare rencana_magang: string | null;
+declare npm: string | null;
+declare program_studi: string | null;
+declare angkatan: string | null;
+declare kelas: string | null;
   declare tipeKonversi: string | null;
   declare tgl_mulai: Date | string | null;
   declare tgl_berakhir: Date | string | null;
@@ -89,6 +133,7 @@ class Pengajuan extends Model<
   declare alasan_penolakan: string | null;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
+  
 }
 
 Pengajuan.init(
@@ -115,6 +160,62 @@ Pengajuan.init(
       allowNull: false,
     },
     link_loa: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    jenis_magang: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    no_hp_mahasiswa: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    foto_diri: {
+      type: DataTypes.TEXT('long'),
+      allowNull: true,
+    },
+    bukti_penerimaan: {
+      type: DataTypes.TEXT('long'),
+      allowNull: true,
+    },
+    alamat_tempat_magang: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    nama_penanggung_jawab: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    kontak_penanggung_jawab: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    latitude: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    longitude: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    rencana_magang: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    npm: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    program_studi: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    angkatan: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    kelas: {
       type: DataTypes.STRING,
       allowNull: true,
     },

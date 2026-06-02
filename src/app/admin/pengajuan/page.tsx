@@ -63,10 +63,11 @@ function getStatusLabel(status?: string | null) {
   if (status === 'Aktif') return 'Aktif';
   if (status === 'Ditolak') return 'Ditolak';
   if (status === 'Selesai') return 'Selesai';
+  if (status === 'Menunggu') return 'Menunggu';
+  if (status === 'Disetujui') return 'Disetujui';
 
   return '-';
 }
-
 export default function AdminPengajuanPage() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [pengajuans, setPengajuans] = useState<Pengajuan[]>([]);
@@ -93,12 +94,15 @@ const [dosens, setDosens] = useState<User[]>([]);
     try {
       setIsLoading(true);
       setErrorMsg('');
-
-     const [me, pengajuanData, usersData] = await Promise.all([
-  getCurrentUserClient(),
-  getPengajuanList(1, 100),
-  getUsers(),
-]);
+    
+      if (!id || Number.isNaN(id)) {
+        throw new Error('ID pengajuan tidak valid.');
+      }
+    
+      const [me, data] = await Promise.all([
+        getCurrentUserClient(),
+        getPengajuanById(id),
+      ]);
 
       if (me.role !== 'Admin') {
         window.location.href = getDashboardPathByRole(me.role);
@@ -302,7 +306,7 @@ const [dosens, setDosens] = useState<User[]>([]);
         <PageHeader
           eyebrow="Admin Pengajuan"
           title={`Verifikasi Pengajuan ${currentUser?.name || ''}`}
-          description="Periksa dokumen LOA mahasiswa, tentukan tipe konversi, lalu setujui atau tolak pengajuan magang."
+          description="Periksa data pendataan magang mahasiswa, bukti penerimaan, lalu tentukan dosen pembimbing dan status pengajuan."
           action={
             <Link href="/admin/dashboard" className="app-btn-secondary">
               Kembali ke Dashboard
@@ -427,16 +431,25 @@ const [dosens, setDosens] = useState<User[]>([]);
                       </Link>
 
                       {item.link_loa && (
-                        <a
-                          href={item.link_loa}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="app-btn-secondary px-4 py-2 text-sm"
-                        >
-                          Lihat LOA
-                        </a>
-                      )}
-
+  <a
+    href={item.link_loa}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="app-btn-secondary px-4 py-2 text-sm"
+  >
+    Lihat Bukti Penerimaan
+  </a>
+)}
+{item.foto_diri && (
+  <a
+    href={item.foto_diri}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="app-btn-secondary px-4 py-2 text-sm"
+  >
+    Lihat Foto
+  </a>
+)}
                       {item.status === 'Menunggu_Verifikasi' && (
                         <>
                           <button
@@ -458,8 +471,42 @@ const [dosens, setDosens] = useState<User[]>([]);
                       )}
                     </div>
                   </div>
+                  <div className="app-panel p-3">
+  <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+    NPM
+  </p>
+  <p className="mt-1 font-bold text-slate-950 dark:text-white">
+    {item.npm || '-'}
+  </p>
+</div>
 
-                  <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-4">
+<div className="app-panel p-3">
+  <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+    Program Studi
+  </p>
+  <p className="mt-1 font-bold text-slate-950 dark:text-white">
+    {item.program_studi || '-'}
+  </p>
+</div>
+
+<div className="app-panel p-3">
+  <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+    Jenis Magang
+  </p>
+  <p className="mt-1 font-bold text-slate-950 dark:text-white">
+    {item.jenis_magang || '-'}
+  </p>
+</div>
+
+<div className="app-panel p-3">
+  <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+    Kelas
+  </p>
+  <p className="mt-1 font-bold text-slate-950 dark:text-white">
+    {item.kelas || '-'}
+  </p>
+</div>
+                  <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-4 xl:grid-cols-6">
                     <div className="app-panel p-3">
                       <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         Tanggal Mulai
@@ -521,18 +568,20 @@ const [dosens, setDosens] = useState<User[]>([]);
             onClick={closeApproveModal}
           />
 
-          <div className="animate-scale-in relative z-10 w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
-            <div className="mb-6">
-              <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
-                Verifikasi LOA
-              </p>
-              <h3 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
-                {selectedPengajuan.nama_mahasiswa}
-              </h3>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {selectedPengajuan.perusahaan} - {selectedPengajuan.posisi}
-              </p>
-            </div>
+          <div className="overflow-y-auto p-6">
+  <div className="mb-6">
+    <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
+      Verifikasi Pengajuan
+    </p>
+
+    <h3 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+      {selectedPengajuan.nama_mahasiswa}
+    </h3>
+
+    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+      {selectedPengajuan.perusahaan} - {selectedPengajuan.posisi}
+    </p>
+  </div>
 
             <form onSubmit={handleApprove} className="space-y-5">
               <div>
@@ -573,7 +622,16 @@ const [dosens, setDosens] = useState<User[]>([]);
                   </p>
                 </div>
               )}
-
+{item.rencana_magang && (
+  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+    <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      Rencana Magang
+    </p>
+    <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
+      {item.rencana_magang}
+    </p>
+  </div>
+)}
               <div>
                 <label className="app-label">Semester Konversi</label>
                 <input
@@ -629,24 +687,24 @@ const [dosens, setDosens] = useState<User[]>([]);
                 </p>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="app-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isSubmitting ? 'Memproses...' : 'Setujui Pengajuan'}
-                </button>
+              <div className="sticky bottom-0 -mx-6 -mb-6 flex flex-col gap-3 border-t border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 sm:flex-row">
+  <button
+    type="submit"
+    disabled={isSubmitting}
+    className="app-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
+  >
+    {isSubmitting ? 'Memproses...' : 'Setujui Pengajuan'}
+  </button>
 
-                <button
-                  type="button"
-                  onClick={closeApproveModal}
-                  disabled={isSubmitting}
-                  className="app-btn-secondary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Batal
-                </button>
-              </div>
+  <button
+    type="button"
+    onClick={closeApproveModal}
+    disabled={isSubmitting}
+    className="app-btn-secondary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
+  >
+    Batal
+  </button>
+</div>
             </form>
           </div>
         </div>

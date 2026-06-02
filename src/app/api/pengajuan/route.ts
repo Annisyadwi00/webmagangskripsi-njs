@@ -121,27 +121,88 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    const perusahaan = body.perusahaan?.trim();
-    const posisi = body.posisi?.trim();
-    const link_loa = body.link_loa?.trim();
     const nama_mahasiswa = body.nama_mahasiswa?.trim() || user.name;
+    const npm = body.npm?.trim() || null;
+    const program_studi = body.program_studi?.trim() || null;
+    const angkatan = body.angkatan?.trim() || null;
+    const kelas = body.kelas?.trim() || null;
+    
+    const jenis_magang = body.jenis_magang?.trim();
+    const no_hp_mahasiswa = body.no_hp_mahasiswa?.trim();
+    const foto_diri = body.foto_diri?.trim() || null;
+    const bukti_penerimaan = body.bukti_penerimaan?.trim();
+    const perusahaan = body.perusahaan?.trim();
+    const posisi = body.posisi?.trim() || body.jenis_magang?.trim() || 'Magang';
+    const link_loa = body.link_loa?.trim() || bukti_penerimaan || null;
+    
+    const alamat_tempat_magang = body.alamat_tempat_magang?.trim();
+    const nama_penanggung_jawab = body.nama_penanggung_jawab?.trim();
+    const kontak_penanggung_jawab = body.kontak_penanggung_jawab?.trim();
+    const latitude = body.latitude?.trim() || null;
+    const longitude = body.longitude?.trim() || null;
+    const rencana_magang = body.rencana_magang?.trim();
+    
     const tgl_mulai = body.tgl_mulai;
     const tgl_berakhir = body.tgl_berakhir;
 
-    if (!perusahaan || !posisi || !link_loa || !tgl_mulai || !tgl_berakhir) {
+    if (
+      !nama_mahasiswa ||
+      !npm ||
+      !program_studi ||
+      !jenis_magang ||
+      !no_hp_mahasiswa ||
+      !bukti_penerimaan ||
+      !perusahaan ||
+      !alamat_tempat_magang ||
+      !nama_penanggung_jawab ||
+      !kontak_penanggung_jawab ||
+      !tgl_mulai ||
+      !tgl_berakhir ||
+      !rencana_magang
+    ) {
       return NextResponse.json(
-        { message: 'Perusahaan, posisi, link LOA, tanggal mulai, dan tanggal berakhir wajib diisi.' },
+        {
+          message:
+            'Nama, NPM, program studi, jenis magang, nomor HP, bukti penerimaan, tempat magang, alamat, penanggung jawab, tanggal, dan rencana magang wajib diisi.',
+        },
         { status: 400 }
       );
     }
 
-    if (!isValidUrl(link_loa)) {
-      return NextResponse.json(
-        { message: 'Format link LOA tidak valid.' },
-        { status: 400 }
-      );
-    }
+    if (link_loa && !isValidUrl(link_loa)) {
+  return NextResponse.json(
+    { message: 'Format link bukti penerimaan/dokumen pendukung tidak valid.' },
+    { status: 400 }
+  );
+}
 
+if (foto_diri && !isValidUrl(foto_diri)) {
+  return NextResponse.json(
+    { message: 'Format link foto diri tidak valid.' },
+    { status: 400 }
+  );
+}
+const phoneRegex = /^62\d{8,15}$/;
+
+if (!phoneRegex.test(no_hp_mahasiswa)) {
+  return NextResponse.json(
+    {
+      message:
+        'Nomor HP mahasiswa harus diawali 62 dan hanya berisi angka. Contoh: 6285456123.',
+    },
+    { status: 400 }
+  );
+}
+
+if (!phoneRegex.test(kontak_penanggung_jawab)) {
+  return NextResponse.json(
+    {
+      message:
+        'Nomor kontak penanggung jawab harus diawali 62 dan hanya berisi angka. Contoh: 6285456123.',
+    },
+    { status: 400 }
+  );
+}
     if (!isValidDate(tgl_mulai) || !isValidDate(tgl_berakhir)) {
   return NextResponse.json(
     { message: 'Format tanggal mulai atau tanggal berakhir tidak valid.' },
@@ -163,7 +224,7 @@ if (tanggalMulai >= tanggalBerakhir) {
       where: {
         user_id: user.id,
         status: {
-          [Op.in]: ['Menunggu_Verifikasi', 'Pilih_Dosen', 'Aktif'],
+          [Op.in]: ['Menunggu_Verifikasi', 'Aktif'],
         },
       },
     });
@@ -178,13 +239,31 @@ if (tanggalMulai >= tanggalBerakhir) {
     const newPengajuan = await Pengajuan.create({
       user_id: user.id,
       nama_mahasiswa,
+      npm,
+      program_studi,
+      angkatan,
+      kelas,
+    
+      jenis_magang,
+      no_hp_mahasiswa,
+      foto_diri,
+      bukti_penerimaan,
       perusahaan,
       posisi,
       link_loa,
+    
+      alamat_tempat_magang,
+      nama_penanggung_jawab,
+      kontak_penanggung_jawab,
+      latitude,
+      longitude,
+      rencana_magang,
+    
       tgl_mulai,
       tgl_berakhir,
       status: 'Menunggu_Verifikasi',
     });
+
     await createActivityLog({
   actor: user,
   action: 'CREATE_PENGAJUAN',
@@ -195,7 +274,7 @@ if (tanggalMulai >= tanggalBerakhir) {
 
     return NextResponse.json(
       {
-        message: 'LOA berhasil dikirim!',
+        message: 'Pengajuan magang berhasil dikirim!',
         data: newPengajuan,
       },
       { status: 201 }
