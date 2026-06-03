@@ -147,7 +147,8 @@ export default function DosenPenilaianPage() {
       nilai_materi: item.nilai_materi ? String(item.nilai_materi) : '',
       nilai_koding: item.nilai_koding ? String(item.nilai_koding) : '',
       nilai_laporan: item.nilai_laporan ? String(item.nilai_laporan) : '',
-    nilai_mitra: Number(form.nilai_mitra),
+    nilai_laporan: item.nilai_laporan ? String(item.nilai_laporan) : '',
+nilai_mitra: item.nilai_mitra ? String(item.nilai_mitra) : '',),
     });
   };
 
@@ -177,28 +178,29 @@ export default function DosenPenilaianPage() {
     const grade = getGrade(average);
 
     if (
-      !form.nilai_kedisiplinan ||
-      !form.nilai_materi ||
-      !form.nilai_koding ||
-      !form.nilai_laporan
-    ) {
-      setErrorMsg('Semua komponen nilai wajib diisi.');
-      return;
-    }
+  !form.nilai_kedisiplinan ||
+  !form.nilai_materi ||
+  !form.nilai_koding ||
+  !form.nilai_laporan ||
+  !form.nilai_mitra
+) {
+  setErrorMsg('Semua komponen nilai, termasuk nilai mitra, wajib diisi.');
+  return;
+}
 
     setIsSubmitting(true);
     setMessage('');
     setErrorMsg('');
 
-    try {
-      const result = await beriNilaiPengajuan({
-        id_pengajuan: form.id_pengajuan,
-        nilai_dari_dosen: grade,
-        nilai_kedisiplinan: Number(form.nilai_kedisiplinan),
-        nilai_materi: Number(form.nilai_materi),
-        nilai_koding: Number(form.nilai_koding),
-        nilai_laporan: Number(form.nilai_laporan),
-      });
+    const result = await beriNilaiPengajuan({
+  id_pengajuan: form.id_pengajuan,
+  nilai_dari_dosen: grade,
+  nilai_kedisiplinan: Number(form.nilai_kedisiplinan),
+  nilai_materi: Number(form.nilai_materi),
+  nilai_koding: Number(form.nilai_koding),
+  nilai_laporan: Number(form.nilai_laporan),
+  nilai_mitra: Number(form.nilai_mitra),
+});
 
       setMessage(result.message || 'Nilai akhir berhasil disimpan.');
       closeNilaiModal();
@@ -432,6 +434,12 @@ export default function DosenPenilaianPage() {
                         {item.nilai_laporan || '-'}
                       </p>
                     </div>
+                    <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
+  <p className="font-bold text-slate-500 dark:text-slate-400">Mitra</p>
+  <p className="mt-1 font-black text-slate-900 dark:text-white">
+    {item.nilai_mitra || '-'}
+  </p>
+</div>
                   </div>
                 </article>
               ))}
@@ -521,6 +529,21 @@ export default function DosenPenilaianPage() {
                     placeholder="0 - 100"
                   />
                 </div>
+                <div>
+  <label className="app-label">Nilai Mitra</label>
+  <input
+    type="text"
+    required
+    inputMode="numeric"
+    value={form.nilai_mitra}
+    onChange={(e) => handleChange('nilai_mitra', e.target.value)}
+    className="app-input"
+    placeholder="0 - 100"
+  />
+  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+    Diisi berdasarkan lembar penilaian mitra/tempat magang.
+  </p>
+</div>
               </div>
 
               <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
@@ -538,7 +561,7 @@ export default function DosenPenilaianPage() {
                   </div>
 
                   <p className="max-w-sm text-right text-sm text-slate-500">
-                    Nilai huruf otomatis dihitung dari rata-rata empat komponen.
+                    Nilai huruf otomatis dihitung dari rata-rata lima komponen, termasuk nilai mitra.
                   </p>
                 </div>
               </div>
@@ -562,21 +585,6 @@ export default function DosenPenilaianPage() {
                 </button>
               </div>
             </form>
-            <div>
-  <label className="app-label">Nilai Mitra</label>
-  <input
-    type="text"
-    required
-    inputMode="numeric"
-    value={form.nilai_mitra}
-    onChange={(e) => handleChange('nilai_mitra', e.target.value)}
-    className="app-input"
-    placeholder="0 - 100"
-  />
-  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-    Diisi berdasarkan lembar penilaian mitra/tempat magang.
-  </p>
-</div>
           </div>
         </div>
       )}
