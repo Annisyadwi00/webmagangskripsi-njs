@@ -494,35 +494,38 @@ await pengajuan.destroy();
       }
     
       if (action === 'beri_nilai') {
-        const {
-          nilai_dari_dosen,
-          nilai_kedisiplinan,
-          nilai_materi,
-          nilai_koding,
-          nilai_laporan,
-        } = body;
+  const {
+    nilai_dari_dosen,
+    nilai_kedisiplinan,
+    nilai_materi,
+    nilai_koding,
+    nilai_laporan,
+    nilai_mitra,
+  } = body;
     
         if (
-          !nilai_dari_dosen ||
-          !isValidScore(nilai_kedisiplinan) ||
-          !isValidScore(nilai_materi) ||
-          !isValidScore(nilai_koding) ||
-          !isValidScore(nilai_laporan)
-        ) {
-          return NextResponse.json(
-            { message: 'Nilai wajib lengkap dan berada pada rentang 0-100.' },
-            { status: 400 }
-          );
-        }
+  !nilai_dari_dosen ||
+  !isValidScore(nilai_kedisiplinan) ||
+  !isValidScore(nilai_materi) ||
+  !isValidScore(nilai_koding) ||
+  !isValidScore(nilai_laporan) ||
+  !isValidScore(nilai_mitra)
+) {
+  return NextResponse.json(
+    { message: 'Nilai dosen dan nilai mitra wajib lengkap pada rentang 0-100.' },
+    { status: 400 }
+  );
+}
     
         await pengajuan.update({
-          nilai_dari_dosen,
-          nilai_kedisiplinan,
-          nilai_materi,
-          nilai_koding,
-          nilai_laporan,
-          status: 'Selesai',
-        });
+  nilai_dari_dosen,
+  nilai_kedisiplinan,
+  nilai_materi,
+  nilai_koding,
+  nilai_laporan,
+  nilai_mitra,
+  status: 'Selesai',
+});
     
         await createActivityLog({
           actor: user,

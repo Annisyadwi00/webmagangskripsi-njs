@@ -11,29 +11,54 @@ export type StatusDosen = 'Menunggu' | 'Disetujui' | 'Ditolak';
 export type Pengajuan = {
   id: number;
   user_id: number;
+
   nama_mahasiswa: string;
-  perusahaan: string;
-  posisi: string;
-  link_loa: string | null;
+  npm: string | null;
+  program_studi: string | null;
+  angkatan: string | null;
+  kelas: string | null;
 
   jenis_magang: string | null;
   no_hp_mahasiswa: string | null;
   foto_diri: string | null;
   bukti_penerimaan: string | null;
+
+  perusahaan: string;
+  posisi: string;
+  link_loa: string | null;
+
   alamat_tempat_magang: string | null;
   nama_penanggung_jawab: string | null;
   kontak_penanggung_jawab: string | null;
   latitude: string | null;
   longitude: string | null;
   rencana_magang: string | null;
-  npm: string | null;
-  program_studi: string | null;
-  angkatan: string | null;
-  kelas: string | null;
-  nilai_mitra: number | null;
+
   tipeKonversi: string | null;
   tgl_mulai: string | null;
   tgl_berakhir: string | null;
+  matkulKonversi: string | null;
+  semester_konversi: string | null;
+
+  link_laporan_akhir: string | null;
+
+  dosenId: number | null;
+  nama_dosen: string | null;
+  status_dosen: StatusDosen | null;
+
+  nilai_dari_dosen: string | null;
+  nilai_kedisiplinan: number | null;
+  nilai_materi: number | null;
+  nilai_koding: number | null;
+  nilai_laporan: number | null;
+  nilai_mitra: number | null;
+
+  status: PengajuanStatus;
+  alasan_penolakan: string | null;
+
+  createdAt?: string;
+  updatedAt?: string;
+};
 
 export type PengajuanMeta = {
   total: number;
@@ -45,6 +70,33 @@ export type PengajuanMeta = {
 export type PengajuanListResponse = {
   items: Pengajuan[];
   meta: PengajuanMeta;
+};
+
+export type CreatePengajuanPayload = {
+  nama_mahasiswa?: string;
+  npm: string;
+  program_studi: string;
+  angkatan?: string | null;
+  kelas?: string | null;
+
+  jenis_magang: string;
+  no_hp_mahasiswa: string;
+  foto_diri?: string | null;
+  bukti_penerimaan: string;
+
+  perusahaan: string;
+  posisi?: string;
+  link_loa?: string | null;
+
+  alamat_tempat_magang: string;
+  nama_penanggung_jawab: string;
+  kontak_penanggung_jawab: string;
+  latitude?: string | null;
+  longitude?: string | null;
+
+  tgl_mulai: string;
+  tgl_berakhir: string;
+  rencana_magang: string;
 };
 
 export async function getPengajuanList(page = 1, limit = 10) {
@@ -87,6 +139,7 @@ export async function getPengajuanList(page = 1, limit = 10) {
       },
   };
 }
+
 export async function getPengajuanById(id: number) {
   const result = await getPengajuanList(1, 100);
 
@@ -98,39 +151,12 @@ export async function getPengajuanById(id: number) {
 
   return pengajuan;
 }
-export type CreatePengajuanPayload = {
-  nama_mahasiswa?: string;
-  npm: string;
-  program_studi: string;
-  angkatan?: string | null;
-  kelas?: string | null;
 
-  jenis_magang: string;
-  no_hp_mahasiswa: string;
-  foto_diri?: string | null;
-  bukti_penerimaan: string;
-
-  perusahaan: string;
-  posisi?: string;
-  link_loa?: string | null;
-
-  alamat_tempat_magang: string;
-  nama_penanggung_jawab: string;
-  kontak_penanggung_jawab: string;
-  latitude?: string | null;
-  longitude?: string | null;
-
-  tgl_mulai: string;
-  tgl_berakhir: string;
-  rencana_magang: string;
-};
 export async function createPengajuan(payload: CreatePengajuanPayload) {
-  const result = await apiClient<Pengajuan>('/api/pengajuan', {
+  return apiClient<Pengajuan>('/api/pengajuan', {
     method: 'POST',
     body: payload,
   });
-
-  return result;
 }
 
 export async function uploadLaporanAkhir(link_laporan_akhir: string) {
@@ -182,7 +208,6 @@ export async function tolakPengajuan(payload: {
   });
 }
 
-
 export async function beriNilaiPengajuan(payload: {
   id_pengajuan: number;
   nilai_dari_dosen: string;
@@ -190,6 +215,7 @@ export async function beriNilaiPengajuan(payload: {
   nilai_materi: number;
   nilai_koding: number;
   nilai_laporan: number;
+  nilai_mitra: number;
 }) {
   return apiClient<null>('/api/pengajuan', {
     method: 'PUT',

@@ -21,6 +21,7 @@ type NilaiForm = {
   nilai_materi: string;
   nilai_koding: string;
   nilai_laporan: string;
+  nilai_mitra: string;
 };
 
 const initialNilaiForm: NilaiForm = {
@@ -31,6 +32,7 @@ const initialNilaiForm: NilaiForm = {
   nilai_materi: '',
   nilai_koding: '',
   nilai_laporan: '',
+  nilai_mitra: '',
 };
 
 function getStatusBadgeClass(status?: string) {
@@ -47,11 +49,12 @@ function getStatusBadgeClass(status?: string) {
 
 function calculateAverage(form: NilaiForm) {
   const nilai = [
-    Number(form.nilai_kedisiplinan),
-    Number(form.nilai_materi),
-    Number(form.nilai_koding),
-    Number(form.nilai_laporan),
-  ];
+  Number(form.nilai_kedisiplinan),
+  Number(form.nilai_materi),
+  Number(form.nilai_koding),
+  Number(form.nilai_laporan),
+  Number(form.nilai_mitra),
+];
 
   if (nilai.some((item) => Number.isNaN(item))) {
     return 0;
@@ -144,6 +147,7 @@ export default function DosenPenilaianPage() {
       nilai_materi: item.nilai_materi ? String(item.nilai_materi) : '',
       nilai_koding: item.nilai_koding ? String(item.nilai_koding) : '',
       nilai_laporan: item.nilai_laporan ? String(item.nilai_laporan) : '',
+    nilai_mitra: Number(form.nilai_mitra),
     });
   };
 
@@ -558,6 +562,21 @@ export default function DosenPenilaianPage() {
                 </button>
               </div>
             </form>
+            <div>
+  <label className="app-label">Nilai Mitra</label>
+  <input
+    type="text"
+    required
+    inputMode="numeric"
+    value={form.nilai_mitra}
+    onChange={(e) => handleChange('nilai_mitra', e.target.value)}
+    className="app-input"
+    placeholder="0 - 100"
+  />
+  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+    Diisi berdasarkan lembar penilaian mitra/tempat magang.
+  </p>
+</div>
           </div>
         </div>
       )}
