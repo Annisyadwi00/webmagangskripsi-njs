@@ -160,44 +160,43 @@ export default function DosenDashboardPage() {
           </Alert>
         )}
 
-        {permintaanBimbingan.length === 0 &&
-          logbookMenunggu.length === 0 &&
-          belumDinilai.length === 0 && (
-            <Alert variant="success">
-              Tidak ada tugas mendesak saat ini. Semua proses bimbingan berjalan
-              normal.
-            </Alert>
-          )}
+        {logbookMenunggu.length === 0 &&
+  belumDinilai.length === 0 && (
+    <Alert variant="success">
+      Tidak ada tugas mendesak saat ini. Semua proses bimbingan berjalan
+      normal.
+    </Alert>
+  )}
 
-<StatCard
-  title="Total Bimbingan"
-  value={pengajuans.length}
-  description="Mahasiswa yang ditetapkan sebagai bimbingan."
-  icon="users"
-/>
+<section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-4">
+  <StatCard
+    title="Total Bimbingan"
+    value={pengajuans.length}
+    description="Mahasiswa yang ditetapkan sebagai bimbingan."
+    icon="users"
+  />
 
-          <StatCard
-            title="Mahasiswa Aktif"
-            value={mahasiswaAktif.length}
-            description="Mahasiswa bimbingan yang sedang magang."
-            icon="briefcase"
-          />
+  <StatCard
+    title="Mahasiswa Aktif"
+    value={mahasiswaAktif.length}
+    description="Mahasiswa bimbingan yang sedang magang."
+    icon="briefcase"
+  />
 
-          <StatCard
-            title="Logbook Menunggu"
-            value={logbookMenunggu.length}
-            description="Logbook yang perlu dievaluasi."
-            icon="document"
-          />
+  <StatCard
+    title="Logbook Menunggu"
+    value={logbookMenunggu.length}
+    description="Logbook yang perlu dievaluasi."
+    icon="document"
+  />
 
-          <StatCard
-            title="Belum Dinilai"
-            value={belumDinilai.length}
-            description="Mahasiswa aktif tanpa nilai akhir."
-            icon="warning"
-          />
-        </section>
-
+  <StatCard
+    title="Belum Dinilai"
+    value={belumDinilai.length}
+    description="Mahasiswa aktif tanpa nilai akhir."
+    icon="warning"
+  />
+</section>
         <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="app-card p-6 lg:col-span-2">
             <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -298,7 +297,7 @@ export default function DosenDashboardPage() {
                 href="/dosen/bimbingan"
                 className="flex items-center justify-between rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 font-bold text-[#1e3a8a] hover:bg-blue-100 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300 dark:hover:bg-blue-400/20"
               >
-                Permintaan Bimbingan
+                Mahasiswa Bimbingan
                 <span>→</span>
               </Link>
 
