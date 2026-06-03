@@ -140,6 +140,7 @@ setUsers(usersData || []);
 
   const latestPengajuan = pengajuans.slice(0, 5);
   const latestMitra = pengajuanMitra.slice(0, 5);
+const latestDokumen = pengajuanDokumen.slice(0, 5);
 
   if (isLoading) {
     return (
@@ -334,7 +335,7 @@ setUsers(usersData || []);
           </div>
         </section>
 
-        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
           <div className="app-card p-6">
             <div className="mb-5 flex items-center justify-between gap-4">
               <div>
@@ -450,6 +451,63 @@ setUsers(usersData || []);
               </div>
             )}
           </div>
+          <div className="app-card p-6">
+  <div className="mb-5 flex items-center justify-between gap-4">
+    <div>
+      <h2 className="text-xl font-black text-slate-950 dark:text-white">
+        Pengajuan Dokumen Terbaru
+      </h2>
+
+      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Permintaan dokumen magang terbaru dari mahasiswa.
+      </p>
+    </div>
+
+    <Link
+      href="/admin/pengajuan-dokumen"
+      className="text-sm font-black text-[#1e3a8a] dark:text-blue-300"
+    >
+      Lihat semua
+    </Link>
+  </div>
+
+  {latestDokumen.length === 0 ? (
+    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/70">
+      <p className="font-bold text-slate-700 dark:text-slate-300">
+        Belum ada pengajuan dokumen.
+      </p>
+    </div>
+  ) : (
+    <div className="space-y-3">
+      {latestDokumen.map((item) => (
+        <div
+          key={item.id}
+          className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="font-black text-slate-950 dark:text-white">
+                {item.jenis_dokumen}
+              </p>
+
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Pengaju: {item.nama_mahasiswa}
+              </p>
+
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {item.npm} • {item.program_studi}
+              </p>
+            </div>
+
+            <span className={getStatusBadgeClass(item.status)}>
+              {item.status}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
         </section>
       </div>
     </main>

@@ -543,3 +543,16 @@ await pengajuan.destroy();
         );
       }
     }
+        return NextResponse.json(
+      { message: 'Aksi tidak valid atau role tidak memiliki akses.' },
+      { status: 400 }
+    );
+  } catch (error) {
+    console.error('UPDATE_PENGAJUAN_ERROR:', error);
+
+    return NextResponse.json(
+      { message: 'Terjadi kesalahan server.' },
+      { status: 500 }
+    );
+  }
+}
