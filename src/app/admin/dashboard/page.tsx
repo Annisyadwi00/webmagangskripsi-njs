@@ -189,6 +189,9 @@ setUsers(usersData || []);
               <Link href="/admin/pengajuan-mitra" className="app-btn-secondary">
                 Verifikasi Mitra
               </Link>
+              <Link href="/admin/pengajuan-dokumen" className="app-btn-secondary">
+  Proses Dokumen
+</Link>
             </div>
           }
         />
