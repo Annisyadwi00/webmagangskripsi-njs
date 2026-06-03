@@ -148,7 +148,7 @@ export default function DosenPenilaianPage() {
       nilai_koding: item.nilai_koding ? String(item.nilai_koding) : '',
       nilai_laporan: item.nilai_laporan ? String(item.nilai_laporan) : '',
     nilai_laporan: item.nilai_laporan ? String(item.nilai_laporan) : '',
-nilai_mitra: item.nilai_mitra ? String(item.nilai_mitra) : '',),
+  nilai_mitra: item.nilai_mitra ? String(item.nilai_mitra) : '',
     });
   };
 
