@@ -187,14 +187,6 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
               <Link href="/pengajuan" className="app-btn-primary">
                 Isi Pendataan Magang
               </Link>
-          
-              <Link href="/pengajuan-mitra" className="app-btn-secondary">
-                Ajukan Mitra
-              </Link>
-          
-              <Link href="/pengajuan-dokumen" className="app-btn-secondary">
-                Ajukan Dokumen
-              </Link>
             </div>
           }
         />
@@ -210,8 +202,21 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
             Ada {totalRevisi} logbook yang perlu direvisi. Segera perbaiki agar proses evaluasi tidak tertunda.
           </Alert>
         )}
-          <section className="mb-8">
-  <ProgressStepper steps={getMagangSteps(pengajuan?.status)} />
+          <section className="mb-6">
+  <div className="app-card p-5">
+    <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h2 className="text-lg font-black text-slate-950 dark:text-white">
+          Progres Magang
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Status kamu saat ini: {pengajuan?.status || 'Belum Ada'}
+        </p>
+      </div>
+    </div>
+
+    <ProgressStepper steps={getMagangSteps(pengajuan?.status)} />
+  </div>
 </section>
 
         <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
@@ -253,59 +258,9 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
                 {pengajuan?.status || 'Belum Ada'}
               </span>
             </div>
-            <section className="app-card mb-8 p-6">
-  <div className="mb-5">
-    <h2 className="text-xl font-black text-slate-950 dark:text-white">
-      Akses Cepat
-    </h2>
-
-    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-      Gunakan menu berikut untuk mengelola proses magang.
-    </p>
-  </div>
-
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-    <Link href="/pengajuan" className="app-panel app-card-hover p-5">
-      <p className="font-black text-slate-950 dark:text-white">
-        Pendataan Magang
-      </p>
-      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-        Isi atau lihat status pendataan magang.
-      </p>
-    </Link>
-
-    <Link href="/pengajuan-mitra" className="app-panel app-card-hover p-5">
-      <p className="font-black text-slate-950 dark:text-white">
-        Pengajuan Mitra
-      </p>
-      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-        Ajukan mitra baru jika belum tersedia.
-      </p>
-    </Link>
-
-    <Link href="/pengajuan-dokumen" className="app-panel app-card-hover p-5">
-      <p className="font-black text-slate-950 dark:text-white">
-        Pengajuan Dokumen
-      </p>
-      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-        Ajukan surat atau dokumen pendukung magang.
-      </p>
-    </Link>
-
-    <Link href="/logbook" className="app-panel app-card-hover p-5">
-      <p className="font-black text-slate-950 dark:text-white">
-        Logbook Kegiatan
-      </p>
-      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-        Catat aktivitas magang berdasarkan tanggal kegiatan.
-      </p>
-    </Link>
-  </div>
-</section>
                   {belumPunyaPengajuan && (
   <Alert variant="info">
-    Kamu belum memiliki pengajuan magang. Silakan ajukan LOA dan data tempat
-    magang terlebih dahulu.
+    Kamu belum memiliki pengajuan magang. Silakan isi pendataan magang dan unggah bukti penerimaan terlebih dahulu.
   </Alert>
 )}
 
