@@ -2,7 +2,6 @@ import { apiClient } from '@/lib/api-client';
 
 export type PengajuanStatus =
   | 'Menunggu_Verifikasi'
-  | 'Pilih_Dosen'
   | 'Aktif'
   | 'Ditolak'
   | 'Selesai';
@@ -31,7 +30,7 @@ export type Pengajuan = {
   program_studi: string | null;
   angkatan: string | null;
   kelas: string | null;
-
+  nilai_mitra: number | null;
   tipeKonversi: string | null;
   tgl_mulai: string | null;
   tgl_berakhir: string | null;
@@ -133,19 +132,6 @@ export async function createPengajuan(payload: CreatePengajuanPayload) {
 
   return result;
 }
-// Deprecated: alur terbaru dosen pembimbing ditentukan oleh admin/koorprodi.
-export async function pilihDosen(payload: {
-  dosenId: number;
-  nama_dosen: string;
-}) {
-  return apiClient<null>('/api/pengajuan', {
-    method: 'PUT',
-    body: {
-      action: 'pilih_dosen',
-      ...payload,
-    },
-  });
-}
 
 export async function uploadLaporanAkhir(link_laporan_akhir: string) {
   return apiClient<null>('/api/pengajuan', {
@@ -196,25 +182,6 @@ export async function tolakPengajuan(payload: {
   });
 }
 
-export async function terimaBimbingan(id_pengajuan: number) {
-  return apiClient<null>('/api/pengajuan', {
-    method: 'PUT',
-    body: {
-      action: 'terima',
-      id_pengajuan,
-    },
-  });
-}
-
-export async function tolakBimbingan(id_pengajuan: number) {
-  return apiClient<null>('/api/pengajuan', {
-    method: 'PUT',
-    body: {
-      action: 'tolak',
-      id_pengajuan,
-    },
-  });
-}
 
 export async function beriNilaiPengajuan(payload: {
   id_pengajuan: number;

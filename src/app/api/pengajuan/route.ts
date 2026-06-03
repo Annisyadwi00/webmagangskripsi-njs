@@ -313,46 +313,6 @@ export async function PUT(request: Request) {
     }
 
     if (user.role === 'Mahasiswa') {
-      if (action === 'pilih_dosen') {
-        if (!body.dosenId || !body.nama_dosen) {
-          return NextResponse.json(
-            { message: 'Dosen pembimbing wajib dipilih.' },
-            { status: 400 }
-          );
-        }
-
-        const pengajuan = await Pengajuan.findOne({
-          where: {
-            user_id: user.id,
-            status: 'Pilih_Dosen',
-          },
-        });
-
-        if (!pengajuan) {
-          return NextResponse.json(
-            { message: 'Pengajuan yang dapat memilih dosen tidak ditemukan.' },
-            { status: 404 }
-          );
-        }
-
-        await pengajuan.update({
-          dosenId: body.dosenId,
-          nama_dosen: body.nama_dosen,
-          status: 'Aktif',
-          status_dosen: 'Menunggu',
-        });
-          await createActivityLog({
-  actor: user,
-  action: 'PILIH_DOSEN',
-  description: `${user.name} memilih ${body.nama_dosen} sebagai dosen pembimbing.`,
-  target_id: pengajuan.getDataValue('id'),
-  target_type: 'Pengajuan',
-});
-        return NextResponse.json(
-          { message: 'Berhasil memilih dosen!' },
-          { status: 200 }
-        );
-      }
 
       if (action === 'upload_laporan_akhir') {
         const link_laporan_akhir = body.link_laporan_akhir?.trim();
@@ -518,62 +478,21 @@ await pengajuan.destroy();
           { status: 400 }
         );
       }
-
+    
       const pengajuan = await Pengajuan.findOne({
         where: {
           id: body.id_pengajuan,
           dosenId: user.id,
         },
       });
-
+    
       if (!pengajuan) {
         return NextResponse.json(
           { message: 'Pengajuan bimbingan tidak ditemukan.' },
           { status: 404 }
         );
       }
-
-      if (action === 'terima') {
-        await pengajuan.update({
-          status_dosen: 'Disetujui',
-        });
-          await createActivityLog({
-  actor: user,
-  action: 'TERIMA_BIMBINGAN',
-  description: `${user.name} menerima bimbingan mahasiswa ${pengajuan.getDataValue(
-    'nama_mahasiswa'
-  )}.`,
-  target_id: pengajuan.getDataValue('id'),
-  target_type: 'Pengajuan',
-});
-        return NextResponse.json(
-          { message: 'Bimbingan disetujui!' },
-          { status: 200 }
-        );
-      }
-
-      if (action === 'tolak') {
-        await pengajuan.update({
-          status_dosen: 'Ditolak',
-          dosenId: null,
-          nama_dosen: null,
-          status: 'Pilih_Dosen',
-        });
-await createActivityLog({
-  actor: user,
-  action: 'TOLAK_BIMBINGAN',
-  description: `${user.name} menolak bimbingan mahasiswa ${pengajuan.getDataValue(
-    'nama_mahasiswa'
-  )}.`,
-  target_id: pengajuan.getDataValue('id'),
-  target_type: 'Pengajuan',
-});
-        return NextResponse.json(
-          { message: 'Bimbingan ditolak.' },
-          { status: 200 }
-        );
-      }
-
+    
       if (action === 'beri_nilai') {
         const {
           nilai_dari_dosen,
@@ -582,7 +501,7 @@ await createActivityLog({
           nilai_koding,
           nilai_laporan,
         } = body;
-
+    
         if (
           !nilai_dari_dosen ||
           !isValidScore(nilai_kedisiplinan) ||
@@ -595,7 +514,7 @@ await createActivityLog({
             { status: 400 }
           );
         }
-
+    
         await pengajuan.update({
           nilai_dari_dosen,
           nilai_kedisiplinan,
@@ -604,32 +523,20 @@ await createActivityLog({
           nilai_laporan,
           status: 'Selesai',
         });
-await createActivityLog({
-  actor: user,
-  action: 'BERI_NILAI',
-  description: `${user.name} memberi nilai akhir ${nilai_dari_dosen} untuk ${pengajuan.getDataValue(
-    'nama_mahasiswa'
-  )}.`,
-  target_id: pengajuan.getDataValue('id'),
-  target_type: 'Pengajuan',
-});
+    
+        await createActivityLog({
+          actor: user,
+          action: 'BERI_NILAI',
+          description: `${user.name} memberi nilai akhir ${nilai_dari_dosen} untuk ${pengajuan.getDataValue(
+            'nama_mahasiswa'
+          )}.`,
+          target_id: pengajuan.getDataValue('id'),
+          target_type: 'Pengajuan',
+        });
+    
         return NextResponse.json(
           { message: 'Nilai dan rubrik evaluasi berhasil disimpan!' },
           { status: 200 }
         );
       }
     }
-
-    return NextResponse.json(
-      { message: 'Aksi tidak valid.' },
-      { status: 400 }
-    );
-  } catch (error) {
-    console.error('UPDATE_PENGAJUAN_ERROR:', error);
-
-    return NextResponse.json(
-      { message: 'Terjadi kesalahan server.' },
-      { status: 500 }
-    );
-  }
-}

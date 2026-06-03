@@ -3,7 +3,6 @@ import sequelize from '@/lib/db';
 
 export type PengajuanStatus =
   | 'Menunggu_Verifikasi'
-  | 'Pilih_Dosen'
   | 'Aktif'
   | 'Ditolak'
   | 'Selesai';
@@ -22,11 +21,7 @@ export type PengajuanAttributes = {
   no_hp_mahasiswa: string | null;
   foto_diri: string | null;
   bukti_penerimaan: string | null;
-  alamat_tempat_magang: string | null;
-  nama_penanggung_jawab: string | null;
-  kontak_penanggung_jawab: string | null;
-  latitude: string | null;
-  longitude: string | null;
+ 
   rencana_magang: string | null;
   npm: string | null;
   program_studi: string | null;
@@ -45,6 +40,7 @@ export type PengajuanAttributes = {
   nilai_materi: number | null;
   nilai_koding: number | null;
   nilai_laporan: number | null;
+  nilai_mitra: number | null;
   status: PengajuanStatus;
   status_dosen: StatusDosen | null;
   semester_konversi: string | null;
@@ -79,11 +75,6 @@ export type PengajuanCreationAttributes = Optional<
 | 'no_hp_mahasiswa'
 | 'foto_diri'
 | 'bukti_penerimaan'
-| 'alamat_tempat_magang'
-| 'nama_penanggung_jawab'
-| 'kontak_penanggung_jawab'
-| 'latitude'
-| 'longitude'
 | 'rencana_magang'
 | 'npm'
 | 'program_studi'
@@ -105,11 +96,6 @@ class Pengajuan extends Model<
 declare no_hp_mahasiswa: string | null;
 declare foto_diri: string | null;
 declare bukti_penerimaan: string | null;
-declare alamat_tempat_magang: string | null;
-declare nama_penanggung_jawab: string | null;
-declare kontak_penanggung_jawab: string | null;
-declare latitude: string | null;
-declare longitude: string | null;
 declare rencana_magang: string | null;
 declare npm: string | null;
 declare program_studi: string | null;
@@ -127,6 +113,7 @@ declare kelas: string | null;
   declare nilai_materi: number | null;
   declare nilai_koding: number | null;
   declare nilai_laporan: number | null;
+  declare nilai_mitra: number | null;
   declare status: PengajuanStatus;
   declare status_dosen: StatusDosen | null;
   declare semester_konversi: string | null;
@@ -179,26 +166,6 @@ Pengajuan.init(
       type: DataTypes.TEXT('long'),
       allowNull: true,
     },
-    alamat_tempat_magang: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
-    nama_penanggung_jawab: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    kontak_penanggung_jawab: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    latitude: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    longitude: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
     rencana_magang: {
       type: DataTypes.TEXT,
       allowNull: true,
@@ -239,6 +206,14 @@ Pengajuan.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    nilai_mitra: {
+  type: DataTypes.INTEGER,
+  allowNull: true,
+  validate: {
+    min: 0,
+    max: 100,
+  },
+},
     nilai_dari_dosen: {
       type: DataTypes.STRING,
       allowNull: true,
@@ -267,10 +242,17 @@ Pengajuan.init(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    nilai_mitra: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        min: 0,
+        max: 100,
+      },
+    },
     status: {
       type: DataTypes.ENUM(
         'Menunggu_Verifikasi',
-        'Pilih_Dosen',
         'Aktif',
         'Ditolak',
         'Selesai'

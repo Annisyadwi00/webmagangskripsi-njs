@@ -15,7 +15,9 @@ export type ActivityLogAction =
   | 'UPLOAD_LAPORAN_AKHIR'
   | 'BERI_NILAI'
   | 'UPDATE_PROFILE'
-  | 'UPDATE_PASSWORD';
+  | 'UPDATE_PASSWORD'
+  | 'CREATE_PENGAJUAN_MITRA'
+  | 'VERIFIKASI_PENGAJUAN_MITRA';
 
 type ActivityLogAttributes = {
   id: number;

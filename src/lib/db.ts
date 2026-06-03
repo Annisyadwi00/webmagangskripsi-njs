@@ -46,7 +46,9 @@ export const syncDatabase = async () => {
     await import('@/models/Job');
     await import('@/models/Feedback');
     await import('@/models/ActivityLog');
-
+    await import('@/models/PengajuanMitra');
+    await import('@/models/PengajuanDokumen');
+    
     await sequelize.sync({ alter: true });
 
     console.log('✅ Struktur tabel berhasil disinkronkan.');
