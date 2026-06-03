@@ -69,10 +69,6 @@ export default function DosenDashboardPage() {
     fetchDashboard();
   }, []);
 
-  const permintaanBimbingan = pengajuans.filter(
-    (item) => item.status_dosen === 'Menunggu'
-  );
-
   const mahasiswaAktif = pengajuans.filter(
     (item) => item.status_dosen === 'Disetujui' && item.status === 'Aktif'
   );
@@ -135,20 +131,13 @@ export default function DosenDashboardPage() {
         <PageHeader
           eyebrow="Dashboard Dosen"
           title={`Halo, ${user?.name || 'Dosen'}`}
-          description="Pantau permintaan bimbingan, mahasiswa aktif, logbook yang perlu dievaluasi, dan penilaian akhir dari satu halaman."
+          description="Pantau mahasiswa bimbingan yang telah ditetapkan admin, logbook yang perlu dievaluasi, dan penilaian akhir dari satu halaman."
           action={
             <Link href="/dosen/logbook" className="app-btn-primary">
               Evaluasi Logbook
             </Link>
           }
         />
-
-        {permintaanBimbingan.length > 0 && (
-          <Alert variant="warning">
-            Ada {permintaanBimbingan.length} permintaan bimbingan baru yang
-            perlu diterima atau ditolak.
-          </Alert>
-        )}
 
         {logbookMenunggu.length > 0 && (
           <Alert variant="info">
@@ -180,13 +169,12 @@ export default function DosenDashboardPage() {
             </Alert>
           )}
 
-        <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-4">
-          <StatCard
-            title="Permintaan Bimbingan"
-            value={permintaanBimbingan.length}
-            description="Mahasiswa yang menunggu persetujuan."
-            icon="users"
-          />
+<StatCard
+  title="Total Bimbingan"
+  value={pengajuans.length}
+  description="Mahasiswa yang ditetapkan sebagai bimbingan."
+  icon="users"
+/>
 
           <StatCard
             title="Mahasiswa Aktif"
@@ -218,7 +206,7 @@ export default function DosenDashboardPage() {
                   Mahasiswa Bimbingan Aktif
                 </h2>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Daftar mahasiswa yang sedang menjalankan proses magang.
+                Mahasiswa yang telah ditetapkan admin/koorprodi sebagai bimbingan akan muncul di sini.
                 </p>
               </div>
 
@@ -226,7 +214,7 @@ export default function DosenDashboardPage() {
                 href="/dosen/bimbingan"
                 className="text-sm font-black text-[#1e3a8a] dark:text-blue-300"
               >
-                Lihat semua
+                Mahasiswa Bimbingan
               </Link>
             </div>
 
@@ -252,7 +240,9 @@ export default function DosenDashboardPage() {
                           {item.nama_mahasiswa}
                         </h3>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                          {item.perusahaan} - {item.posisi}
+                        {item.npm || '-'} • {item.program_studi || '-'} • {item.kelas || '-'}
+<br />
+{item.perusahaan} - {item.posisi}
                         </p>
                       </div>
 

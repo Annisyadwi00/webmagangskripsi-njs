@@ -7,13 +7,13 @@ import StatCard from '@/components/ui/StatCard';
 import Alert from '@/components/ui/Alert';
 import { getDashboardPathByRole } from '@/lib/role-redirect';
 import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
-import { User, getUsers } from '@/lib/users-client';
 import {
   Pengajuan,
   getPengajuanList,
   setujuiPengajuan,
   tolakPengajuan,
 } from '@/lib/pengajuan-client';
+import { User, getUsers } from '@/lib/users-client';
 
 type VerifikasiForm = {
   id: number;
@@ -29,12 +29,12 @@ type VerifikasiForm = {
 const initialVerifikasiForm: VerifikasiForm = {
   id: 0,
   nama_mahasiswa: '',
-  dosenId: '',
-nama_dosen: '',
   perusahaan: '',
   tipeKonversi: 'Full',
   matkulInput: '',
   semester_konversi: 'Semester 6',
+  dosenId: '',
+  nama_dosen: '',
 };
 
 function getStatusBadgeClass(status?: string | null) {
@@ -63,15 +63,17 @@ function getStatusLabel(status?: string | null) {
   if (status === 'Aktif') return 'Aktif';
   if (status === 'Ditolak') return 'Ditolak';
   if (status === 'Selesai') return 'Selesai';
-  if (status === 'Menunggu') return 'Menunggu';
   if (status === 'Disetujui') return 'Disetujui';
+  if (status === 'Menunggu') return 'Menunggu';
 
   return '-';
 }
+
 export default function AdminPengajuanPage() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [pengajuans, setPengajuans] = useState<Pengajuan[]>([]);
-const [dosens, setDosens] = useState<User[]>([]);
+  const [dosens, setDosens] = useState<User[]>([]);
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
 
@@ -94,14 +96,11 @@ const [dosens, setDosens] = useState<User[]>([]);
     try {
       setIsLoading(true);
       setErrorMsg('');
-    
-      if (!id || Number.isNaN(id)) {
-        throw new Error('ID pengajuan tidak valid.');
-      }
-    
-      const [me, data] = await Promise.all([
+
+      const [me, pengajuanData, usersData] = await Promise.all([
         getCurrentUserClient(),
-        getPengajuanById(id),
+        getPengajuanList(1, 100),
+        getUsers(),
       ]);
 
       if (me.role !== 'Admin') {
@@ -135,7 +134,10 @@ const [dosens, setDosens] = useState<User[]>([]);
       const matchesKeyword =
         item.nama_mahasiswa.toLowerCase().includes(keyword) ||
         item.perusahaan.toLowerCase().includes(keyword) ||
-        item.posisi.toLowerCase().includes(keyword);
+        item.posisi.toLowerCase().includes(keyword) ||
+        (item.npm || '').toLowerCase().includes(keyword) ||
+        (item.program_studi || '').toLowerCase().includes(keyword) ||
+        (item.jenis_magang || '').toLowerCase().includes(keyword);
 
       const matchesStatus =
         statusFilter === 'Semua' || item.status === statusFilter;
@@ -162,15 +164,15 @@ const [dosens, setDosens] = useState<User[]>([]);
     setRejectReason('');
 
     setVerifikasiForm({
-  id: pengajuan.id,
-  nama_mahasiswa: pengajuan.nama_mahasiswa,
-  perusahaan: pengajuan.perusahaan,
-  tipeKonversi: pengajuan.tipeKonversi || 'Full',
-  matkulInput: pengajuan.matkulKonversi || '',
-  semester_konversi: pengajuan.semester_konversi || 'Semester 6',
-  dosenId: pengajuan.dosenId ? String(pengajuan.dosenId) : '',
-  nama_dosen: pengajuan.nama_dosen || '',
-});
+      id: pengajuan.id,
+      nama_mahasiswa: pengajuan.nama_mahasiswa,
+      perusahaan: pengajuan.perusahaan,
+      tipeKonversi: pengajuan.tipeKonversi || 'Full',
+      matkulInput: pengajuan.matkulKonversi || '',
+      semester_konversi: pengajuan.semester_konversi || 'Semester 6',
+      dosenId: pengajuan.dosenId ? String(pengajuan.dosenId) : '',
+      nama_dosen: pengajuan.nama_dosen || '',
+    });
   };
 
   const closeApproveModal = () => {
@@ -198,11 +200,12 @@ const [dosens, setDosens] = useState<User[]>([]);
     setMessage('');
     setErrorMsg('');
 
-      if (!verifikasiForm.dosenId || !verifikasiForm.nama_dosen) {
+    if (!verifikasiForm.dosenId || !verifikasiForm.nama_dosen) {
       setErrorMsg('Dosen pembimbing wajib dipilih.');
       setIsSubmitting(false);
       return;
     }
+
     try {
       const matkulKonversi =
         verifikasiForm.tipeKonversi === 'Tidak'
@@ -213,15 +216,19 @@ const [dosens, setDosens] = useState<User[]>([]);
               .filter(Boolean);
 
       const result = await setujuiPengajuan({
-  id: verifikasiForm.id,
-  tipeKonversi: verifikasiForm.tipeKonversi,
-  matkulKonversi,
-  semester_konversi: verifikasiForm.semester_konversi,
-  dosenId: Number(verifikasiForm.dosenId),
-  nama_dosen: verifikasiForm.nama_dosen,
-});
+        id: verifikasiForm.id,
+        tipeKonversi: verifikasiForm.tipeKonversi,
+        matkulKonversi,
+        semester_konversi: verifikasiForm.semester_konversi,
+        dosenId: Number(verifikasiForm.dosenId),
+        nama_dosen: verifikasiForm.nama_dosen,
+      });
 
-      setMessage(result.message || 'Pengajuan berhasil disetujui.');
+      setMessage(
+        result.message ||
+          'Pengajuan berhasil disetujui dan dosen pembimbing berhasil ditentukan.'
+      );
+
       closeApproveModal();
       await fetchData();
     } catch (error) {
@@ -276,6 +283,7 @@ const [dosens, setDosens] = useState<User[]>([]);
           <div className="app-card p-8">
             <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
             <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+
             <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
               {[1, 2, 3].map((item) => (
                 <div
@@ -352,8 +360,9 @@ const [dosens, setDosens] = useState<User[]>([]);
               <h2 className="text-xl font-black text-slate-950 dark:text-white">
                 Daftar Pengajuan
               </h2>
+
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Cari, filter, dan verifikasi pengajuan magang mahasiswa.
+                Cari, filter, dan verifikasi pendataan magang mahasiswa.
               </p>
             </div>
           </div>
@@ -366,7 +375,7 @@ const [dosens, setDosens] = useState<User[]>([]);
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="app-input"
-                placeholder="Cari nama mahasiswa, perusahaan, atau posisi..."
+                placeholder="Cari nama, NPM, perusahaan, prodi, atau jenis magang..."
               />
             </div>
 
@@ -381,7 +390,6 @@ const [dosens, setDosens] = useState<User[]>([]);
                 <option value="Menunggu_Verifikasi">
                   Menunggu Verifikasi
                 </option>
-                <option value="Pilih_Dosen">Pilih Dosen</option>
                 <option value="Aktif">Aktif</option>
                 <option value="Ditolak">Ditolak</option>
                 <option value="Selesai">Selesai</option>
@@ -394,6 +402,7 @@ const [dosens, setDosens] = useState<User[]>([]);
               <p className="font-bold text-slate-700 dark:text-slate-300">
                 Pengajuan tidak ditemukan.
               </p>
+
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                 Coba ubah kata kunci pencarian atau filter status.
               </p>
@@ -418,6 +427,11 @@ const [dosens, setDosens] = useState<User[]>([]);
                       </div>
 
                       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        {item.npm || '-'} • {item.program_studi || '-'} •{' '}
+                        {item.kelas || '-'}
+                      </p>
+
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         {item.perusahaan} - {item.posisi}
                       </p>
                     </div>
@@ -431,25 +445,27 @@ const [dosens, setDosens] = useState<User[]>([]);
                       </Link>
 
                       {item.link_loa && (
-  <a
-    href={item.link_loa}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="app-btn-secondary px-4 py-2 text-sm"
-  >
-    Lihat Bukti Penerimaan
-  </a>
-)}
-{item.foto_diri && (
-  <a
-    href={item.foto_diri}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="app-btn-secondary px-4 py-2 text-sm"
-  >
-    Lihat Foto
-  </a>
-)}
+                        <a
+                          href={item.link_loa}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="app-btn-secondary px-4 py-2 text-sm"
+                        >
+                          Lihat Bukti Penerimaan
+                        </a>
+                      )}
+
+                      {item.foto_diri && (
+                        <a
+                          href={item.foto_diri}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="app-btn-secondary px-4 py-2 text-sm"
+                        >
+                          Lihat Foto
+                        </a>
+                      )}
+
                       {item.status === 'Menunggu_Verifikasi' && (
                         <>
                           <button
@@ -471,42 +487,44 @@ const [dosens, setDosens] = useState<User[]>([]);
                       )}
                     </div>
                   </div>
-                  <div className="app-panel p-3">
-  <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-    NPM
-  </p>
-  <p className="mt-1 font-bold text-slate-950 dark:text-white">
-    {item.npm || '-'}
-  </p>
-</div>
 
-<div className="app-panel p-3">
-  <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-    Program Studi
-  </p>
-  <p className="mt-1 font-bold text-slate-950 dark:text-white">
-    {item.program_studi || '-'}
-  </p>
-</div>
-
-<div className="app-panel p-3">
-  <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-    Jenis Magang
-  </p>
-  <p className="mt-1 font-bold text-slate-950 dark:text-white">
-    {item.jenis_magang || '-'}
-  </p>
-</div>
-
-<div className="app-panel p-3">
-  <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-    Kelas
-  </p>
-  <p className="mt-1 font-bold text-slate-950 dark:text-white">
-    {item.kelas || '-'}
-  </p>
-</div>
                   <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-4 xl:grid-cols-6">
+                    <div className="app-panel p-3">
+                      <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        NPM
+                      </p>
+                      <p className="mt-1 font-bold text-slate-950 dark:text-white">
+                        {item.npm || '-'}
+                      </p>
+                    </div>
+
+                    <div className="app-panel p-3">
+                      <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Program Studi
+                      </p>
+                      <p className="mt-1 font-bold text-slate-950 dark:text-white">
+                        {item.program_studi || '-'}
+                      </p>
+                    </div>
+
+                    <div className="app-panel p-3">
+                      <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Jenis Magang
+                      </p>
+                      <p className="mt-1 font-bold text-slate-950 dark:text-white">
+                        {item.jenis_magang || '-'}
+                      </p>
+                    </div>
+
+                    <div className="app-panel p-3">
+                      <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Kelas
+                      </p>
+                      <p className="mt-1 font-bold text-slate-950 dark:text-white">
+                        {item.kelas || '-'}
+                      </p>
+                    </div>
+
                     <div className="app-panel p-3">
                       <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         Tanggal Mulai
@@ -544,11 +562,24 @@ const [dosens, setDosens] = useState<User[]>([]);
                     </div>
                   </div>
 
+                  {item.rencana_magang && (
+                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+                      <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Rencana Magang
+                      </p>
+
+                      <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
+                        {item.rencana_magang}
+                      </p>
+                    </div>
+                  )}
+
                   {item.alasan_penolakan && (
                     <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-4 dark:border-red-400/20 dark:bg-red-400/10">
                       <p className="text-xs font-black uppercase tracking-wide text-red-600 dark:text-red-300">
                         Alasan Penolakan
                       </p>
+
                       <p className="mt-2 text-sm leading-6 text-red-700 dark:text-red-300">
                         {item.alasan_penolakan}
                       </p>
@@ -568,144 +599,160 @@ const [dosens, setDosens] = useState<User[]>([]);
             onClick={closeApproveModal}
           />
 
-          <div className="overflow-y-auto p-6">
-  <div className="mb-6">
-    <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
-      Verifikasi Pengajuan
-    </p>
+          <div className="animate-scale-in relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900">
+            <div className="overflow-y-auto p-6">
+              <div className="mb-6">
+                <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
+                  Verifikasi Pengajuan Magang
+                </p>
 
-    <h3 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
-      {selectedPengajuan.nama_mahasiswa}
-    </h3>
+                <h3 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+                  {selectedPengajuan.nama_mahasiswa}
+                </h3>
 
-    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-      {selectedPengajuan.perusahaan} - {selectedPengajuan.posisi}
-    </p>
-  </div>
-
-            <form onSubmit={handleApprove} className="space-y-5">
-              <div>
-                <label className="app-label">Tipe Konversi</label>
-                <select
-                  value={verifikasiForm.tipeKonversi}
-                  onChange={(e) =>
-                    setVerifikasiForm({
-                      ...verifikasiForm,
-                      tipeKonversi: e.target.value,
-                    })
-                  }
-                  className="app-input"
-                >
-                  <option value="Full">Full</option>
-                  <option value="Parsial">Parsial</option>
-                  <option value="Tidak">Tidak</option>
-                </select>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  {selectedPengajuan.perusahaan} - {selectedPengajuan.posisi}
+                </p>
               </div>
 
-              {verifikasiForm.tipeKonversi !== 'Tidak' && (
+              <form onSubmit={handleApprove} className="space-y-5">
                 <div>
-                  <label className="app-label">Mata Kuliah Konversi</label>
-                  <input
-                    type="text"
-                    value={verifikasiForm.matkulInput}
+                  <label className="app-label">Tipe Konversi</label>
+                  <select
+                    value={verifikasiForm.tipeKonversi}
                     onChange={(e) =>
                       setVerifikasiForm({
                         ...verifikasiForm,
-                        matkulInput: e.target.value,
+                        tipeKonversi: e.target.value,
                       })
                     }
                     className="app-input"
-                    placeholder="Contoh: Kerja Praktik, Etika Profesi"
+                  >
+                    <option value="Full">Full</option>
+                    <option value="Parsial">Parsial</option>
+                    <option value="Tidak">Tidak</option>
+                  </select>
+                </div>
+
+                {verifikasiForm.tipeKonversi !== 'Tidak' && (
+                  <div>
+                    <label className="app-label">Mata Kuliah Konversi</label>
+                    <input
+                      type="text"
+                      value={verifikasiForm.matkulInput}
+                      onChange={(e) =>
+                        setVerifikasiForm({
+                          ...verifikasiForm,
+                          matkulInput: e.target.value,
+                        })
+                      }
+                      className="app-input"
+                      placeholder="Contoh: Kerja Praktik, Etika Profesi"
+                    />
+
+                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                      Pisahkan dengan koma jika lebih dari satu mata kuliah.
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <label className="app-label">Semester Konversi</label>
+                  <input
+                    type="text"
+                    value={verifikasiForm.semester_konversi}
+                    onChange={(e) =>
+                      setVerifikasiForm({
+                        ...verifikasiForm,
+                        semester_konversi: e.target.value,
+                      })
+                    }
+                    className="app-input"
+                    placeholder="Contoh: Semester 6"
                   />
+                </div>
+
+                <div>
+                  <label className="app-label">Dosen Pembimbing</label>
+                  <select
+                    required
+                    value={verifikasiForm.dosenId}
+                    onChange={(e) => {
+                      const selectedDosen = dosens.find(
+                        (dosen) => dosen.id === Number(e.target.value)
+                      );
+
+                      setVerifikasiForm({
+                        ...verifikasiForm,
+                        dosenId: e.target.value,
+                        nama_dosen: selectedDosen?.name || '',
+                      });
+                    }}
+                    className="app-input"
+                  >
+                    <option value="">Pilih Dosen Pembimbing</option>
+
+                    {dosens.map((dosen) => {
+                      const dosenData = dosen as User & {
+                        kategori_dosen?: string | null;
+                      };
+
+                      return (
+                        <option key={dosen.id} value={dosen.id}>
+                          {dosen.name}
+                          {dosenData.kategori_dosen
+                            ? ` - ${dosenData.kategori_dosen}`
+                            : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+
                   <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    Pisahkan dengan koma jika lebih dari satu mata kuliah.
+                    Dosen yang dipilih akan langsung menjadi dosen pembimbing
+                    mahasiswa.
                   </p>
                 </div>
-              )}
-{item.rencana_magang && (
-  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-    <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-      Rencana Magang
-    </p>
-    <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
-      {item.rencana_magang}
-    </p>
-  </div>
-)}
-              <div>
-                <label className="app-label">Semester Konversi</label>
-                <input
-                  type="text"
-                  value={verifikasiForm.semester_konversi}
-                  onChange={(e) =>
-                    setVerifikasiForm({
-                      ...verifikasiForm,
-                      semester_konversi: e.target.value,
-                    })
-                  }
-                  className="app-input"
-                  placeholder="Contoh: Semester 6"
-                />
-              </div>
-                    <div>
-  <label className="app-label">Dosen Pembimbing</label>
-  <select
-    required
-    value={verifikasiForm.dosenId}
-    onChange={(e) => {
-      const selectedDosen = dosens.find(
-        (dosen) => dosen.id === Number(e.target.value)
-      );
 
-      setVerifikasiForm({
-        ...verifikasiForm,
-        dosenId: e.target.value,
-        nama_dosen: selectedDosen?.name || '',
-      });
-    }}
-    className="app-input"
-  >
-    <option value="">Pilih Dosen Pembimbing</option>
-    {dosens.map((dosen) => (
-      <option key={dosen.id} value={dosen.id}>
-        {dosen.name}
-        {dosen.kategori_dosen ? ` - ${dosen.kategori_dosen}` : ''}
-      </option>
-    ))}
-  </select>
+                {dosens.length === 0 && (
+                  <Alert variant="warning">
+                    Belum ada data dosen di sistem. Tambahkan akun dosen
+                    terlebih dahulu melalui menu Pengguna.
+                  </Alert>
+                )}
 
-  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-    Dosen yang dipilih akan langsung menjadi dosen pembimbing mahasiswa.
-  </p>
-</div>
-              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-400/20 dark:bg-blue-400/10">
-                <p className="text-sm font-bold text-[#1e3a8a] dark:text-blue-300">
-                  Setelah disetujui
-                </p>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  Status pengajuan akan langsung menjadi “Aktif”, dan dosen pembimbing ditentukan oleh admin.
-                </p>
-              </div>
+                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-400/20 dark:bg-blue-400/10">
+                  <p className="text-sm font-bold text-[#1e3a8a] dark:text-blue-300">
+                    Setelah disetujui
+                  </p>
 
-              <div className="sticky bottom-0 -mx-6 -mb-6 flex flex-col gap-3 border-t border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 sm:flex-row">
-  <button
-    type="submit"
-    disabled={isSubmitting}
-    className="app-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
-  >
-    {isSubmitting ? 'Memproses...' : 'Setujui Pengajuan'}
-  </button>
+                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    Status pengajuan akan langsung menjadi “Aktif”. Dosen
+                    pembimbing yang dipilih admin akan menjadi DPM mahasiswa
+                    sesuai alur penentuan dosen pembimbing magang.
+                  </p>
+                </div>
 
-  <button
-    type="button"
-    onClick={closeApproveModal}
-    disabled={isSubmitting}
-    className="app-btn-secondary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
-  >
-    Batal
-  </button>
-</div>
-            </form>
+                <div className="sticky bottom-0 -mx-6 -mb-6 flex flex-col gap-3 border-t border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 sm:flex-row">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="app-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSubmitting ? 'Memproses...' : 'Setujui Pengajuan'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={closeApproveModal}
+                    disabled={isSubmitting}
+                    className="app-btn-secondary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
@@ -722,9 +769,11 @@ const [dosens, setDosens] = useState<User[]>([]);
               <p className="text-sm font-black uppercase tracking-[0.18em] text-red-600 dark:text-red-300">
                 Tolak Pengajuan
               </p>
+
               <h3 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
                 Alasan Penolakan
               </h3>
+
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Berikan alasan yang jelas agar mahasiswa dapat memperbaiki
                 pengajuannya.
@@ -740,7 +789,7 @@ const [dosens, setDosens] = useState<User[]>([]);
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                   className="app-input"
-                  placeholder="Contoh: Dokumen LOA belum mencantumkan periode magang..."
+                  placeholder="Contoh: Bukti penerimaan belum dapat diakses..."
                 />
               </div>
 

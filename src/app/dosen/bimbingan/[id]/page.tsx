@@ -9,12 +9,16 @@ import { getDashboardPathByRole } from '@/lib/role-redirect';
 import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
 import { Pengajuan, getPengajuanById } from '@/lib/pengajuan-client';
 
-function getStatusBadgeClass(status?: string) {
+function getStatusBadgeClass(status?: string | null) {
   if (status === 'Aktif' || status === 'Selesai' || status === 'Disetujui') {
     return 'app-badge app-badge-green';
   }
 
-  if (status === 'Menunggu_Verifikasi' || status === 'Pilih_Dosen' || status === 'Menunggu') {
+  if (
+    status === 'Menunggu_Verifikasi' ||
+    status === 'Pilih_Dosen' ||
+    status === 'Menunggu'
+  ) {
     return 'app-badge app-badge-yellow';
   }
 
@@ -25,11 +29,17 @@ function getStatusBadgeClass(status?: string) {
   return 'app-badge app-badge-blue';
 }
 
-function getStatusLabel(status?: string) {
+function getStatusLabel(status?: string | null) {
   if (status === 'Menunggu_Verifikasi') return 'Menunggu Verifikasi';
   if (status === 'Pilih_Dosen') return 'Pilih Dosen';
+  if (status === 'Aktif') return 'Aktif';
+  if (status === 'Ditolak') return 'Ditolak';
+  if (status === 'Selesai') return 'Selesai';
+  if (status === 'Menunggu') return 'Menunggu';
+  if (status === 'Disetujui') return 'Disetujui';
+  if (status === 'Revisi') return 'Revisi';
 
-  return status || '-';
+  return '-';
 }
 
 function DetailItem({
@@ -44,7 +54,8 @@ function DetailItem({
       <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
         {label}
       </p>
-      <p className="mt-1 font-black text-slate-950 dark:text-white">
+
+      <p className="mt-1 break-words font-black text-slate-950 dark:text-white">
         {value || '-'}
       </p>
     </div>
@@ -67,6 +78,10 @@ export default function DosenBimbinganDetailPage() {
         setIsLoading(true);
         setErrorMsg('');
 
+        if (!id || Number.isNaN(id)) {
+          throw new Error('ID bimbingan tidak valid.');
+        }
+
         const [me, data] = await Promise.all([
           getCurrentUserClient(),
           getPengajuanById(id),
@@ -77,13 +92,17 @@ export default function DosenBimbinganDetailPage() {
           return;
         }
 
+        if (data.dosenId !== me.id) {
+          throw new Error('Anda tidak memiliki akses ke data bimbingan ini.');
+        }
+
         setCurrentUser(me);
         setPengajuan(data);
       } catch (error) {
         const message =
           error instanceof Error
             ? error.message
-            : 'Gagal memuat detail pengajuan.';
+            : 'Gagal memuat detail bimbingan.';
 
         setErrorMsg(message);
       } finally {
@@ -91,9 +110,7 @@ export default function DosenBimbinganDetailPage() {
       }
     };
 
-    if (id) {
-      fetchData();
-    }
+    fetchData();
   }, [id]);
 
   if (isLoading) {
@@ -115,12 +132,14 @@ export default function DosenBimbinganDetailPage() {
       <main className="min-h-screen py-8">
         <div className="app-container">
           <Alert variant="error">
-            {errorMsg || 'Data pengajuan tidak ditemukan.'}
+            {errorMsg || 'Data bimbingan tidak ditemukan.'}
           </Alert>
 
-          <Link href="/dosen/bimbingan" className="app-btn-secondary">
-            Kembali ke Bimbingan
-          </Link>
+          <div className="mt-5">
+            <Link href="/dosen/bimbingan" className="app-btn-secondary">
+              Kembali ke Bimbingan
+            </Link>
+          </div>
         </div>
       </main>
     );
@@ -132,7 +151,9 @@ export default function DosenBimbinganDetailPage() {
         <PageHeader
           eyebrow="Detail Bimbingan"
           title={pengajuan.nama_mahasiswa}
-          description={`Detail pengajuan magang yang dilihat oleh ${currentUser?.name || 'Admin'}.`}
+          description={`Detail mahasiswa bimbingan yang dilihat oleh ${
+            currentUser?.name || 'Dosen'
+          }.`}
           action={
             <Link href="/dosen/bimbingan" className="app-btn-secondary">
               Kembali
@@ -140,14 +161,15 @@ export default function DosenBimbinganDetailPage() {
           }
         />
 
-        <section className="mb-6 app-card p-6">
+        <section className="app-card mb-6 p-6">
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-xl font-black text-slate-950 dark:text-white">
-                Informasi Pengajuan
+                Informasi Mahasiswa Bimbingan
               </h2>
+
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Status dan data utama pengajuan magang.
+                Data pendataan magang dan informasi bimbingan mahasiswa.
               </p>
             </div>
 
@@ -162,15 +184,96 @@ export default function DosenBimbinganDetailPage() {
             </Alert>
           )}
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <DetailItem label="Nama Mahasiswa" value={pengajuan.nama_mahasiswa} />
-            <DetailItem label="Perusahaan" value={pengajuan.perusahaan} />
-            <DetailItem label="Posisi" value={pengajuan.posisi} />
-            <DetailItem label="Dosen Pembimbing" value={pengajuan.nama_dosen} />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <DetailItem
+              label="Nama Mahasiswa"
+              value={pengajuan.nama_mahasiswa}
+            />
+            <DetailItem label="NPM" value={pengajuan.npm} />
+            <DetailItem label="Program Studi" value={pengajuan.program_studi} />
+            <DetailItem label="Angkatan" value={pengajuan.angkatan} />
+            <DetailItem label="Kelas" value={pengajuan.kelas} />
+            <DetailItem
+              label="No HP Mahasiswa"
+              value={pengajuan.no_hp_mahasiswa}
+            />
+
+            <DetailItem label="Jenis Magang" value={pengajuan.jenis_magang} />
+            <DetailItem
+              label="Nama Tempat Magang"
+              value={pengajuan.perusahaan}
+            />
+            <DetailItem label="Posisi / Unit Kerja" value={pengajuan.posisi} />
+
             <DetailItem label="Tanggal Mulai" value={pengajuan.tgl_mulai} />
-            <DetailItem label="Tanggal Berakhir" value={pengajuan.tgl_berakhir} />
+            <DetailItem
+              label="Tanggal Berakhir"
+              value={pengajuan.tgl_berakhir}
+            />
+            <DetailItem
+              label="Dosen Pembimbing"
+              value={pengajuan.nama_dosen}
+            />
+
             <DetailItem label="Tipe Konversi" value={pengajuan.tipeKonversi} />
-            <DetailItem label="Semester Konversi" value={pengajuan.semester_konversi} />
+            <DetailItem
+              label="Semester Konversi"
+              value={pengajuan.semester_konversi}
+            />
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="app-panel p-4">
+              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                Alamat Tempat Magang
+              </p>
+
+              <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700 dark:text-slate-300">
+                {pengajuan.alamat_tempat_magang || '-'}
+              </p>
+            </div>
+
+            <div className="app-panel p-4">
+              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                Koordinat Tempat Magang
+              </p>
+
+              <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
+                Latitude: {pengajuan.latitude || '-'}
+                <br />
+                Longitude: {pengajuan.longitude || '-'}
+              </p>
+            </div>
+
+            <div className="app-panel p-4">
+              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                Nama Penanggung Jawab
+              </p>
+
+              <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
+                {pengajuan.nama_penanggung_jawab || '-'}
+              </p>
+            </div>
+
+            <div className="app-panel p-4">
+              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                Kontak Penanggung Jawab
+              </p>
+
+              <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
+                {pengajuan.kontak_penanggung_jawab || '-'}
+              </p>
+            </div>
+          </div>
+
+          <div className="app-panel mt-5 p-4">
+            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+              Rencana Magang
+            </p>
+
+            <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700 dark:text-slate-300">
+              {pengajuan.rencana_magang || '-'}
+            </p>
           </div>
 
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
@@ -181,7 +284,18 @@ export default function DosenBimbinganDetailPage() {
                 rel="noopener noreferrer"
                 className="app-btn-primary"
               >
-                Buka Dokumen LOA
+                Buka Bukti Penerimaan
+              </a>
+            )}
+
+            {pengajuan.foto_diri && (
+              <a
+                href={pengajuan.foto_diri}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="app-btn-secondary"
+              >
+                Buka Foto Diri
               </a>
             )}
 
@@ -201,16 +315,25 @@ export default function DosenBimbinganDetailPage() {
         <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="app-card p-6">
             <h2 className="text-xl font-black text-slate-950 dark:text-white">
-              Status Dosen
+              Aksi Bimbingan
             </h2>
+
             <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Status persetujuan dosen pembimbing:
+              Dosen dapat mengevaluasi logbook kegiatan dan menginput nilai
+              akhir mahasiswa bimbingan.
             </p>
 
-            <div className="mt-4">
-              <span className={getStatusBadgeClass(pengajuan.status_dosen || undefined)}>
-                {pengajuan.status_dosen || 'Belum Ada'}
-              </span>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <Link href="/dosen/logbook" className="app-btn-primary flex-1">
+                Evaluasi Logbook
+              </Link>
+
+              <Link
+                href="/dosen/penilaian"
+                className="app-btn-secondary flex-1"
+              >
+                Input Nilai
+              </Link>
             </div>
           </div>
 
@@ -219,9 +342,19 @@ export default function DosenBimbinganDetailPage() {
               Nilai Akhir
             </h2>
 
+            <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+              Nilai akan muncul setelah dosen pembimbing menyelesaikan evaluasi.
+            </p>
+
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <DetailItem label="Nilai Akhir" value={pengajuan.nilai_dari_dosen} />
-              <DetailItem label="Kedisiplinan" value={pengajuan.nilai_kedisiplinan} />
+              <DetailItem
+                label="Nilai Akhir"
+                value={pengajuan.nilai_dari_dosen}
+              />
+              <DetailItem
+                label="Kedisiplinan"
+                value={pengajuan.nilai_kedisiplinan}
+              />
               <DetailItem label="Materi" value={pengajuan.nilai_materi} />
               <DetailItem label="Koding" value={pengajuan.nilai_koding} />
               <DetailItem label="Laporan" value={pengajuan.nilai_laporan} />

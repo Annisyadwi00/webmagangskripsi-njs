@@ -30,13 +30,7 @@ function getStatusBadgeClass(status?: string) {
 function getMagangSteps(status?: string) {
   const currentStatus = status || 'Belum_Ada';
 
-  const order = [
-    'Belum_Ada',
-    'Menunggu_Verifikasi',
-    'Pilih_Dosen',
-    'Aktif',
-    'Selesai',
-  ];
+  const order = ['Belum_Ada', 'Menunggu_Verifikasi', 'Aktif', 'Selesai'];
 
   const currentIndex = order.indexOf(currentStatus);
 
@@ -59,23 +53,21 @@ function getMagangSteps(status?: string) {
 
   return [
     {
-      title: 'Pengajuan LOA',
-      description: 'Mahasiswa mengirim data tempat magang dan dokumen LOA.',
+      title: 'Pendataan Magang',
+      description:
+        'Mahasiswa mengisi data magang, bukti penerimaan, dan permohonan dosen pembimbing.',
       status: getStatus('Belum_Ada'),
     },
     {
       title: 'Verifikasi Admin',
-      description: 'Admin memeriksa kelengkapan dan validitas dokumen LOA.',
+      description:
+        'Admin memeriksa data magang dan menentukan dosen pembimbing.',
       status: getStatus('Menunggu_Verifikasi'),
     },
     {
-      title: 'Pilih Dosen',
-      description: 'Mahasiswa memilih dosen pembimbing setelah LOA disetujui.',
-      status: getStatus('Pilih_Dosen'),
-    },
-    {
       title: 'Magang Aktif',
-      description: 'Mahasiswa menjalankan magang dan mengisi logbook harian.',
+      description:
+        'Mahasiswa melaksanakan magang dan mengisi logbook kegiatan.',
       status: getStatus('Aktif'),
     },
     {
@@ -181,8 +173,6 @@ const belumPunyaPengajuan = !pengajuan;
 
 const pengajuanMenunggu = pengajuan?.status === 'Menunggu_Verifikasi';
 
-const pengajuanPilihDosen = pengajuan?.status === 'Pilih_Dosen';
-
 const pengajuanAktif = pengajuan?.status === 'Aktif';
   return (
   <DashboardShell role="Mahasiswa">
@@ -194,8 +184,8 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
           description="Pantau progres magang, logbook, dan evaluasi akhir kamu dari satu halaman yang lebih ringkas."
           action={
             <Link href="/pengajuan" className="app-btn-primary">
-              Ajukan Magang
-            </Link>
+  Isi Pendataan Magang
+</Link>
           }
         />
 
@@ -261,21 +251,18 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
 
 {pengajuanMenunggu && (
   <Alert variant="warning">
-    Pengajuan kamu sedang menunggu verifikasi admin. Pastikan link LOA dapat
-    diakses.
-  </Alert>
-)}
-
-{pengajuanPilihDosen && (
-  <Alert variant="info">
-    Pengajuan kamu sudah disetujui. Silakan pilih dosen pembimbing untuk
-    memulai proses magang aktif.
+    Pengajuan kamu sedang menunggu verifikasi admin. Pastikan bukti penerimaan dan dokumen pendukung dapat diakses.
   </Alert>
 )}
 
 {pengajuanAktif && logbookMenunggu.length > 0 && (
   <Alert variant="info">
     Ada {logbookMenunggu.length} logbook yang sedang menunggu evaluasi dosen.
+  </Alert>
+)}
+{pengajuanAktif && (
+  <Alert variant="success">
+    Pengajuan kamu sudah aktif. Dosen pembimbing telah ditentukan oleh admin.
   </Alert>
 )}
 
@@ -312,7 +299,7 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
                     Dosen Pembimbing
                   </p>
                   <p className="mt-1 font-black text-slate-950 dark:text-white dark:text-white">
-                    {pengajuan.nama_dosen || 'Belum memilih dosen'}
+                  description="Dosen pembimbing yang ditentukan admin."
                   </p>
                 </div>
 
@@ -332,6 +319,31 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
                     {pengajuan.tgl_berakhir || '-'}
                   </p>
                 </div>
+                <div className="app-panel p-4">
+  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+    Jenis Magang
+  </p>
+  <p className="mt-1 font-black text-slate-950 dark:text-white">
+    {pengajuan.jenis_magang || '-'}
+  </p>
+</div>
+
+<div className="app-panel p-4">
+  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+    Program Studi
+  </p>
+  <p className="mt-1 font-black text-slate-950 dark:text-white">
+    {pengajuan.program_studi || '-'}
+  </p>
+</div>
+<div className="app-panel p-4 md:col-span-2">
+  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+    Rencana Magang
+  </p>
+  <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
+    {pengajuan.rencana_magang || '-'}
+  </p>
+</div>
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 dark:bg-slate-800/70 dark:bg-slate-800/70 p-8 text-center">
@@ -339,7 +351,7 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
                   Kamu belum memiliki pengajuan magang.
                 </p>
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                  Mulai dengan mengirim LOA dan data perusahaan tempat magang.
+                Silakan isi data magang dan bukti penerimaan terlebih dahulu.
                 </p>
                 <Link href="/pengajuan" className="app-btn-primary mt-5">
                   Buat Pengajuan

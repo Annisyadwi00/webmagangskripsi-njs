@@ -67,33 +67,39 @@ const initialForm: PengajuanForm = {
   rencana_magang: '',
 };
 
-function getStatusBadgeClass(status?: string) {
-  if (status === 'Aktif' || status === 'Selesai') {
+function getStatusBadgeClass(status?: string | null) {
+  if (status === 'Aktif' || status === 'Selesai' || status === 'Disetujui') {
     return 'app-badge app-badge-green';
   }
 
-  if (status === 'Menunggu_Verifikasi' || status === 'Pilih_Dosen') {
+  if (
+    status === 'Menunggu_Verifikasi' ||
+    status === 'Pilih_Dosen' ||
+    status === 'Menunggu'
+  ) {
     return 'app-badge app-badge-yellow';
   }
 
-  if (status === 'Ditolak') {
+  if (status === 'Ditolak' || status === 'Revisi') {
     return 'app-badge app-badge-red';
   }
 
   return 'app-badge app-badge-blue';
 }
 
-function getStatusLabel(status?: string) {
+function getStatusLabel(status?: string | null) {
   if (status === 'Menunggu_Verifikasi') return 'Menunggu Verifikasi';
   if (status === 'Pilih_Dosen') return 'Pilih Dosen';
   if (status === 'Aktif') return 'Aktif';
   if (status === 'Ditolak') return 'Ditolak';
   if (status === 'Selesai') return 'Selesai';
+  if (status === 'Disetujui') return 'Disetujui';
+  if (status === 'Menunggu') return 'Menunggu';
 
   return 'Belum Ada';
 }
 
-function getMagangSteps(status?: string) {
+function getMagangSteps(status?: string | null) {
   const currentStatus = status || 'Belum_Ada';
 
   const order = ['Belum_Ada', 'Menunggu_Verifikasi', 'Aktif', 'Selesai'];
@@ -132,7 +138,8 @@ function getMagangSteps(status?: string) {
     },
     {
       title: 'Magang Aktif',
-      description: 'Mahasiswa melaksanakan magang dan mengisi logbook kegiatan.',
+      description:
+        'Mahasiswa melaksanakan magang dan mengisi logbook kegiatan.',
       status: getStatus('Aktif'),
     },
     {
@@ -141,6 +148,25 @@ function getMagangSteps(status?: string) {
       status: getStatus('Selesai'),
     },
   ];
+}
+
+function DetailItem({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string | number | null;
+}) {
+  return (
+    <div className="app-panel p-4">
+      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+        {label}
+      </p>
+      <p className="mt-1 break-words font-black text-slate-950 dark:text-white">
+        {value || '-'}
+      </p>
+    </div>
+  );
 }
 
 export default function PengajuanMahasiswaPage() {
@@ -175,13 +201,19 @@ export default function PengajuanMahasiswaPage() {
         ? pengajuanData
         : pengajuanData?.items || [];
 
+      const userData = currentUser as CurrentUser & {
+        nim_nidn?: string | null;
+        prodi?: string | null;
+        kelas?: string | null;
+      };
+
       setUser(currentUser);
       setForm((prev) => ({
         ...prev,
-        nama_mahasiswa: prev.nama_mahasiswa || currentUser.name || '',
-        npm: prev.npm || currentUser.nim_nidn || '',
-        program_studi: prev.program_studi || currentUser.prodi || '',
-        kelas: prev.kelas || '',
+        nama_mahasiswa: prev.nama_mahasiswa || userData.name || '',
+        npm: prev.npm || userData.nim_nidn || '',
+        program_studi: prev.program_studi || userData.prodi || '',
+        kelas: prev.kelas || userData.kelas || '',
       }));
       setPengajuan(pengajuanItems[0] || null);
     } catch (error) {
@@ -201,7 +233,9 @@ export default function PengajuanMahasiswaPage() {
   }, []);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     setForm({
       ...form,
@@ -223,35 +257,35 @@ export default function PengajuanMahasiswaPage() {
         program_studi: form.program_studi.trim(),
         angkatan: form.angkatan.trim(),
         kelas: form.kelas.trim(),
-      
+
         jenis_magang: form.jenis_magang,
         no_hp_mahasiswa: form.no_hp_mahasiswa.trim(),
         foto_diri: form.foto_diri.trim() || null,
         bukti_penerimaan: form.bukti_penerimaan.trim(),
-      
+
         perusahaan: form.perusahaan.trim(),
         posisi: form.posisi.trim() || form.jenis_magang,
         link_loa: form.bukti_penerimaan.trim(),
-      
+
         alamat_tempat_magang: form.alamat_tempat_magang.trim(),
         nama_penanggung_jawab: form.nama_penanggung_jawab.trim(),
         kontak_penanggung_jawab: form.kontak_penanggung_jawab.trim(),
         latitude: form.latitude.trim() || null,
         longitude: form.longitude.trim() || null,
-      
+
         tgl_mulai: form.tgl_mulai,
         tgl_berakhir: form.tgl_berakhir,
         rencana_magang: form.rencana_magang.trim(),
       });
 
-      setMessage(result.message || 'Pengajuan berhasil dikirim.');
+      setMessage(result.message || 'Pendataan magang berhasil dikirim.');
       setForm(initialForm);
       await fetchData();
     } catch (error) {
       const errMessage =
         error instanceof Error
           ? error.message
-          : 'Gagal mengirim pengajuan.';
+          : 'Gagal mengirim pendataan magang.';
 
       setErrorMsg(errMessage);
     } finally {
@@ -270,6 +304,7 @@ export default function PengajuanMahasiswaPage() {
 
     try {
       const result = await batalPengajuan();
+
       setMessage(result.message || 'Pengajuan berhasil dibatalkan.');
       await fetchData();
     } catch (error) {
@@ -293,6 +328,7 @@ export default function PengajuanMahasiswaPage() {
 
     try {
       const result = await uploadLaporanAkhir(linkLaporanAkhir.trim());
+
       setMessage(result.message || 'Laporan akhir berhasil disimpan.');
       setLinkLaporanAkhir('');
       await fetchData();
@@ -357,9 +393,9 @@ export default function PengajuanMahasiswaPage() {
       <main className="min-h-screen py-8">
         <div className="app-container">
           <PageHeader
-            eyebrow="Pengajuan Magang"
+            eyebrow="Pendataan Magang"
             title={`Pengajuan Magang ${user?.name || ''}`}
-            description="Kirim data LOA magang, pantau status verifikasi, dan unggah laporan akhir setelah magang aktif."
+            description="Isi data pendataan magang, pantau status verifikasi, dan unggah laporan akhir setelah magang aktif."
             action={
               <Link href="/dashboard" className="app-btn-secondary">
                 Kembali ke Dashboard
@@ -380,21 +416,22 @@ export default function PengajuanMahasiswaPage() {
 
           {currentPengajuan?.status === 'Menunggu_Verifikasi' && (
             <Alert variant="warning">
-              Pengajuan kamu sedang menunggu verifikasi admin. Pastikan link LOA
-              dapat diakses.
+              Pengajuan kamu sedang menunggu verifikasi admin. Pastikan bukti
+              penerimaan dan dokumen pendukung dapat diakses.
             </Alert>
           )}
 
-{currentPengajuan?.status === 'Aktif' && (
-  <Alert variant="success">
-    Pengajuan kamu sudah aktif. Dosen pembimbing telah ditentukan oleh admin.
-  </Alert>
-)}
+          {currentPengajuan?.status === 'Aktif' && (
+            <Alert variant="success">
+              Pengajuan kamu sudah aktif. Dosen pembimbing telah ditentukan oleh
+              admin.
+            </Alert>
+          )}
 
           {!currentPengajuan && (
             <Alert variant="info">
-              Kamu belum memiliki pengajuan magang. Silakan isi form pengajuan
-              LOA terlebih dahulu.
+              Kamu belum memiliki pendataan magang. Silakan isi data magang dan
+              bukti penerimaan terlebih dahulu.
             </Alert>
           )}
 
@@ -406,14 +443,14 @@ export default function PengajuanMahasiswaPage() {
             <StatCard
               title="Status Pengajuan"
               value={getStatusLabel(currentPengajuan?.status)}
-              description="Status terakhir pengajuan magang."
+              description="Status terakhir proses magang."
               icon="document"
             />
 
             <StatCard
               title="Dosen Pembimbing"
               value={currentPengajuan?.nama_dosen || '-'}
-              description="Dosen pembimbing yang dipilih."
+              description="Dosen pembimbing ditentukan oleh admin."
               icon="users"
             />
 
@@ -432,13 +469,13 @@ export default function PengajuanMahasiswaPage() {
                   <h2 className="text-xl font-black text-slate-950 dark:text-white">
                     {currentPengajuan
                       ? 'Detail Pengajuan'
-                      : 'Form Pengajuan LOA'}
+                      : 'Form Pendataan Magang'}
                   </h2>
 
                   <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                     {currentPengajuan
-                      ? 'Informasi pengajuan magang yang sedang berjalan.'
-                      : 'Lengkapi data tempat magang dan link dokumen LOA.'}
+                      ? 'Informasi pendataan magang yang sedang berjalan.'
+                      : 'Lengkapi data magang dan bukti penerimaan dari tempat magang.'}
                   </p>
                 </div>
 
@@ -451,392 +488,383 @@ export default function PengajuanMahasiswaPage() {
 
               {!currentPengajuan ? (
                 <form onSubmit={handleSubmitPengajuan} className="space-y-6">
-                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-400/20 dark:bg-blue-400/10">
-                  <h3 className="font-black text-[#1e3a8a] dark:text-blue-300">
-                    Data Mahasiswa
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                    Pastikan data mahasiswa sesuai identitas akademik.
-                  </p>
-                </div>
-              
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div>
-                    <label className="app-label">Nama Lengkap</label>
-                    <input
-                      type="text"
-                      name="nama_mahasiswa"
-                      required
-                      value={form.nama_mahasiswa}
-                      onChange={handleChange}
-                      className="app-input"
-                      placeholder="Nama lengkap mahasiswa"
-                    />
-                  </div>
-              
-                  <div>
-                    <label className="app-label">NPM</label>
-                    <input
-                      type="text"
-                      name="npm"
-                      required
-                      value={form.npm}
-                      onChange={handleChange}
-                      className="app-input"
-                      placeholder="Contoh: 2210631170112"
-                    />
-                  </div>
-              
-                  <div>
-                    <label className="app-label">Program Studi</label>
-                    <select
-                      name="program_studi"
-                      required
-                      value={form.program_studi}
-                      onChange={handleChange}
-                      className="app-input"
-                    >
-                      <option value="">Pilih Program Studi</option>
-                      <option value="Informatika">Informatika</option>
-                      <option value="Sistem Informasi">Sistem Informasi</option>
-                    </select>
-                  </div>
-              
-                  <div>
-                    <label className="app-label">Angkatan</label>
-                    <input
-                      type="text"
-                      name="angkatan"
-                      required
-                      value={form.angkatan}
-                      onChange={handleChange}
-                      className="app-input"
-                      placeholder="Contoh: 2022"
-                    />
-                  </div>
-              
-                  <div>
-                    <label className="app-label">Kelas</label>
-                    <input
-                      type="text"
-                      name="kelas"
-                      required
-                      value={form.kelas}
-                      onChange={handleChange}
-                      className="app-input"
-                      placeholder="Contoh: 7C"
-                    />
-                  </div>
-              
-                  <div>
-                    <label className="app-label">Nomor HP Mahasiswa</label>
-                    <input
-                      type="text"
-                      name="no_hp_mahasiswa"
-                      required
-                      value={form.no_hp_mahasiswa}
-                      onChange={handleChange}
-                      className="app-input"
-                      placeholder="6285456123"
-                    />
-                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                      Gunakan format 62, bukan 0. Contoh: 6285456123.
+                  <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-400/20 dark:bg-blue-400/10">
+                    <h3 className="font-black text-[#1e3a8a] dark:text-blue-300">
+                      Data Mahasiswa
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                      Pastikan data mahasiswa sesuai identitas akademik.
                     </p>
                   </div>
-                </div>
-              
-                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-400/20 dark:bg-blue-400/10">
-                  <h3 className="font-black text-[#1e3a8a] dark:text-blue-300">
-                    Data Magang
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                    Isi data tempat magang dan bukti penerimaan dari unit tujuan magang.
-                  </p>
-                </div>
-              
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div>
-                    <label className="app-label">Jenis Magang</label>
-                    <select
-                      name="jenis_magang"
-                      required
-                      value={form.jenis_magang}
-                      onChange={handleChange}
-                      className="app-input"
-                    >
-                      <option value="Magang Berdampak">Magang Berdampak</option>
-                      <option value="Mandiri Konversi">Mandiri Konversi</option>
-                      <option value="Umum Mandiri Non-Konversi">
-                        Umum / Mandiri Non-Konversi
-                      </option>
-                    </select>
+
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <div>
+                      <label className="app-label">Nama Lengkap</label>
+                      <input
+                        type="text"
+                        name="nama_mahasiswa"
+                        required
+                        value={form.nama_mahasiswa}
+                        onChange={handleChange}
+                        className="app-input"
+                        placeholder="Nama lengkap mahasiswa"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="app-label">NPM</label>
+                      <input
+                        type="text"
+                        name="npm"
+                        required
+                        value={form.npm}
+                        onChange={handleChange}
+                        className="app-input"
+                        placeholder="Contoh: 2210631170112"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="app-label">Program Studi</label>
+                      <select
+                        name="program_studi"
+                        required
+                        value={form.program_studi}
+                        onChange={handleChange}
+                        className="app-input"
+                      >
+                        <option value="">Pilih Program Studi</option>
+                        <option value="Informatika">Informatika</option>
+                        <option value="Sistem Informasi">
+                          Sistem Informasi
+                        </option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="app-label">Angkatan</label>
+                      <input
+                        type="text"
+                        name="angkatan"
+                        required
+                        value={form.angkatan}
+                        onChange={handleChange}
+                        className="app-input"
+                        placeholder="Contoh: 2022"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="app-label">Kelas</label>
+                      <input
+                        type="text"
+                        name="kelas"
+                        required
+                        value={form.kelas}
+                        onChange={handleChange}
+                        className="app-input"
+                        placeholder="Contoh: 7C"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="app-label">Nomor HP Mahasiswa</label>
+                      <input
+                        type="text"
+                        name="no_hp_mahasiswa"
+                        required
+                        value={form.no_hp_mahasiswa}
+                        onChange={handleChange}
+                        className="app-input"
+                        placeholder="6285456123"
+                      />
+                      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        Gunakan format 62, bukan 0. Contoh: 6285456123.
+                      </p>
+                    </div>
                   </div>
-              
-                  <div>
-                    <label className="app-label">Nama Tempat Magang</label>
-                    <input
-                      type="text"
-                      name="perusahaan"
-                      required
-                      value={form.perusahaan}
-                      onChange={handleChange}
-                      className="app-input"
-                      placeholder="Contoh: PT. Sukamaju"
-                    />
-                  </div>
-              
-                  <div>
-                    <label className="app-label">Posisi / Unit Kerja</label>
-                    <input
-                      type="text"
-                      name="posisi"
-                      value={form.posisi}
-                      onChange={handleChange}
-                      className="app-input"
-                      placeholder="Contoh: Frontend Developer Intern"
-                    />
-                  </div>
-              
-                  <div>
-                    <label className="app-label">Link Foto Diri Profesional</label>
-                    <input
-                      type="url"
-                      name="foto_diri"
-                      value={form.foto_diri}
-                      onChange={handleChange}
-                      className="app-input"
-                      placeholder="https://drive.google.com/..."
-                    />
-                  </div>
-              
-                  <div className="md:col-span-2">
-                    <label className="app-label">Bukti Penerimaan Magang</label>
-                    <input
-                      type="url"
-                      name="bukti_penerimaan"
-                      required
-                      value={form.bukti_penerimaan}
-                      onChange={handleChange}
-                      className="app-input"
-                      placeholder="https://drive.google.com/..."
-                    />
-                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                      Bisa berupa surat resmi, screenshot chat, email penerimaan, atau bukti
-                      lain. Gunakan link Google Drive yang bisa diakses.
+
+                  <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-400/20 dark:bg-blue-400/10">
+                    <h3 className="font-black text-[#1e3a8a] dark:text-blue-300">
+                      Data Magang
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                      Isi data tempat magang dan bukti penerimaan dari unit
+                      tujuan magang.
                     </p>
                   </div>
-              
-                  <div className="md:col-span-2">
-                    <label className="app-label">Alamat Tempat Magang</label>
+
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <div>
+                      <label className="app-label">Jenis Magang</label>
+                      <select
+                        name="jenis_magang"
+                        required
+                        value={form.jenis_magang}
+                        onChange={handleChange}
+                        className="app-input"
+                      >
+                        <option value="Magang Berdampak">
+                          Magang Berdampak
+                        </option>
+                        <option value="Mandiri Konversi">
+                          Mandiri Konversi
+                        </option>
+                        <option value="Umum Mandiri Non-Konversi">
+                          Umum / Mandiri Non-Konversi
+                        </option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="app-label">Nama Tempat Magang</label>
+                      <input
+                        type="text"
+                        name="perusahaan"
+                        required
+                        value={form.perusahaan}
+                        onChange={handleChange}
+                        className="app-input"
+                        placeholder="Contoh: PT. Sukamaju"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="app-label">Posisi / Unit Kerja</label>
+                      <input
+                        type="text"
+                        name="posisi"
+                        value={form.posisi}
+                        onChange={handleChange}
+                        className="app-input"
+                        placeholder="Contoh: Frontend Developer Intern"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="app-label">
+                        Link Foto Diri Profesional
+                      </label>
+                      <input
+                        type="url"
+                        name="foto_diri"
+                        value={form.foto_diri}
+                        onChange={handleChange}
+                        className="app-input"
+                        placeholder="https://drive.google.com/..."
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="app-label">
+                        Bukti Penerimaan Magang
+                      </label>
+                      <input
+                        type="url"
+                        name="bukti_penerimaan"
+                        required
+                        value={form.bukti_penerimaan}
+                        onChange={handleChange}
+                        className="app-input"
+                        placeholder="https://drive.google.com/..."
+                      />
+                      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        Bisa berupa surat resmi, screenshot chat, email
+                        penerimaan, atau bukti lain. Gunakan link Google Drive
+                        yang bisa diakses.
+                      </p>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="app-label">
+                        Alamat Tempat Magang
+                      </label>
+                      <textarea
+                        name="alamat_tempat_magang"
+                        required
+                        rows={3}
+                        value={form.alamat_tempat_magang}
+                        onChange={handleChange}
+                        className="app-input"
+                        placeholder="Contoh: Jl. Parahyangan No.39, Karawang..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="app-label">Latitude</label>
+                      <input
+                        type="text"
+                        name="latitude"
+                        value={form.latitude}
+                        onChange={handleChange}
+                        className="app-input"
+                        placeholder="-6.367712"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="app-label">Longitude</label>
+                      <input
+                        type="text"
+                        name="longitude"
+                        value={form.longitude}
+                        onChange={handleChange}
+                        className="app-input"
+                        placeholder="107.277014"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="app-label">Tanggal Mulai Magang</label>
+                      <input
+                        type="date"
+                        name="tgl_mulai"
+                        required
+                        value={form.tgl_mulai}
+                        onChange={handleChange}
+                        className="app-input"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="app-label">
+                        Tanggal Selesai Magang
+                      </label>
+                      <input
+                        type="date"
+                        name="tgl_berakhir"
+                        required
+                        value={form.tgl_berakhir}
+                        onChange={handleChange}
+                        className="app-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-400/20 dark:bg-blue-400/10">
+                    <h3 className="font-black text-[#1e3a8a] dark:text-blue-300">
+                      Penanggung Jawab Tempat Magang
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <div>
+                      <label className="app-label">
+                        Nama Penanggung Jawab
+                      </label>
+                      <input
+                        type="text"
+                        name="nama_penanggung_jawab"
+                        required
+                        value={form.nama_penanggung_jawab}
+                        onChange={handleChange}
+                        className="app-input"
+                        placeholder="Nama PIC / pembimbing lapangan"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="app-label">
+                        Kontak Penanggung Jawab
+                      </label>
+                      <input
+                        type="text"
+                        name="kontak_penanggung_jawab"
+                        required
+                        value={form.kontak_penanggung_jawab}
+                        onChange={handleChange}
+                        className="app-input"
+                        placeholder="6285456123"
+                      />
+                      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        Gunakan format 62, bukan 0.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="app-label">Rencana Magang</label>
                     <textarea
-                      name="alamat_tempat_magang"
+                      name="rencana_magang"
                       required
-                      rows={3}
-                      value={form.alamat_tempat_magang}
+                      rows={5}
+                      value={form.rencana_magang}
                       onChange={handleChange}
                       className="app-input"
-                      placeholder="Contoh: Jl. Parahyangan No.39, Karawang..."
+                      placeholder="Tulis deskripsi kegiatan yang akan dilakukan selama magang..."
                     />
                   </div>
-              
-                  <div>
-                    <label className="app-label">Latitude</label>
-                    <input
-                      type="text"
-                      name="latitude"
-                      value={form.latitude}
-                      onChange={handleChange}
-                      className="app-input"
-                      placeholder="-6.367712"
-                    />
-                  </div>
-              
-                  <div>
-                    <label className="app-label">Longitude</label>
-                    <input
-                      type="text"
-                      name="longitude"
-                      value={form.longitude}
-                      onChange={handleChange}
-                      className="app-input"
-                      placeholder="107.277014"
-                    />
-                  </div>
-              
-                  <div>
-                    <label className="app-label">Tanggal Mulai Magang</label>
-                    <input
-                      type="date"
-                      name="tgl_mulai"
-                      required
-                      value={form.tgl_mulai}
-                      onChange={handleChange}
-                      className="app-input"
-                    />
-                  </div>
-              
-                  <div>
-                    <label className="app-label">Tanggal Selesai Magang</label>
-                    <input
-                      type="date"
-                      name="tgl_berakhir"
-                      required
-                      value={form.tgl_berakhir}
-                      onChange={handleChange}
-                      className="app-input"
-                    />
-                  </div>
-                </div>
-              
-                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-400/20 dark:bg-blue-400/10">
-                  <h3 className="font-black text-[#1e3a8a] dark:text-blue-300">
-                    Penanggung Jawab Tempat Magang
-                  </h3>
-                </div>
-              
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div>
-                    <label className="app-label">Nama Penanggung Jawab</label>
-                    <input
-                      type="text"
-                      name="nama_penanggung_jawab"
-                      required
-                      value={form.nama_penanggung_jawab}
-                      onChange={handleChange}
-                      className="app-input"
-                      placeholder="Nama PIC / pembimbing lapangan"
-                    />
-                  </div>
-              
-                  <div>
-                    <label className="app-label">Kontak Penanggung Jawab</label>
-                    <input
-                      type="text"
-                      name="kontak_penanggung_jawab"
-                      required
-                      value={form.kontak_penanggung_jawab}
-                      onChange={handleChange}
-                      className="app-input"
-                      placeholder="6285456123"
-                    />
-                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                      Gunakan format 62, bukan 0.
-                    </p>
-                  </div>
-                </div>
-              
-                <div>
-                  <label className="app-label">Rencana Magang</label>
-                  <textarea
-                    name="rencana_magang"
-                    required
-                    rows={5}
-                    value={form.rencana_magang}
-                    onChange={handleChange}
-                    className="app-input"
-                    placeholder="Tulis deskripsi kegiatan yang akan dilakukan selama magang..."
-                  />
-                </div>
-              
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="app-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isSubmitting ? 'Mengirim...' : 'Kirim Pendataan Magang'}
-                </button>
-              </form>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="app-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSubmitting
+                      ? 'Mengirim...'
+                      : 'Kirim Pendataan Magang'}
+                  </button>
+                </form>
               ) : (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="app-panel p-4">
-                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                      Nama Mahasiswa
-                    </p>
-                    <p className="mt-1 font-black text-slate-950 dark:text-white">
-                      {currentPengajuan.nama_mahasiswa}
-                    </p>
-                  </div>
-                  <div className="app-panel p-4">
-  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-    NPM
-  </p>
-  <p className="mt-1 font-black text-slate-950 dark:text-white">
-    {currentPengajuan.npm || '-'}
-  </p>
-</div>
-
-<div className="app-panel p-4">
-  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-    Program Studi
-  </p>
-  <p className="mt-1 font-black text-slate-950 dark:text-white">
-    {currentPengajuan.program_studi || '-'}
-  </p>
-</div>
-
-<div className="app-panel p-4">
-  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-    Jenis Magang
-  </p>
-  <p className="mt-1 font-black text-slate-950 dark:text-white">
-    {currentPengajuan.jenis_magang || '-'}
-  </p>
-</div>
-                  <div className="app-panel p-4">
-                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                      Perusahaan
-                    </p>
-                    <p className="mt-1 font-black text-slate-950 dark:text-white">
-                      {currentPengajuan.perusahaan}
-                    </p>
-                  </div>
-
-                  <div className="app-panel p-4">
-                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                      Posisi
-                    </p>
-                    <p className="mt-1 font-black text-slate-950 dark:text-white">
-                      {currentPengajuan.posisi}
-                    </p>
+                <div className="space-y-5">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <DetailItem
+                      label="Nama Mahasiswa"
+                      value={currentPengajuan.nama_mahasiswa}
+                    />
+                    <DetailItem label="NPM" value={currentPengajuan.npm} />
+                    <DetailItem
+                      label="Program Studi"
+                      value={currentPengajuan.program_studi}
+                    />
+                    <DetailItem
+                      label="Angkatan"
+                      value={currentPengajuan.angkatan}
+                    />
+                    <DetailItem label="Kelas" value={currentPengajuan.kelas} />
+                    <DetailItem
+                      label="Jenis Magang"
+                      value={currentPengajuan.jenis_magang}
+                    />
+                    <DetailItem
+                      label="Tempat Magang"
+                      value={currentPengajuan.perusahaan}
+                    />
+                    <DetailItem
+                      label="Posisi / Unit Kerja"
+                      value={currentPengajuan.posisi}
+                    />
+                    <DetailItem
+                      label="Tanggal Mulai"
+                      value={currentPengajuan.tgl_mulai}
+                    />
+                    <DetailItem
+                      label="Tanggal Berakhir"
+                      value={currentPengajuan.tgl_berakhir}
+                    />
+                    <DetailItem
+                      label="Dosen Pembimbing"
+                      value={
+                        currentPengajuan.nama_dosen ||
+                        'Menunggu penentuan admin'
+                      }
+                    />
+                    <DetailItem
+                      label="Tipe Konversi"
+                      value={currentPengajuan.tipeKonversi}
+                    />
                   </div>
 
                   <div className="app-panel p-4">
                     <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                      Tipe Konversi
+                      Rencana Magang
                     </p>
-                    <p className="mt-1 font-black text-slate-950 dark:text-white">
-                      {currentPengajuan.tipeKonversi || '-'}
-                    </p>
-                  </div>
-
-                  <div className="app-panel p-4">
-                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                      Tanggal Mulai
-                    </p>
-                    <p className="mt-1 font-black text-slate-950 dark:text-white">
-                      {currentPengajuan.tgl_mulai || '-'}
+                    <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700 dark:text-slate-300">
+                      {currentPengajuan.rencana_magang || '-'}
                     </p>
                   </div>
 
-                  <div className="app-panel p-4">
-                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                      Tanggal Berakhir
-                    </p>
-                    <p className="mt-1 font-black text-slate-950 dark:text-white">
-                      {currentPengajuan.tgl_berakhir || '-'}
-                    </p>
-                  </div>
-
-                  <div className="app-panel p-4 md:col-span-2">
-                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                      Dosen Pembimbing
-                    </p>
-                    <p className="mt-1 font-black text-slate-950 dark:text-white">
-                    {currentPengajuan.nama_dosen || 'Menunggu penentuan admin'}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-3 md:col-span-2 sm:flex-row">
+                  <div className="flex flex-col gap-3 sm:flex-row">
                     {currentPengajuan.link_loa && (
                       <a
                         href={currentPengajuan.link_loa}
@@ -844,7 +872,18 @@ export default function PengajuanMahasiswaPage() {
                         rel="noopener noreferrer"
                         className="app-btn-secondary flex-1"
                       >
-                       Lihat Bukti Penerimaan
+                        Lihat Bukti Penerimaan
+                      </a>
+                    )}
+
+                    {currentPengajuan.foto_diri && (
+                      <a
+                        href={currentPengajuan.foto_diri}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="app-btn-secondary flex-1"
+                      >
+                        Lihat Foto Diri
                       </a>
                     )}
 
@@ -877,7 +916,7 @@ export default function PengajuanMahasiswaPage() {
                     1. Pendataan Magang
                   </p>
                   <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                  Mahasiswa mengisi data magang dan bukti penerimaan.
+                    Mahasiswa mengisi data magang dan bukti penerimaan.
                   </p>
                 </div>
 
@@ -886,13 +925,13 @@ export default function PengajuanMahasiswaPage() {
                     2. Verifikasi Admin
                   </p>
                   <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                    Admin memeriksa kelengkapan dan validitas dokumen.
+                    Admin memeriksa data dan dokumen pendukung.
                   </p>
                 </div>
 
                 <div className="app-panel p-4">
                   <p className="font-black text-slate-950 dark:text-white">
-                    3. Penetuan Dosen
+                    3. Penentuan Dosen
                   </p>
                   <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                     Admin/koorprodi menentukan dosen pembimbing magang.

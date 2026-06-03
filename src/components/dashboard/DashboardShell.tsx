@@ -21,14 +21,16 @@ type DashboardShellProps = {
 const navItems: Record<DashboardRole, NavItem[]> = {
   Mahasiswa: [
     { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Pengajuan', href: '/pengajuan' },
+    { label: 'Pengajuan Magang', href: '/pengajuan' },
+    { label: 'Pengajuan Mitra', href: '/pengajuan-mitra' },
     { label: 'Logbook', href: '/logbook' },
     { label: 'Lowongan', href: '/lowongan' },
     { label: 'Settings', href: '/settings' },
   ],
   Admin: [
     { label: 'Dashboard', href: '/admin/dashboard' },
-    { label: 'Pengajuan', href: '/admin/pengajuan' },
+    { label: 'Pengajuan Magang', href: '/admin/pengajuan' },
+    { label: 'Pengajuan Mitra', href: '/admin/pengajuan-mitra' },
     { label: 'Pengguna', href: '/admin/users' },
     { label: 'Lowongan', href: '/admin/lowongan' },
     { label: 'Feedback', href: '/admin/feedback' },
@@ -99,8 +101,9 @@ export default function DashboardShell({ role, children }: DashboardShellProps) 
   };
 
   const getLinkClass = (href: string) => {
-    const isActive = pathname === href;
-
+    const isActive =
+      pathname === href || (href !== '/dashboard' && pathname.startsWith(`${href}/`));
+  
     return isActive
       ? 'bg-blue-50 text-[#1e3a8a] ring-1 ring-blue-100 dark:bg-blue-400/10 dark:text-blue-300 dark:ring-blue-400/20'
       : 'text-slate-600 hover:bg-slate-50 hover:text-[#1e3a8a] dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-300';
