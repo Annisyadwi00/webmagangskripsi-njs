@@ -62,7 +62,7 @@ function getMagangSteps(status?: string) {
       title: 'Verifikasi Admin',
       description:
         'Admin memeriksa data magang dan menentukan dosen pembimbing.',
-      status: getStatus('Menunggu_Verifikasi'),
+      status: getStatus('Menunggu Verifikasi'),
     },
     {
       title: 'Magang Aktif',
@@ -314,7 +314,7 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
                     Dosen Pembimbing
                   </p>
                   <p className="mt-1 font-black text-slate-950 dark:text-white dark:text-white">
-                  description="Dosen pembimbing yang ditentukan admin."
+                  Dosen pembimbing yang ditentukan admin.
                   </p>
                 </div>
 

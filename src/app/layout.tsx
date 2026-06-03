@@ -1,6 +1,5 @@
 import './globals.css';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer'; // <-- TAMBAHKAN BARIS INI! Wajib hukumnya
+import SiteChrome from '@/components/SiteChrome'; // <-- TAMBAHKAN BARIS INI! Wajib hukumnya
 import { cookies } from 'next/headers';
 
 export const metadata = {
@@ -32,14 +31,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body
   suppressHydrationWarning
   className="min-h-screen bg-background text-foreground antialiased selection:bg-blue-200 selection:text-[#1e3a8a]"
->
-        <Navbar user={user} />
-        
-        <div className="flex-grow">
-          {children}
-        </div>
-        
-        <Footer />
+><SiteChrome user={user}>
+  {children}
+</SiteChrome>
       </body>
     </html>
   );
