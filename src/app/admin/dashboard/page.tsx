@@ -25,8 +25,7 @@ function getStatusBadgeClass(status?: string | null) {
 
   if (
     status === 'Menunggu_Verifikasi' ||
-    status === 'Menunggu' ||
-    status === 'Pilih_Dosen'
+    status === 'Menunggu' 
   ) {
     return 'app-badge app-badge-yellow';
   }
@@ -64,15 +63,21 @@ export default function AdminDashboardPage() {
       setIsLoading(true);
       setErrorMsg('');
 
-      const [me, pengajuanData, mitraData, lowonganData, usersData] =
-        await Promise.all([
-          getCurrentUserClient(),
-          getPengajuanList(1, 100),
-          getPengajuanMitraList(),
-          getAllLowonganList(),
-          getPengajuanDokumenList(),
-          getUsers(),
-        ]);
+     const [
+  me,
+  pengajuanData,
+  mitraData,
+  lowonganData,
+  dokumenData,
+  usersData,
+] = await Promise.all([
+  getCurrentUserClient(),
+  getPengajuanList(1, 100),
+  getPengajuanMitraList(),
+  getAllLowonganList(),
+  getPengajuanDokumenList(),
+  getUsers(),
+]);
 
       if (me.role !== 'Admin') {
         window.location.href = getDashboardPathByRole(me.role);
@@ -80,10 +85,11 @@ export default function AdminDashboardPage() {
       }
 
       setCurrentUser(me);
-      setPengajuans(pengajuanData?.items || []);
-      setPengajuanMitra(mitraData || []);
-      setLowongan(lowonganData || []);
-      setUsers(usersData || []);
+setPengajuans(pengajuanData?.items || []);
+setPengajuanMitra(mitraData || []);
+setLowongan(lowonganData || []);
+setPengajuanDokumen(dokumenData || []);
+setUsers(usersData || []);
     } catch (error) {
       const message =
         error instanceof Error
@@ -204,7 +210,7 @@ export default function AdminDashboardPage() {
           </Alert>
         )}
 
-        <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-4">
+        <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-5">
           <StatCard
             title="Menunggu Magang"
             value={pendingPengajuan.length}
