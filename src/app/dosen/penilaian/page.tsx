@@ -132,7 +132,7 @@ export default function DosenPenilaianPage() {
     (item) => item.nilai_dari_dosen
   );
 
-  const openNilaiModal = (item: Pengajuan) => {
+    const openNilaiModal = (item: Pengajuan) => {
     setSelectedPengajuan(item);
     setMessage('');
     setErrorMsg('');
@@ -147,7 +147,7 @@ export default function DosenPenilaianPage() {
       nilai_materi: item.nilai_materi ? String(item.nilai_materi) : '',
       nilai_koding: item.nilai_koding ? String(item.nilai_koding) : '',
       nilai_laporan: item.nilai_laporan ? String(item.nilai_laporan) : '',
-  nilai_mitra: item.nilai_mitra ? String(item.nilai_mitra) : '',
+      nilai_mitra: item.nilai_mitra ? String(item.nilai_mitra) : '',
     });
   };
 
@@ -177,30 +177,31 @@ export default function DosenPenilaianPage() {
     const grade = getGrade(average);
 
     if (
-  !form.nilai_kedisiplinan ||
-  !form.nilai_materi ||
-  !form.nilai_koding ||
-  !form.nilai_laporan ||
-  !form.nilai_mitra
-) {
-  setErrorMsg('Semua komponen nilai, termasuk nilai mitra, wajib diisi.');
-  return;
-}
+      !form.nilai_kedisiplinan ||
+      !form.nilai_materi ||
+      !form.nilai_koding ||
+      !form.nilai_laporan ||
+      !form.nilai_mitra
+    ) {
+      setErrorMsg('Semua komponen nilai, termasuk nilai mitra, wajib diisi.');
+      return;
+    }
 
     setIsSubmitting(true);
     setMessage('');
     setErrorMsg('');
 
-   const result = await beriNilaiPengajuan({
-  id_pengajuan: form.id_pengajuan,
-  nilai_dari_dosen: grade,
-  nilai_kedisiplinan: Number(form.nilai_kedisiplinan),
-  nilai_materi: Number(form.nilai_materi),
-  nilai_koding: Number(form.nilai_koding),
-  nilai_laporan: Number(form.nilai_laporan),
-  nilai_mitra: Number(form.nilai_mitra),
-});
-try {
+    try {
+      const result = await beriNilaiPengajuan({
+        id_pengajuan: form.id_pengajuan,
+        nilai_dari_dosen: grade,
+        nilai_kedisiplinan: Number(form.nilai_kedisiplinan),
+        nilai_materi: Number(form.nilai_materi),
+        nilai_koding: Number(form.nilai_koding),
+        nilai_laporan: Number(form.nilai_laporan),
+        nilai_mitra: Number(form.nilai_mitra),
+      });
+
       setMessage(result.message || 'Nilai akhir berhasil disimpan.');
       closeNilaiModal();
       await fetchData();
