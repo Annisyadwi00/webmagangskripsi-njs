@@ -7,17 +7,12 @@ import StatCard from '@/components/ui/StatCard';
 import Alert from '@/components/ui/Alert';
 import { getDashboardPathByRole } from '@/lib/role-redirect';
 import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
-import { Pengajuan, getPengajuanList } from '@/lib/pengajuan-client';
 import {
   PengajuanMitra,
   getPengajuanMitraList,
 } from '@/lib/pengajuan-mitra-client';
 import { Lowongan, getAllLowonganList } from '@/lib/lowongan-client';
-import { User, getUsers } from '@/lib/users-client';
-import {
-  PengajuanDokumen,
-  getPengajuanDokumenList,
-} from '@/lib/pengajuan-dokumen-client';
+
 function getStatusBadgeClass(status?: string | null) {
   if (status === 'Aktif' || status === 'Selesai' || status === 'Disetujui') {
     return 'app-badge app-badge-green';
@@ -50,46 +45,30 @@ function getStatusLabel(status?: string | null) {
 
 export default function AdminDashboardPage() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
-  const [pengajuans, setPengajuans] = useState<Pengajuan[]>([]);
   const [pengajuanMitra, setPengajuanMitra] = useState<PengajuanMitra[]>([]);
   const [lowongan, setLowongan] = useState<Lowongan[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
-  const [pengajuanDokumen, setPengajuanDokumen] = useState<PengajuanDokumen[]>([]);
   const fetchDashboard = async () => {
     try {
       setIsLoading(true);
       setErrorMsg('');
 
-     const [
-  me,
-  pengajuanData,
-  mitraData,
-  lowonganData,
-  dokumenData,
-  usersData,
-] = await Promise.all([
+    const [me, mitraData, lowonganData] = await Promise.all([
   getCurrentUserClient(),
-  getPengajuanList(1, 100),
   getPengajuanMitraList(),
   getAllLowonganList(),
-  getPengajuanDokumenList(),
-  getUsers(),
 ]);
 
-      if (me.role !== 'Admin') {
-        window.location.href = getDashboardPathByRole(me.role);
-        return;
-      }
+if (me.role !== 'Admin') {
+  window.location.href = getDashboardPathByRole(me.role);
+  return;
+}
 
-      setCurrentUser(me);
-setPengajuans(pengajuanData?.items || []);
+setCurrentUser(me);
 setPengajuanMitra(mitraData || []);
 setLowongan(lowonganData || []);
-setPengajuanDokumen(dokumenData || []);
-setUsers(usersData || []);
     } catch (error) {
       const message =
         error instanceof Error
@@ -106,24 +85,7 @@ setUsers(usersData || []);
     fetchDashboard();
   }, []);
 
-  const pendingPengajuan = useMemo(
-    () =>
-      pengajuans.filter((item) => item.status === 'Menunggu_Verifikasi'),
-    [pengajuans]
-  );
-  const pendingDokumen = useMemo(
-    () => pengajuanDokumen.filter((item) => item.status === 'Menunggu'),
-    [pengajuanDokumen]
-  );
-  const pengajuanAktif = useMemo(
-    () => pengajuans.filter((item) => item.status === 'Aktif'),
-    [pengajuans]
-  );
-
-  const pengajuanSelesai = useMemo(
-    () => pengajuans.filter((item) => item.status === 'Selesai'),
-    [pengajuans]
-  );
+  
 
   const pendingMitra = useMemo(
     () => pengajuanMitra.filter((item) => item.status === 'Menunggu'),
@@ -134,13 +96,8 @@ setUsers(usersData || []);
     () => lowongan.filter((item) => item.status === 'Aktif'),
     [lowongan]
   );
-
-  const totalMahasiswa = users.filter((item) => item.role === 'Mahasiswa').length;
-  const totalDosen = users.filter((item) => item.role === 'Dosen').length;
-
-  const latestPengajuan = pengajuans.slice(0, 5);
+  
   const latestMitra = pengajuanMitra.slice(0, 5);
-const latestDokumen = pengajuanDokumen.slice(0, 5);
 
   if (isLoading) {
     return (
@@ -180,60 +137,35 @@ const latestDokumen = pengajuanDokumen.slice(0, 5);
         <PageHeader
           eyebrow="Dashboard Admin"
           title={`Halo, ${currentUser?.name || 'Admin'}`}
-          description="Pantau pengajuan magang, pengajuan mitra, data pengguna, dan lowongan dari satu halaman."
+          description="Kelola pengajuan mitra, lowongan magang, dan pantau activity log sistem."
+          
           action={
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Link href="/admin/pengajuan" className="app-btn-primary">
-                Verifikasi Magang
-              </Link>
+  <div className="flex flex-col gap-3 sm:flex-row">
+    <Link href="/admin/pengajuan-mitra" className="app-btn-primary">
+      Verifikasi Mitra
+    </Link>
 
-              <Link href="/admin/pengajuan-mitra" className="app-btn-secondary">
-                Verifikasi Mitra
-              </Link>
-              <Link href="/admin/pengajuan-dokumen" className="app-btn-secondary">
-  Proses Dokumen
-</Link>
-            </div>
-          }
+    <Link href="/admin/lowongan" className="app-btn-secondary">
+      Kelola Lowongan
+    </Link>
+
+    <Link href="/admin/activity" className="app-btn-secondary">
+      Activity Log
+    </Link>
+  </div>
+}
         />
 
-        {pendingPengajuan.length > 0 && (
-          <Alert variant="warning">
-            Ada {pendingPengajuan.length} pengajuan magang yang menunggu
-            verifikasi.
-          </Alert>
-        )}
-{pendingDokumen.length > 0 && (
-  <Alert variant="info">
-    Ada {pendingDokumen.length} pengajuan dokumen yang menunggu diproses.
-  </Alert>
-)}
+        
         {pendingMitra.length > 0 && (
           <Alert variant="info">
             Ada {pendingMitra.length} pengajuan mitra yang menunggu verifikasi.
           </Alert>
         )}
 
-        <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-5">
-          <StatCard
-            title="Menunggu Magang"
-            value={pendingPengajuan.length}
-            description="Pengajuan magang perlu diverifikasi."
-            icon="clock"
-          />
+        
 
-          <StatCard
-            title="Magang Aktif"
-            value={pengajuanAktif.length}
-            description="Mahasiswa sedang menjalankan magang."
-            icon="briefcase"
-          />
-<StatCard
-  title="Dokumen Menunggu"
-  value={pendingDokumen.length}
-  description="Pengajuan dokumen perlu diproses."
-  icon="document"
-/>
+         <section className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
             title="Pengajuan Mitra"
             value={pendingMitra.length}
@@ -249,151 +181,52 @@ const latestDokumen = pengajuanDokumen.slice(0, 5);
           />
         </section>
 
-        <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
-          <StatCard
-            title="Total Mahasiswa"
-            value={totalMahasiswa}
-            description="Akun mahasiswa di sistem."
-            icon="users"
-          />
-
-          <StatCard
-            title="Total Dosen"
-            value={totalDosen}
-            description="Akun dosen pembimbing."
-            icon="users"
-          />
-
-          <StatCard
-            title="Magang Selesai"
-            value={pengajuanSelesai.length}
-            description="Pengajuan yang sudah selesai."
-            icon="chart"
-          />
-        </section>
 
         <section className="app-card mb-8 p-6">
-          <div className="mb-5">
-            <h2 className="text-xl font-black text-slate-950 dark:text-white">
-              Akses Cepat Admin
-            </h2>
+  <div className="mb-5">
+    <h2 className="text-xl font-black text-slate-950 dark:text-white">
+      Akses Cepat Admin
+    </h2>
 
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Gunakan menu berikut untuk mengelola proses utama SI Magang.
-            </p>
-          </div>
+    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+      Gunakan menu berikut untuk mengelola fitur admin/staff TU.
+    </p>
+  </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-            <Link href="/admin/pengajuan" className="app-panel app-card-hover p-5">
-              <p className="font-black text-slate-950 dark:text-white">
-                Pengajuan Magang
-              </p>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Verifikasi pendataan magang dan tentukan dosen.
-              </p>
-            </Link>
+  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+    <Link
+      href="/admin/pengajuan-mitra"
+      className="app-panel app-card-hover p-5"
+    >
+      <p className="font-black text-slate-950 dark:text-white">
+        Pengajuan Mitra
+      </p>
+      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        Setujui atau tolak data mitra baru.
+      </p>
+    </Link>
 
-            <Link
-              href="/admin/pengajuan-mitra"
-              className="app-panel app-card-hover p-5"
-            >
-              <p className="font-black text-slate-950 dark:text-white">
-                Pengajuan Mitra
-              </p>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Setujui atau tolak data mitra baru.
-              </p>
-            </Link>
-            <Link
-  href="/admin/pengajuan-dokumen"
-  className="app-panel app-card-hover p-5"
->
-  <p className="font-black text-slate-950 dark:text-white">
-    Pengajuan Dokumen
-  </p>
-  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-    Proses permintaan dokumen dan isi link Google Drive.
-  </p>
-</Link>
-            <Link href="/admin/lowongan" className="app-panel app-card-hover p-5">
-              <p className="font-black text-slate-950 dark:text-white">
-                Lowongan
-              </p>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Tambah dan kelola lowongan magang.
-              </p>
-            </Link>
+    <Link href="/admin/lowongan" className="app-panel app-card-hover p-5">
+      <p className="font-black text-slate-950 dark:text-white">
+        Lowongan
+      </p>
+      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        Lihat data lowongan magang.
+      </p>
+    </Link>
 
-            <Link href="/admin/users" className="app-panel app-card-hover p-5">
-              <p className="font-black text-slate-950 dark:text-white">
-                Pengguna
-              </p>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Kelola akun mahasiswa, dosen, dan admin.
-              </p>
-            </Link>
-          </div>
-        </section>
+    <Link href="/admin/activity" className="app-panel app-card-hover p-5">
+      <p className="font-black text-slate-950 dark:text-white">
+        Activity Log
+      </p>
+      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        Pantau aktivitas penting di sistem.
+      </p>
+    </Link>
+  </div>
+</section>
 
         <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-          <div className="app-card p-6">
-            <div className="mb-5 flex items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-black text-slate-950 dark:text-white">
-                  Pengajuan Magang Terbaru
-                </h2>
-
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Data pendataan magang terbaru dari mahasiswa.
-                </p>
-              </div>
-
-              <Link
-                href="/admin/pengajuan"
-                className="text-sm font-black text-[#1e3a8a] dark:text-blue-300"
-              >
-                Lihat semua
-              </Link>
-            </div>
-
-            {latestPengajuan.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/70">
-                <p className="font-bold text-slate-700 dark:text-slate-300">
-                  Belum ada pengajuan magang.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {latestPengajuan.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
-                  >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="font-black text-slate-950 dark:text-white">
-                          {item.nama_mahasiswa}
-                        </p>
-
-                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                          {item.npm || '-'} • {item.program_studi || '-'}
-                        </p>
-
-                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                          {item.perusahaan} - {item.posisi}
-                        </p>
-                      </div>
-
-                      <span className={getStatusBadgeClass(item.status)}>
-                        {getStatusLabel(item.status)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           <div className="app-card p-6">
             <div className="mb-5 flex items-center justify-between gap-4">
               <div>
@@ -451,7 +284,6 @@ const latestDokumen = pengajuanDokumen.slice(0, 5);
               </div>
             )}
           </div>
-          <div className="app-card p-6">
   <div className="mb-5 flex items-center justify-between gap-4">
     <div>
       <h2 className="text-xl font-black text-slate-950 dark:text-white">
@@ -470,44 +302,6 @@ const latestDokumen = pengajuanDokumen.slice(0, 5);
       Lihat semua
     </Link>
   </div>
-
-  {latestDokumen.length === 0 ? (
-    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/70">
-      <p className="font-bold text-slate-700 dark:text-slate-300">
-        Belum ada pengajuan dokumen.
-      </p>
-    </div>
-  ) : (
-    <div className="space-y-3">
-      {latestDokumen.map((item) => (
-        <div
-          key={item.id}
-          className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
-        >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="font-black text-slate-950 dark:text-white">
-                {item.jenis_dokumen}
-              </p>
-
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Pengaju: {item.nama_mahasiswa}
-              </p>
-
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {item.npm} • {item.program_studi}
-              </p>
-            </div>
-
-            <span className={getStatusBadgeClass(item.status)}>
-              {item.status}
-            </span>
-          </div>
-        </div>
-      ))}
-    </div>
-  )}
-</div>
         </section>
       </div>
     </main>

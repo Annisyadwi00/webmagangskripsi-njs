@@ -516,7 +516,15 @@ await pengajuan.destroy();
     { status: 400 }
   );
 }
-    
+    if (!pengajuan.getDataValue('link_laporan_akhir')) {
+  return NextResponse.json(
+    {
+      message:
+        'Mahasiswa belum mengunggah laporan akhir. Penilaian akhir belum dapat diproses.',
+    },
+    { status: 400 }
+  );
+}
         await pengajuan.update({
   nilai_dari_dosen,
   nilai_kedisiplinan,
