@@ -8,7 +8,6 @@ import Alert from '@/components/ui/Alert';
 import { getDashboardPathByRole } from '@/lib/role-redirect';
 import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
 import { Pengajuan, getPengajuanList } from '@/lib/pengajuan-client';
-import { Logbook, getLogbookList } from '@/lib/logbook-client';
 
 function getStatusBadgeClass(status?: string) {
   if (status === 'Disetujui' || status === 'Aktif' || status === 'Selesai') {
@@ -29,7 +28,6 @@ function getStatusBadgeClass(status?: string) {
 export default function DosenDashboardPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [pengajuans, setPengajuans] = useState<Pengajuan[]>([]);
-  const [logbooks, setLogbooks] = useState<Logbook[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -40,11 +38,10 @@ export default function DosenDashboardPage() {
         setIsLoading(true);
         setErrorMsg('');
 
-        const [currentUser, pengajuanData, logbookData] = await Promise.all([
-          getCurrentUserClient(),
-          getPengajuanList(1, 50),
-          getLogbookList(),
-        ]);
+       const [currentUser, pengajuanData] = await Promise.all([
+  getCurrentUserClient(),
+  getPengajuanList(1, 50),
+]);
 
         if (currentUser.role !== 'Dosen') {
           window.location.href = getDashboardPathByRole(currentUser.role);
@@ -53,7 +50,6 @@ export default function DosenDashboardPage() {
 
         setUser(currentUser);
         setPengajuans(pengajuanData?.items || []);
-        setLogbooks(logbookData || []);
       } catch (error) {
         const message =
           error instanceof Error
@@ -77,11 +73,13 @@ export default function DosenDashboardPage() {
     (item) => item.status === 'Selesai'
   );
 
-  const logbookMenunggu = logbooks.filter(
-    (item) => item.status === 'Menunggu'
-  );
+  const sudahUploadLaporan = pengajuans.filter(
+  (item) => item.link_laporan_akhir
+);
 
-  const logbookRevisi = logbooks.filter((item) => item.status === 'Revisi');
+const belumUploadLaporan = pengajuans.filter(
+  (item) => !item.link_laporan_akhir
+);
 
   const belumDinilai = pengajuans.filter(
     (item) =>
@@ -90,7 +88,6 @@ export default function DosenDashboardPage() {
       !item.nilai_dari_dosen
   );
 
-  const latestLogbooks = logbooks.slice(0, 5);
   const latestBimbingan = mahasiswaAktif.slice(0, 5);
 
   if (isLoading) {
@@ -131,27 +128,13 @@ export default function DosenDashboardPage() {
         <PageHeader
           eyebrow="Dashboard Dosen"
           title={`Halo, ${user?.name || 'Dosen'}`}
-          description="Pantau mahasiswa bimbingan yang telah ditetapkan admin, logbook yang perlu dievaluasi, dan penilaian akhir dari satu halaman."
+          description="Pantau mahasiswa bimbingan yang telah ditetapkan admin, laporan akhir yang perlu diupload, dan penilaian akhir dari satu halaman."
           action={
-            <Link href="/dosen/logbook" className="app-btn-primary">
-              Evaluasi Logbook
+            <Link href="/dosen/laporan-akhir" className="app-btn-primary">
+              Laporan
             </Link>
           }
         />
-
-        {logbookMenunggu.length > 0 && (
-          <Alert variant="info">
-            Ada {logbookMenunggu.length} logbook mahasiswa yang menunggu
-            evaluasi.
-          </Alert>
-        )}
-
-        {logbookRevisi.length > 0 && (
-          <Alert variant="warning">
-            Ada {logbookRevisi.length} logbook berstatus revisi yang perlu
-            dipantau.
-          </Alert>
-        )}
 
         {belumDinilai.length > 0 && (
           <Alert variant="info">
@@ -160,17 +143,17 @@ export default function DosenDashboardPage() {
           </Alert>
         )}
 
-        {logbookMenunggu.length === 0 &&
+    {belumUploadLaporan.length === 0 &&
   belumDinilai.length === 0 && (
     <Alert variant="success">
-      Tidak ada tugas mendesak saat ini. Semua proses bimbingan berjalan
+      Tidak ada tugas mendesak saat ini. Semua laporan dan penilaian berjalan
       normal.
     </Alert>
   )}
 
 <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-4">
   <StatCard
-    title="Total Bimbingan"
+    title="Total Mahasiswa"
     value={pengajuans.length}
     description="Mahasiswa yang ditetapkan sebagai bimbingan."
     icon="users"
@@ -184,9 +167,9 @@ export default function DosenDashboardPage() {
   />
 
   <StatCard
-    title="Logbook Menunggu"
-    value={logbookMenunggu.length}
-    description="Logbook yang perlu dievaluasi."
+    title="Laporan Masuk"
+    value={sudahUploadLaporan.length}
+    description="Mahasiswa yang sudah upload laporan akhir."
     icon="document"
   />
 
@@ -197,6 +180,7 @@ export default function DosenDashboardPage() {
     icon="warning"
   />
 </section>
+
         <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="app-card p-6 lg:col-span-2">
             <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -210,10 +194,10 @@ export default function DosenDashboardPage() {
               </div>
 
               <Link
-                href="/dosen/bimbingan"
+                href="/dosen/laporan-akhir"
                 className="text-sm font-black text-[#1e3a8a] dark:text-blue-300"
               >
-                Mahasiswa Bimbingan
+                Laporan Akhir
               </Link>
             </div>
 
@@ -301,13 +285,17 @@ export default function DosenDashboardPage() {
                 <span>→</span>
               </Link>
 
-              <Link
-                href="/dosen/logbook"
-                className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-              >
-                Evaluasi Logbook
-                <span>→</span>
-              </Link>
+              action={
+  <div className="flex flex-col gap-3 sm:flex-row">
+    <Link href="/dosen/laporan-akhir" className="app-btn-primary">
+      Lihat Laporan Akhir
+    </Link>
+
+    <Link href="/dosen/penilaian" className="app-btn-secondary">
+      Input Penilaian
+    </Link>
+  </div>
+}
 
               <Link
                 href="/dosen/penilaian"
@@ -329,58 +317,59 @@ export default function DosenDashboardPage() {
         </section>
 
         <section className="app-card mt-6 p-6">
-          <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-xl font-black text-slate-950 dark:text-white">
-                Logbook Terbaru
-              </h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Aktivitas mahasiswa terbaru yang masuk ke sistem.
-              </p>
-            </div>
+  <div className="mb-5 flex items-center justify-between gap-4">
+    <div>
+      <h2 className="text-xl font-black text-slate-950 dark:text-white">
+        Laporan Akhir Terbaru
+      </h2>
+      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Mahasiswa yang sudah mengunggah laporan akhir.
+      </p>
+    </div>
 
-            <Link
-              href="/dosen/logbook"
-              className="text-sm font-black text-[#1e3a8a] dark:text-blue-300"
-            >
-              Lihat semua
-            </Link>
+    <Link
+      href="/dosen/laporan-akhir"
+      className="text-sm font-black text-[#1e3a8a] dark:text-blue-300"
+    >
+      Lihat semua
+    </Link>
+  </div>
+
+  {sudahUploadLaporan.length === 0 ? (
+    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/70">
+      <p className="font-bold text-slate-700 dark:text-slate-300">
+        Belum ada laporan akhir yang diunggah.
+      </p>
+    </div>
+  ) : (
+    <div className="space-y-3">
+      {sudahUploadLaporan.slice(0, 5).map((item) => (
+        <div
+          key={item.id}
+          className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:flex-row md:items-center md:justify-between"
+        >
+          <div>
+            <p className="font-black text-slate-950 dark:text-white">
+              {item.nama_mahasiswa}
+            </p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              {item.npm || '-'} • {item.perusahaan}
+            </p>
           </div>
 
-          {latestLogbooks.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/70">
-              <p className="font-bold text-slate-700 dark:text-slate-300">
-                Belum ada logbook.
-              </p>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Logbook mahasiswa akan muncul setelah mahasiswa mengisi
-                aktivitas magang.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {latestLogbooks.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:flex-row md:items-center md:justify-between"
-                >
-                  <div>
-                    <p className="font-black text-slate-950 dark:text-white">
-                      {item.tanggal}
-                    </p>
-                    <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
-                      {item.kegiatan}
-                    </p>
-                  </div>
-
-                  <span className={getStatusBadgeClass(item.status)}>
-                    {item.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+          <a
+            href={item.link_laporan_akhir || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="app-btn-secondary px-4 py-2 text-sm"
+          >
+            Buka Laporan
+          </a>
+        </div>
+      ))}
+    </div>
+  )}
+</section>
 
         <section className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
           <div className="app-card p-6">
@@ -399,8 +388,7 @@ export default function DosenDashboardPage() {
               Prioritas Hari Ini
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Fokus utama: evaluasi logbook menunggu dan proses permintaan
-              bimbingan baru agar mahasiswa tidak menunggu terlalu lama.
+              Fokus utama: laporan akhir mahasiswa menunggu penilaian. Pastikan untuk memberikan nilai tepat waktu agar mahasiswa dapat segera mengetahui hasil bimbingan mereka.
             </p>
           </div>
         </section>

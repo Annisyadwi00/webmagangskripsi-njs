@@ -121,9 +121,17 @@ export default function DosenPenilaianPage() {
   }, []);
 
   const mahasiswaAktif = pengajuans.filter(
-    (item) => item.status_dosen === 'Disetujui' && item.status === 'Aktif'
-  );
+  (item) =>
+    item.status_dosen === 'Disetujui' &&
+    (item.status === 'Aktif' || item.status === 'Selesai')
+);
+const mahasiswaSiapDinilai = mahasiswaAktif.filter(
+  (item) => item.link_laporan_akhir
+);
 
+const mahasiswaBelumUploadLaporan = mahasiswaAktif.filter(
+  (item) => !item.link_laporan_akhir
+);
   const mahasiswaSelesai = pengajuans.filter(
     (item) => item.status === 'Selesai'
   );
@@ -133,7 +141,13 @@ export default function DosenPenilaianPage() {
   );
 
     const openNilaiModal = (item: Pengajuan) => {
-    setSelectedPengajuan(item);
+    if (!item.link_laporan_akhir) {
+  setErrorMsg(
+    'Mahasiswa belum mengunggah laporan akhir, sehingga belum dapat dinilai.'
+  );
+  return;
+}
+      setSelectedPengajuan(item);
     setMessage('');
     setErrorMsg('');
 
@@ -264,7 +278,13 @@ export default function DosenPenilaianPage() {
             </Link>
           }
         />
-
+{mahasiswaBelumUploadLaporan.length > 0 && (
+  <Alert variant="warning">
+    Ada {mahasiswaBelumUploadLaporan.length} mahasiswa yang belum mengunggah
+    laporan akhir. Penilaian akhir hanya dapat dilakukan setelah laporan akhir
+    tersedia.
+  </Alert>
+)}
         {message && <Alert variant="success">{message}</Alert>}
         {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
 
@@ -303,13 +323,13 @@ export default function DosenPenilaianPage() {
             </div>
           </div>
 
-          {mahasiswaAktif.length === 0 ? (
+          {mahasiswaSiapDinilai.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
               <p className="font-bold text-slate-700">
-                Tidak ada mahasiswa yang perlu dinilai.
+                Belum ada mahasiswa yang siap dinilai.
               </p>
               <p className="mt-2 text-sm text-slate-500">
-                Mahasiswa aktif yang belum selesai dinilai akan muncul di sini.
+                Mahasiswa akan muncul di halaman ini setelah mengunggah laporan akhir.
               </p>
             </div>
           ) : (
@@ -327,7 +347,7 @@ export default function DosenPenilaianPage() {
                 </thead>
 
                 <tbody className="divide-y divide-slate-100">
-                  {mahasiswaAktif.map((item) => (
+                  {mahasiswaSiapDinilai.map((item) => (
                     <tr key={item.id} className="align-top">
                       <td className="px-5 py-4 font-black text-slate-950">
                         {item.nama_mahasiswa}
@@ -352,12 +372,25 @@ export default function DosenPenilaianPage() {
                       </td>
 
                       <td className="px-5 py-4">
+  
+  <div className="flex flex-col gap-2 sm:flex-row">
+  {item.link_laporan_akhir && (
+    <a
+      href={item.link_laporan_akhir}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="app-btn-secondary px-4 py-2 text-sm"
+    >
+      Buka Laporan
+    </a>
+  )}
+
                         <button
                           type="button"
                           onClick={() => openNilaiModal(item)}
                           className="app-btn-primary px-4 py-2 text-sm"
                         >
-                          Input Nilai
+                          Beri Nilai
                         </button>
                       </td>
                     </tr>
