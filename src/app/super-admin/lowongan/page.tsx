@@ -364,6 +364,42 @@ const handleUpdatePengajuanLowongan = async (
   }
 };
 
+const handleUsePengajuanAsLowongan = (item: PengajuanLowongan) => {
+  setForm({
+    posisi: item.posisi,
+    perusahaan: item.nama_mitra,
+    deskripsi: [
+      item.deskripsi,
+      item.persyaratan ? `\n\nPersyaratan:\n${item.persyaratan}` : '',
+    ]
+      .filter(Boolean)
+      .join(''),
+    location: item.lokasi || 'Menyesuaikan',
+    kategori: 'Magang',
+    type: item.sistem_kerja,
+    tipeKonversi: item.tipe_konversi,
+    isPaid: false,
+    kuota: item.kuota,
+    link_pendaftaran: item.link_pendaftaran || '',
+    email_perusahaan: item.email_pic || '',
+    valid_until: '',
+    status: 'Aktif',
+  });
+
+  setSelectedPengajuanLowongan(null);
+  setCatatanSuperAdmin('');
+  setIsFormOpen(true);
+
+  setMessage(
+    'Data pengajuan lowongan berhasil dimasukkan ke form. Silakan cek kembali sebelum dipublikasikan.'
+  );
+
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  });
+};
+
   if (isLoading) {
     return (
       <DashboardShell role="Super Admin">
@@ -507,6 +543,15 @@ description="Tambah, ubah, nonaktifkan, hapus, dan validasi lowongan magang yang
                   Setujui
                 </button>
               )}
+              {item.status === 'Disetujui' && (
+  <button
+    type="button"
+    onClick={() => handleUsePengajuanAsLowongan(item)}
+    className="app-btn-primary px-4 py-2 text-sm"
+  >
+    Jadikan Lowongan
+  </button>
+)}
             </div>
           </div>
         </article>
@@ -1016,6 +1061,16 @@ description="Tambah, ubah, nonaktifkan, hapus, dan validasi lowongan magang yang
             </button>
           </>
         )}
+
+{selectedPengajuanLowongan.status === 'Disetujui' && (
+  <button
+    type="button"
+    onClick={() => handleUsePengajuanAsLowongan(selectedPengajuanLowongan)}
+    className="app-btn-primary flex-1"
+  >
+    Jadikan Lowongan
+  </button>
+)}
 
         <button
           type="button"

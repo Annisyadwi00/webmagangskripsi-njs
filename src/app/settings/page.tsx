@@ -15,8 +15,6 @@ type ProfileForm = {
   nim_nidn: string;
   prodi: string;
   phone: string;
-  photo: string;
-  semester: string;
   kategori_dosen: string;
 };
 
@@ -33,8 +31,6 @@ const initialProfileForm: ProfileForm = {
   nim_nidn: '',
   prodi: '',
   phone: '',
-  photo: '',
-  semester: '',
   kategori_dosen: '',
 };
 
@@ -77,6 +73,12 @@ export default function SettingsPage() {
     return '/dashboard';
   };
 
+<Alert variant="info">
+  Data identitas seperti nama, NPM/NIM, email kampus, dan program studi bersifat
+  tetap karena akan diambil dari data akademik/API kampus. Mahasiswa hanya dapat
+  memperbarui nomor WhatsApp.
+</Alert>
+
   const fetchUser = async () => {
     try {
       setIsLoading(true);
@@ -92,8 +94,6 @@ export default function SettingsPage() {
         nim_nidn: user.nim_nidn || '',
         prodi: user.prodi || '',
         phone: user.phone || '',
-        photo: user.photo || '',
-        semester: user.semester || '',
         kategori_dosen: user.kategori_dosen || '',
       });
     } catch (error) {
@@ -124,29 +124,10 @@ export default function SettingsPage() {
     });
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
 
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      setErrorMsg('Ukuran foto maksimal 2MB.');
-      return;
-    }
-
-    if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
-      setErrorMsg('Format foto harus JPG atau PNG.');
-      return;
-    }
 
     const reader = new FileReader();
 
-    reader.onloadend = () => {
-      setProfileForm({
-        ...profileForm,
-        photo: String(reader.result || ''),
-      });
-    };
 
     reader.readAsDataURL(file);
   };
@@ -168,8 +149,6 @@ export default function SettingsPage() {
           action: 'update_profile',
           name: profileForm.name,
           phone: profileForm.phone,
-          photo: profileForm.photo || null,
-          semester: profileForm.semester,
           kategori_dosen: profileForm.kategori_dosen,
         }),
       });
@@ -280,7 +259,7 @@ export default function SettingsPage() {
         <PageHeader
           eyebrow="Settings"
           title="Pengaturan Akun"
-          description="Kelola profil pengguna, foto profil, dan kata sandi akun SI Magang."
+          description="Kelola profil pengguna dan kata sandi akun SI Magang."
           action={
             <button
               type="button"
@@ -295,20 +274,6 @@ export default function SettingsPage() {
         {message && <Alert variant="success">{message}</Alert>}
         {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
 
-        <section className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr]">
-          <aside className="app-card p-6">
-            <div className="flex items-center gap-4 border-b border-slate-100 pb-6 dark:border-slate-800">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-blue-100 bg-blue-50 text-xl font-black text-[#1e3a8a] dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
-                {profileForm.photo ? (
-                  <img
-                    src={profileForm.photo}
-                    alt="Foto profil"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  profileForm.name.charAt(0).toUpperCase() || 'U'
-                )}
-              </div>
 
               <div className="min-w-0">
                 <p className="truncate font-black text-slate-950 dark:text-white">
@@ -354,62 +319,10 @@ export default function SettingsPage() {
                   Profil User
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                  Perbarui nama, nomor WhatsApp, foto profil, dan informasi
+                  Perbarui nama, nomor WhatsApp dan informasi
                   tambahan sesuai role.
                 </p>
               </div>
-
-              <form onSubmit={handleUpdateProfile} className="space-y-6">
-                <div className="flex flex-col gap-5 rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/70 md:flex-row md:items-center">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/jpg"
-                    onChange={handlePhotoUpload}
-                    className="hidden"
-                  />
-
-                  <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-3xl border border-blue-100 bg-blue-50 text-3xl font-black text-[#1e3a8a] dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
-                    {profileForm.photo ? (
-                      <img
-                        src={profileForm.photo}
-                        alt="Foto profil"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      profileForm.name.charAt(0).toUpperCase() || 'U'
-                    )}
-                  </div>
-
-                  <div className="flex-1">
-                    <p className="font-black text-slate-950 dark:text-white">
-                      Foto Profil
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                      Gunakan JPG atau PNG. Maksimal 2MB.
-                    </p>
-
-                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="app-btn-secondary"
-                      >
-                        Pilih Foto
-                      </button>
-
-                      {profileForm.photo && (
-                        <button
-                          type="button"
-                          onClick={() => handleProfileChange('photo', '')}
-                          className="app-btn-danger"
-                        >
-                          Hapus Foto
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
 
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                   <div>
@@ -421,6 +334,7 @@ export default function SettingsPage() {
                       onChange={(e) =>
                         handleProfileChange('name', e.target.value)
                       }
+                      readOnly
                       className="app-input"
                     />
                   </div>
@@ -431,6 +345,7 @@ export default function SettingsPage() {
                       type="email"
                       disabled
                       value={profileForm.email}
+                      readOnly
                       className="app-input cursor-not-allowed opacity-70"
                     />
                   </div>
@@ -443,10 +358,19 @@ export default function SettingsPage() {
                       type="text"
                       disabled
                       value={profileForm.nim_nidn}
+                      readOnly
                       className="app-input cursor-not-allowed opacity-70"
                     />
                   </div>
-
+<div>
+  <label className="app-label">Program Studi</label>
+  <input
+    type="text"
+    value={user?.prodi || '-'}
+    readOnly
+    className="app-input cursor-not-allowed bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+  />
+</div>
                   <div>
                     <label className="app-label">Nomor WhatsApp</label>
                     <input
@@ -463,24 +387,7 @@ export default function SettingsPage() {
                     />
                   </div>
 
-                  {profileForm.role === 'Mahasiswa' && (
-                    <div>
-                      <label className="app-label">Semester</label>
-                      <select
-                        value={profileForm.semester}
-                        onChange={(e) =>
-                          handleProfileChange('semester', e.target.value)
-                        }
-                        className="app-input"
-                      >
-                        <option value="">Pilih Semester</option>
-                        <option value="5">Semester 5</option>
-                        <option value="6">Semester 6</option>
-                        <option value="7">Semester 7</option>
-                        <option value="8">Semester 8</option>
-                      </select>
-                    </div>
-                  )}
+                  
 
                   {profileForm.role === 'Dosen' && (
                     <div>

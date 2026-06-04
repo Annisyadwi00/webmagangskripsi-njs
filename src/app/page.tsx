@@ -2,123 +2,106 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { createFeedback } from '@/lib/feedback-client';
-import Alert from '@/components/ui/Alert';
-
-type FeedbackForm = {
-  nama: string;
-  email: string;
-  pesan: string;
-};
 
 type FAQ = {
   tanya: string;
   jawab: string;
 };
 
+const mitraList = [
+  'Toyota Motor Manufacturing Indonesia',
+  'Kominfo Karawang',
+  'LPPM UNSIKA',
+  'Kantor Kecamatan Telukjambe',
+  'SMK Negeri 1 Karawang',
+  'PT Teknologi Indonesia',
+];
+<section className="relative py-12">
+  <div className="app-container">
+    <div className="mb-8 text-center">
+      <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
+        Daftar Mitra
+      </p>
+
+      <h2 className="mt-3 text-3xl font-black text-slate-950 dark:text-white">
+        Mitra magang yang terdata.
+      </h2>
+
+      <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+        Beberapa perusahaan atau instansi yang dapat dijadikan referensi tempat magang mahasiswa.
+      </p>
+    </div>
+
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      {mitraList.map((mitra) => (
+        <div key={mitra} className="app-card app-card-hover p-5">
+          <p className="font-black text-slate-950 dark:text-white">
+            {mitra}
+          </p>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            Mitra/instansi terdata dalam proses magang.
+          </p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
 const faqs: FAQ[] = [
   {
     tanya: 'Siapa saja yang bisa menggunakan SI Magang?',
     jawab:
-      'Sistem ini digunakan oleh Mahasiswa, Dosen Pembimbing, dan Admin Fakultas Ilmu Komputer UNSIKA untuk mengelola proses magang secara digital.',
+      'Sistem ini digunakan oleh Mahasiswa, Dosen Pembimbing, Admin/Staff TU, dan Super Admin untuk mengelola proses magang sesuai kewenangan masing-masing.',
   },
   {
-    tanya: 'Bagaimana alur pendaftaran magang?',
+    tanya: 'Bagaimana alur pengajuan magang?',
     jawab:
-      'Mahasiswa membuat akun, mengajukan LOA, menunggu verifikasi admin, memilih dosen pembimbing, lalu mengisi logbook selama proses magang.',
+      'Mahasiswa mengisi pendataan magang dan bukti penerimaan, kemudian Super Admin memverifikasi data serta menetapkan dosen pembimbing.',
   },
   {
-    tanya: 'Apakah logbook wajib diisi?',
+    tanya: 'Apakah logbook masih digunakan di sistem?',
     jawab:
-      'Ya. Logbook digunakan sebagai bukti aktivitas harian mahasiswa dan menjadi salah satu dasar evaluasi oleh dosen pembimbing.',
+      'Tidak. Pada revisi terbaru, fitur logbook diganti dengan upload laporan akhir dalam bentuk PDF.',
   },
   {
     tanya: 'Bagaimana proses penilaian akhir?',
     jawab:
-      'Dosen pembimbing memberikan nilai berdasarkan komponen kedisiplinan, pemahaman materi, kemampuan teknis, dan laporan akhir mahasiswa.',
+      'Dosen pembimbing melihat laporan akhir mahasiswa lalu menginput seluruh komponen penilaian, termasuk nilai dari mitra/tempat magang.',
   },
 ];
 
 const features = [
   {
-    title: 'Pengajuan LOA',
+    title: 'Pendataan Magang',
     description:
-      'Mahasiswa dapat mengirim data perusahaan, posisi magang, dan link LOA untuk diverifikasi admin.',
+      'Mahasiswa mengisi data tempat magang, periode magang, bukti penerimaan, dan rencana kegiatan untuk diverifikasi.',
   },
   {
-    title: 'Logbook Harian',
+    title: 'Upload Laporan Akhir',
     description:
-      'Aktivitas magang dicatat secara rutin beserta waktu kegiatan, bukti, dan komentar dari dosen.',
+      'Mahasiswa wajib mengunggah laporan akhir dalam bentuk PDF sebagai syarat sebelum penilaian akhir diproses.',
   },
   {
-    title: 'Evaluasi Terstruktur',
+    title: 'Penilaian Akhir',
     description:
-      'Dosen pembimbing dapat mengevaluasi logbook dan memberikan nilai akhir dengan komponen yang jelas.',
+      'Dosen pembimbing menginput nilai akhir berdasarkan laporan akhir dan dokumen penilaian mitra.',
   },
 ];
 
 const steps = [
-  'Mahasiswa membuat akun menggunakan email institusi.',
-  'Mahasiswa mengajukan LOA dan data tempat magang.',
-  'Admin memverifikasi pengajuan dan menentukan konversi.',
-  'Mahasiswa memilih dosen pembimbing.',
-  'Mahasiswa mengisi logbook hingga magang selesai.',
-  'Dosen memberikan evaluasi dan nilai akhir.',
+  'Mahasiswa melakukan registrasi menggunakan NPM/NIM dan email kampus.',
+  'Mahasiswa mengisi pendataan magang dan mengunggah bukti penerimaan.',
+  'Super Admin memverifikasi pengajuan dan menetapkan dosen pembimbing.',
+  'Mahasiswa melaksanakan magang sesuai periode yang diajukan.',
+  'Mahasiswa mengunggah laporan akhir dalam bentuk PDF.',
+  'Dosen pembimbing memeriksa laporan akhir dan menginput nilai akhir.',
 ];
 
-export default function LandingPage() {
-  const [form, setForm] = useState<FeedbackForm>({
-    nama: '',
-    email: '',
-    pesan: '',
-  });
+
 
   const [loading, setLoading] = useState(false);
-  const [pesanSukses, setPesanSukses] = useState('');
-  const [pesanError, setPesanError] = useState('');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  
 
-  const handleChange = (field: keyof FeedbackForm, value: string) => {
-    setForm({
-      ...form,
-      [field]: value,
-    });
-  };
-
-  const kirimPesan = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    setLoading(true);
-    setPesanSukses('');
-    setPesanError('');
-
-    try {
-      const result = await createFeedback({
-        nama: form.nama.trim(),
-        email: form.email.trim(),
-        pesan: form.pesan.trim(),
-      });
-
-      setPesanSukses(
-        result.message || 'Pesan dan masukan berhasil dikirim. Terima kasih.'
-      );
-      setForm({ nama: '', email: '', pesan: '' });
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Terjadi kesalahan saat mengirim pesan.';
-
-      setPesanError(message);
-    } finally {
-      setLoading(false);
-
-      setTimeout(() => {
-        setPesanSukses('');
-        setPesanError('');
-      }, 5000);
-    }
-  };
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-100">
@@ -139,8 +122,8 @@ export default function LandingPage() {
               </h1>
 
               <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300 md:text-lg">
-                Digitalisasi proses magang mulai dari pengajuan LOA, pengisian
-                logbook, bimbingan dosen, hingga evaluasi dan nilai akhir.
+                Digitalisasi proses magang mulai dari pendataan magang, pengajuan mitra,
+upload laporan akhir, alokasi dosen pembimbing, hingga penilaian akhir.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -153,6 +136,10 @@ export default function LandingPage() {
                 </Link>
               </div>
             </div>
+        
+        <Link href="/ajukan-lowongan" className="app-btn-secondary">
+  Mitra Ajukan Lowongan
+</Link>
 
             <div className="app-card app-card-hover animate-fade-up animate-delay-200 p-6 md:p-8">
               <div className="mb-6">
@@ -328,82 +315,61 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section
-        id="feedback"
-        className="relative scroll-mt-24 py-12 pb-20"
+      <section className="py-16">
+  <div className="app-container">
+    <div className="app-card grid grid-cols-1 gap-6 p-8 md:grid-cols-[1fr_auto] md:items-center">
+      <div>
+        <p className="text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a] dark:text-blue-300">
+          Untuk Mitra
+        </p>
+
+        <h2 className="mt-3 text-2xl font-black text-slate-950 dark:text-white">
+          Ingin membuka lowongan magang?
+        </h2>
+
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+          Mitra, perusahaan, atau instansi dapat mengajukan lowongan magang
+          melalui sistem. Lowongan akan diverifikasi terlebih dahulu oleh Super
+          Admin sebelum ditampilkan kepada mahasiswa.
+        </p>
+      </div>
+
+      <Link href="/ajukan-lowongan" className="app-btn-primary">
+        Ajukan Lowongan
+      </Link>
+    </div>
+  </div>
+</section>
+<section className="relative py-12">
+  <div className="app-container">
+    <div className="app-card grid grid-cols-1 gap-6 p-8 md:grid-cols-[1fr_auto] md:items-center">
+      <div>
+        <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
+          Butuh Informasi?
+        </p>
+
+        <h2 className="mt-3 text-2xl font-black text-slate-950 dark:text-white">
+          Hubungi TU Fasilkom
+        </h2>
+
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+          Jika membutuhkan informasi lebih lanjut terkait proses magang,
+          mahasiswa dapat menghubungi TU Fasilkom melalui WhatsApp.
+        </p>
+      </div>
+
+      <a
+        href="https://wa.me/628xxxxxxxxxx"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="app-btn-primary"
       >
-        <div className="app-container">
-          <div className="mx-auto max-w-3xl">
-            <div className="app-card app-card-hover animate-fade-up p-6 md:p-8">
-              <div className="mb-8 text-center">
-                <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
-                  Feedback
-                </p>
+        Hubungi TU
+      </a>
+    </div>
+  </div>
+</section>
 
-                <h2 className="mt-3 text-3xl font-black text-slate-950 dark:text-white">
-                  Kirim pesan atau masukan.
-                </h2>
-
-                <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                  Masukan pengguna membantu pengembangan SI Magang agar lebih
-                  baik.
-                </p>
-              </div>
-
-              {pesanSukses && <Alert variant="success">{pesanSukses}</Alert>}
-              {pesanError && <Alert variant="error">{pesanError}</Alert>}
-
-              <form onSubmit={kirimPesan} className="space-y-5">
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div>
-                    <label className="app-label">Nama Lengkap</label>
-                    <input
-                      required
-                      type="text"
-                      value={form.nama}
-                      onChange={(e) => handleChange('nama', e.target.value)}
-                      className="app-input"
-                      placeholder="Masukkan nama"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="app-label">Email</label>
-                    <input
-                      required
-                      type="email"
-                      value={form.email}
-                      onChange={(e) => handleChange('email', e.target.value)}
-                      className="app-input"
-                      placeholder="email@contoh.com"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="app-label">Pesan</label>
-                  <textarea
-                    required
-                    rows={5}
-                    value={form.pesan}
-                    onChange={(e) => handleChange('pesan', e.target.value)}
-                    className="app-input"
-                    placeholder="Tuliskan kendala atau saran..."
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="app-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loading ? 'Mengirim...' : 'Kirim Pesan'}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </section>
     </main>
   );
 }
