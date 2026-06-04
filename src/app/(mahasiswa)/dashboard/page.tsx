@@ -8,7 +8,6 @@ import StatCard from '@/components/ui/StatCard';
 import Alert from '@/components/ui/Alert';
 import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
 import { Pengajuan, getPengajuanList } from '@/lib/pengajuan-client';
-import { Logbook, getLogbookList } from '@/lib/logbook-client';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 import ProgressStepper from '@/components/ui/ProgressStepper';
 
@@ -89,7 +88,6 @@ function getMagangSteps(status?: string) {
 export default function MahasiswaDashboardPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [pengajuan, setPengajuan] = useState<Pengajuan | null>(null);
-  const [logbooks, setLogbooks] = useState<Logbook[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -100,11 +98,10 @@ export default function MahasiswaDashboardPage() {
         setIsLoading(true);
         setErrorMsg('');
 
-        const [currentUser, pengajuanData, logbookData] = await Promise.all([
-          getCurrentUserClient(),
-          getPengajuanList(1, 10),
-          getLogbookList(),
-        ]);
+       const [currentUser, pengajuanData] = await Promise.all([
+  getCurrentUserClient(),
+  getPengajuanList(1, 10),
+]);
 
       if (currentUser.role !== 'Mahasiswa') {
   window.location.href = getDashboardPathByRole(currentUser.role);
@@ -117,7 +114,6 @@ const pengajuanItems = Array.isArray(pengajuanData)
 
 setUser(currentUser);
 setPengajuan(pengajuanItems[0] || null);
-setLogbooks(logbookData || []);
 
       } catch (error) {
         const message =
@@ -134,13 +130,6 @@ setLogbooks(logbookData || []);
     fetchDashboard();
   }, []);
 
-  const totalDisetujui = logbooks.filter(
-    (item) => item.status === 'Disetujui'
-  ).length;
-
-  const totalRevisi = logbooks.filter((item) => item.status === 'Revisi').length;
-
-  const latestLogbooks = logbooks.slice(0, 3);
 
   if (isLoading) {
     return (
@@ -173,7 +162,7 @@ setLogbooks(logbookData || []);
       </DashboardShell>
     );
   }
-const logbookMenunggu = logbooks.filter((item) => item.status === 'Menunggu');
+const sudahUploadLaporan = Boolean(pengajuan?.link_laporan_akhir);
 
 const sudahAdaNilai = Boolean(pengajuan?.nilai_dari_dosen);
 
@@ -205,11 +194,6 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
           </Alert>
         )}
 
-        {totalRevisi > 0 && (
-          <Alert variant="warning">
-            Ada {totalRevisi} logbook yang perlu direvisi. Segera perbaiki agar proses evaluasi tidak tertunda.
-          </Alert>
-        )}
           <section className="mb-6">
   <div className="app-card p-5">
     <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -227,38 +211,42 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
   </div>
 </section>
 
-        <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
-          <StatCard
-  title="Status Pengajuan"
-  value={getStatusLabel(pengajuan?.status)}
-  description={
-    pengajuan?.status === 'Menunggu_Verifikasi'
-      ? 'Menunggu admin memverifikasi data magang.'
-      : pengajuan?.status === 'Aktif'
-        ? 'Magang sudah aktif dan bisa mengisi logbook.'
-        : pengajuan?.status === 'Selesai'
-          ? 'Magang selesai dan nilai akhir tersedia.'
-          : pengajuan?.status === 'Ditolak'
-            ? 'Pengajuan ditolak. Periksa catatan admin.'
-            : 'Belum ada pengajuan magang.'
-  }
-  icon="document"
-/>
+       <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+  <StatCard
+    title="Status Pengajuan"
+    value={getStatusLabel(pengajuan?.status)}
+    description={
+      pengajuan?.status === 'Menunggu_Verifikasi'
+        ? 'Menunggu admin memverifikasi data magang.'
+        : pengajuan?.status === 'Aktif'
+          ? 'Magang sudah aktif.'
+          : pengajuan?.status === 'Selesai'
+            ? 'Magang selesai dan nilai akhir tersedia.'
+            : pengajuan?.status === 'Ditolak'
+              ? 'Pengajuan ditolak. Periksa catatan admin.'
+              : 'Belum ada pengajuan magang.'
+    }
+    icon="document"
+  />
 
-          <StatCard
-            title="Total Logbook"
-            value={logbooks.length}
-            description="Jumlah logbook yang sudah kamu kirim."
-            icon="calendar"
-          />
+  <StatCard
+    title="Laporan Akhir"
+    value={sudahUploadLaporan ? 'Sudah Upload' : 'Belum Upload'}
+    description={
+      sudahUploadLaporan
+        ? 'Laporan akhir sudah tersimpan.'
+        : 'Laporan akhir wajib diunggah.'
+    }
+    icon="document"
+  />
 
-          <StatCard
-            title="Disetujui Dosen"
-            value={totalDisetujui}
-            description={`${totalRevisi} logbook masih perlu revisi.`}
-            icon="check"
-          />
-        </section>
+  <StatCard
+    title="Nilai Akhir"
+    value={pengajuan?.nilai_dari_dosen || 'Belum Ada'}
+    description="Nilai akhir diinput oleh dosen pembimbing."
+    icon="check"
+  />
+</section>
 
         <section className="grid grid-cols-1 gap-6">
   <div className="app-card p-6">
@@ -288,21 +276,16 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
   </Alert>
 )}
 
-{pengajuanAktif && logbookMenunggu.length > 0 && (
-  <Alert variant="info">
-    Ada {logbookMenunggu.length} logbook yang sedang menunggu evaluasi dosen.
-  </Alert>
-)}
 {pengajuanAktif && (
   <Alert variant="success">
     Pengajuan kamu sudah aktif. Dosen pembimbing telah ditentukan oleh admin.
   </Alert>
 )}
 
-{totalRevisi > 0 && (
+{pengajuanAktif && !sudahUploadLaporan && (
   <Alert variant="warning">
-    Ada {totalRevisi} logbook yang perlu direvisi. Segera perbaiki agar proses
-    evaluasi tidak tertunda.
+    Kamu belum mengunggah laporan akhir. Laporan akhir wajib diunggah sebelum
+    proses penilaian akhir.
   </Alert>
 )}
 
@@ -395,52 +378,52 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
         </section>
 
         <section className="app-card mt-6 p-6">
-          <div className="mb-5 flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-black text-slate-950 dark:text-white">
-                Logbook Terbaru
-              </h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400">
-                Tiga aktivitas terakhir yang kamu kirim.
-              </p>
-            </div>
+  <div className="mb-5 flex items-center justify-between gap-4">
+    <div>
+      <h2 className="text-xl font-black text-slate-950 dark:text-white">
+        Laporan Akhir
+      </h2>
+      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Upload file PDF laporan akhir magang kamu.
+      </p>
+    </div>
 
-            <Link href="/logbook" className="text-sm font-black text-[#1e3a8a]">
-              Lihat semua
-            </Link>
-          </div>
+    <Link href="/laporan-akhir" className="text-sm font-black text-[#1e3a8a] dark:text-blue-300">
+      Kelola laporan
+    </Link>
+  </div>
 
-          {latestLogbooks.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 dark:bg-slate-800/70 dark:bg-slate-800/70 p-8 text-center">
-              <p className="font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300">Belum ada logbook.</p>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400">
-                Logbook akan muncul setelah kamu mengisi aktivitas magang.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {latestLogbooks.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex flex-col gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 md:flex-row md:items-center md:justify-between"
-                >
-                  <div>
-                    <p className="font-black text-slate-950 dark:text-white">
-                      {item.tanggal}
-                    </p>
-                    <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400">
-                      {item.kegiatan}
-                    </p>
-                  </div>
+  {sudahUploadLaporan ? (
+    <div className="rounded-2xl border border-green-100 bg-green-50 p-5 dark:border-green-400/20 dark:bg-green-400/10">
+      <p className="font-black text-green-700 dark:text-green-300">
+        Laporan akhir sudah diunggah.
+      </p>
 
-                  <span className={getStatusBadgeClass(item.status)}>
-                    {item.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+      <a
+        href={pengajuan?.link_laporan_akhir || '#'}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-3 inline-flex font-black text-[#1e3a8a] dark:text-blue-300"
+      >
+        Buka Laporan Akhir →
+      </a>
+    </div>
+  ) : (
+    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/70">
+      <p className="font-bold text-slate-700 dark:text-slate-300">
+        Belum ada laporan akhir.
+      </p>
+      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        Upload laporan akhir dalam bentuk PDF setelah periode magang selesai.
+      </p>
+
+      <Link href="/laporan-akhir" className="app-btn-primary mt-5">
+        Upload Laporan Akhir
+      </Link>
+    </div>
+  )}
+</section>
+
       </div>
     </main>
     </DashboardShell>
