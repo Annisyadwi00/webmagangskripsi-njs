@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import User, { UserRole } from '@/models/User';
 import { connectDB } from '@/lib/db';
-import { requireAdmin } from '@/lib/auth';
+import { requireSuperAdmin } from '@/lib/auth';
 import { isValidEmail, trimString, optionalTrimString } from '@/lib/validators';
 import {
   successResponse,
@@ -12,7 +12,7 @@ import {
   notFoundResponse,
 } from '@/lib/api-response';
 
-const allowedRoles: UserRole[] = ['Admin', 'Mahasiswa', 'Dosen'];
+const allowedRoles: UserRole[] = ['Admin', 'Super Admin'];
 
 function generateDefaultPassword() {
   return `SImagang${new Date().getFullYear()}`;
@@ -22,18 +22,21 @@ export async function GET() {
   try {
     await connectDB();
 
-    const admin = await requireAdmin();
+    const superAdmin = await requireSuperAdmin();
 
-    if (!admin) {
-      return forbiddenResponse(
-        'Akses ditolak. Hanya Admin yang dapat melihat data pengguna.'
-      );
-    }
+if (!superAdmin) {
+  return forbiddenResponse(
+    'Akses ditolak. Hanya Super Admin yang dapat melihat data pengguna.'
+  );
+}
 
     const users = await User.findAll({
-      attributes: { exclude: ['password'] },
-      order: [['createdAt', 'DESC']],
-    });
+  where: {
+    role: ['Admin', 'Super Admin'],
+  },
+  attributes: { exclude: ['password'] },
+  order: [['createdAt', 'DESC']],
+});
 
     return successResponse(
       users,
@@ -50,13 +53,13 @@ export async function POST(request: Request) {
   try {
     await connectDB();
 
-    const admin = await requireAdmin();
+    const superAdmin = await requireSuperAdmin();
 
-    if (!admin) {
-      return forbiddenResponse(
-        'Akses ditolak. Hanya Admin yang dapat menambahkan pengguna.'
-      );
-    }
+if (!superAdmin) {
+  return forbiddenResponse(
+    'Akses ditolak. Hanya Super Admin yang dapat mengubah pengguna.'
+  );
+}
 
     const body = await request.json();
 
@@ -86,12 +89,12 @@ export async function POST(request: Request) {
     }
 
     if (role === 'Mahasiswa' && !prodi) {
-      return badRequestResponse('Program studi wajib diisi untuk Mahasiswa.');
-    }
+  return badRequestResponse('Program studi wajib diisi untuk Mahasiswa.');
+}
 
-    if (role === 'Dosen' && !kategori_dosen) {
-      return badRequestResponse('Kategori dosen wajib diisi untuk Dosen.');
-    }
+if (role === 'Dosen' && !kategori_dosen) {
+  return badRequestResponse('Kategori dosen wajib diisi untuk Dosen.');
+}
 
     const existingUser = await User.findOne({
       where: { email },
@@ -104,16 +107,16 @@ export async function POST(request: Request) {
     const finalPassword = password || generateDefaultPassword();
     const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
-    await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      role,
-      nim_nidn,
-      prodi: role === 'Mahasiswa' ? prodi : null,
-      semester: role === 'Mahasiswa' ? semester : null,
-      kategori_dosen: role === 'Dosen' ? kategori_dosen : null,
-    });
+   await User.create({
+  name,
+  email,
+  password: hashedPassword,
+  role,
+  nim_nidn,
+  prodi: null,
+  semester: null,
+  kategori_dosen: null,
+});
 
     return successResponse(
       {
@@ -133,13 +136,13 @@ export async function PUT(request: Request) {
   try {
     await connectDB();
 
-    const admin = await requireAdmin();
+    const superAdmin = await requireSuperAdmin();
 
-    if (!admin) {
-      return forbiddenResponse(
-        'Akses ditolak. Hanya Admin yang dapat mengubah pengguna.'
-      );
-    }
+if (!superAdmin) {
+  return forbiddenResponse(
+    'Akses ditolak. Hanya Super Admin yang dapat menambahkan pengguna.'
+  );
+}
 
     const body = await request.json();
     const { id, action } = body;
@@ -150,6 +153,7 @@ export async function PUT(request: Request) {
 
     const user = await User.findByPk(id);
 
+    
     if (!user) {
       return notFoundResponse('Pengguna tidak ditemukan.');
     }
@@ -175,7 +179,14 @@ export async function PUT(request: Request) {
         'Password berhasil direset.'
       );
     }
-
+if (
+  user.getDataValue('role') !== 'Admin' &&
+  user.getDataValue('role') !== 'Super Admin'
+) {
+  return forbiddenResponse(
+    'User management hanya dapat mengelola akun Admin dan Super Admin.'
+  );
+}
     return badRequestResponse('Aksi tidak valid.');
   } catch (error) {
     console.error('UPDATE_USER_ERROR:', error);

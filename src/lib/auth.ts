@@ -48,6 +48,27 @@ export async function requireAdmin(): Promise<AuthUser | null> {
   return user;
 }
 
+
+export async function requireSuperAdmin(): Promise<AuthUser | null> {
+  const user = await getCurrentUser();
+
+  if (!user || user.role !== 'Super Admin') {
+    return null;
+  }
+
+  return user;
+}
+
+export async function requireAdminOrSuperAdmin(): Promise<AuthUser | null> {
+  const user = await getCurrentUser();
+
+  if (!user || (user.role !== 'Admin' && user.role !== 'Super Admin')) {
+    return null;
+  }
+
+  return user;
+}
+
 export async function requireDosen(): Promise<AuthUser | null> {
   const user = await getCurrentUser();
 
@@ -67,3 +88,4 @@ export async function requireMahasiswa(): Promise<AuthUser | null> {
 
   return user;
 }
+
