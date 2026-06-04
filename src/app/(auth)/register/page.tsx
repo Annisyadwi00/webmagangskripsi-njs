@@ -7,27 +7,23 @@ import { apiClient } from '@/lib/api-client';
 import Alert from '@/components/ui/Alert';
 
 type RegisterFormData = {
-  name: string;
   email: string;
   phone: string;
   password: string;
   confirmPassword: string;
   nim_nidn: string;
-  prodi: string;
 };
 
 export default function RegisterPage() {
   const router = useRouter();
 
   const [formData, setFormData] = useState<RegisterFormData>({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-    nim_nidn: '',
-    prodi: 'S1 Informatika',
-  });
+  email: '',
+  phone: '',
+  password: '',
+  confirmPassword: '',
+  nim_nidn: '',
+});
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -36,9 +32,7 @@ export default function RegisterPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.id]: e.target.value,
@@ -59,11 +53,6 @@ export default function RegisterPage() {
     setSuccessMsg('');
 
     const numberOnlyRegex = /^[0-9]+$/;
-
-    if (!formData.name.trim()) {
-      setErrorMsg('Nama lengkap wajib diisi.');
-      return;
-    }
 
     if (!numberOnlyRegex.test(formData.nim_nidn)) {
       setErrorMsg('NIM hanya boleh berisi angka.');
@@ -107,13 +96,11 @@ export default function RegisterPage() {
       const result = await apiClient<null>('/api/auth/register', {
         method: 'POST',
         body: {
-          name: formData.name.trim(),
-          nim_nidn: formData.nim_nidn,
-          email: formData.email.trim(),
-          phone: formData.phone,
-          password: formData.password,
-          prodi: formData.prodi,
-        },
+  nim_nidn: formData.nim_nidn,
+  email: formData.email.trim(),
+  phone: formData.phone,
+  password: formData.password,
+},
       });
 
       setSuccessMsg(result.message || 'Akun Mahasiswa berhasil didaftarkan.');
@@ -148,9 +135,8 @@ export default function RegisterPage() {
                 </h1>
 
                 <p className="mt-5 text-base leading-7 text-slate-500">
-                  Daftar menggunakan email institusi UNSIKA agar kamu dapat
-                  mengajukan LOA, mengisi logbook, dan memantau evaluasi
-                  magang.
+                 Daftar menggunakan NPM/NIM dan email kampus UNSIKA. Data identitas
+mahasiswa akan divalidasi melalui data akademik kampus.
                 </p>
 
                 <div className="mt-8 rounded-3xl border border-blue-100 bg-blue-50 p-6">
@@ -158,10 +144,10 @@ export default function RegisterPage() {
                     Persyaratan akun
                   </p>
                   <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
-                    <li>Email wajib menggunakan domain UNSIKA.</li>
-                    <li>Password minimal 8 karakter.</li>
-                    <li>Password memiliki minimal 1 huruf kapital dan 1 angka.</li>
-                    <li>NIM dan nomor WhatsApp hanya boleh berisi angka.</li>
+                    <li>NPM/NIM wajib sesuai data akademik kampus.</li>
+<li>Email wajib menggunakan domain UNSIKA.</li>
+<li>Nomor WhatsApp menggunakan format angka.</li>
+<li>Password minimal 8 karakter, memiliki huruf kapital dan angka.</li>
                   </ul>
                 </div>
               </div>
@@ -186,109 +172,56 @@ export default function RegisterPage() {
               {successMsg && <Alert variant="success">{successMsg}</Alert>}
 
               <form onSubmit={handleRegister} className="space-y-5">
-                <div>
-                  <label htmlFor="name" className="app-label">
-                    Nama Lengkap
-                  </label>
-                  <input
-                    id="name"
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="app-input"
-                    placeholder="Nama sesuai KTM"
-                  />
-                </div>
 
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div>
-                    <label htmlFor="nim_nidn" className="app-label">
-                      NIM
-                    </label>
-                    <input
-                      id="nim_nidn"
-                      type="text"
-                      required
-                      value={formData.nim_nidn}
-                      onChange={(e) =>
-                        handleNumberInput('nim_nidn', e.target.value)
-                      }
-                      className="app-input"
-                      placeholder="2210631170001"
-                    />
-                  </div>
+  <div>
+    <label htmlFor="nim_nidn" className="app-label">
+      NPM/NIM
+    </label>
+    <input
+      id="nim_nidn"
+      type="text"
+      required
+      value={formData.nim_nidn}
+      onChange={(e) => handleNumberInput('nim_nidn', e.target.value)}
+      className="app-input"
+      placeholder="2210631170001"
+    />
+  </div>
 
-                  <div>
-                    <label htmlFor="prodi" className="app-label">
-                      Program Studi
-                    </label>
-                    <select
-                      id="prodi"
-                      required
-                      value={formData.prodi}
-                      onChange={handleChange}
-                      className="app-input"
-                    >
-                      <option value="S1 Informatika">S1 Informatika</option>
-                      <option value="S1 Sistem Informasi">
-                        S1 Sistem Informasi
-                      </option>
-                    </select>
-                  </div>
-                </div>
+  <div>
+    <label htmlFor="email" className="app-label">
+      Email Kampus
+    </label>
+    <input
+      id="email"
+      type="email"
+      required
+      value={formData.email}
+      onChange={handleChange}
+      className="app-input"
+      placeholder="npm@student.unsika.ac.id"
+    />
+  </div>
+</div>
 
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div>
-                    <label htmlFor="phone" className="app-label">
-                      Nomor WhatsApp
-                    </label>
-                    <input
-                      id="phone"
-                      type="text"
-                      required
-                      value={formData.phone}
-                      onChange={(e) =>
-                        handleNumberInput('phone', e.target.value)
-                      }
-                      className="app-input"
-                      placeholder="081234567890"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="email" className="app-label">
-                      Email Institusi
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="app-input"
-                      placeholder="nama@student.unsika.ac.id"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div>
-                    <label htmlFor="password" className="app-label">
-                      Password
-                    </label>
-                    <div className="relative">
-                      <input
-                        id="password"
-                        type={showPassword ? 'text' : 'password'}
-                        required
-                        minLength={8}
-                        value={formData.password}
-                        onChange={handleChange}
-                        autoComplete="off"
-                        className="app-input pr-24"
-                        placeholder="Minimal 8 karakter"
-                      />
+<div>
+  <label htmlFor="phone" className="app-label">
+    Nomor WhatsApp
+  </label>
+  <input
+    id="phone"
+    type="text"
+    required
+    value={formData.phone}
+    onChange={(e) => handleNumberInput('phone', e.target.value)}
+    className="app-input"
+    placeholder="628xxxxxxxxxx"
+  />
+  <p className="mt-2 text-xs text-slate-500">
+    Gunakan format angka. Disarankan diawali 62.
+  </p>
+</div>
 
                       <button
                         type="button"
