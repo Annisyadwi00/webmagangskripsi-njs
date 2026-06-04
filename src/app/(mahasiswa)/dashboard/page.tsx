@@ -17,7 +17,7 @@ function getStatusBadgeClass(status?: string) {
     return 'app-badge app-badge-green';
   }
 
-  if (status === 'Menunggu_Verifikasi' || status === 'Pilih_Dosen') {
+  if (status === 'Menunggu_Verifikasi' ) {
     return 'app-badge app-badge-yellow';
   }
 
@@ -26,6 +26,14 @@ function getStatusBadgeClass(status?: string) {
   }
 
   return 'app-badge app-badge-blue';
+}
+function getStatusLabel(status?: string | null) {
+  if (status === 'Menunggu_Verifikasi') return 'Menunggu Verifikasi';
+  if (status === 'Aktif') return 'Aktif';
+  if (status === 'Selesai') return 'Selesai';
+  if (status === 'Ditolak') return 'Ditolak';
+
+  return 'Belum Ada';
 }
 function getMagangSteps(status?: string) {
   const currentStatus = status || 'Belum_Ada';
@@ -62,7 +70,7 @@ function getMagangSteps(status?: string) {
       title: 'Verifikasi Admin',
       description:
         'Admin memeriksa data magang dan menentukan dosen pembimbing.',
-      status: getStatus('Menunggu Verifikasi'),
+      status: getStatus('Menunggu_Verifikasi'),
     },
     {
       title: 'Magang Aktif',
@@ -221,11 +229,21 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
 
         <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
           <StatCard
-            title="Status Pengajuan"
-            value={pengajuan?.status || 'Belum Ada'}
-            description="Status terakhir proses magang kamu."
-            icon="document"
-          />
+  title="Status Pengajuan"
+  value={getStatusLabel(pengajuan?.status)}
+  description={
+    pengajuan?.status === 'Menunggu_Verifikasi'
+      ? 'Menunggu admin memverifikasi data magang.'
+      : pengajuan?.status === 'Aktif'
+        ? 'Magang sudah aktif dan bisa mengisi logbook.'
+        : pengajuan?.status === 'Selesai'
+          ? 'Magang selesai dan nilai akhir tersedia.'
+          : pengajuan?.status === 'Ditolak'
+            ? 'Pengajuan ditolak. Periksa catatan admin.'
+            : 'Belum ada pengajuan magang.'
+  }
+  icon="document"
+/>
 
           <StatCard
             title="Total Logbook"
@@ -242,11 +260,11 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
           />
         </section>
 
-        <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="app-card p-6 lg:col-span-2">
+        <section className="grid grid-cols-1 gap-6">
+  <div className="app-card p-6">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-xl font-black text-slate-950 dark:text-white dark:text-white">
+                <h2 className="text-xl font-black text-slate-950 dark:text-white">
                   Ringkasan Magang
                 </h2>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -255,8 +273,8 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
               </div>
 
               <span className={getStatusBadgeClass(pengajuan?.status)}>
-                {pengajuan?.status || 'Belum Ada'}
-              </span>
+  {getStatusLabel(pengajuan?.status)}
+</span>
             </div>
                   {belumPunyaPengajuan && (
   <Alert variant="info">
@@ -297,14 +315,14 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="app-panel p-4">
                   <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Perusahaan</p>
-                  <p className="mt-1 font-black text-slate-950 dark:text-white dark:text-white">
+                  <p className="mt-1 font-black text-slate-950 dark:text-white">
                     {pengajuan.perusahaan}
                   </p>
                 </div>
 
                 <div className="app-panel p-4">
                   <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Posisi</p>
-                  <p className="mt-1 font-black text-slate-950 dark:text-white dark:text-white">
+                  <p className="mt-1 font-black text-slate-950 dark:text-white">
                     {pengajuan.posisi}
                   </p>
                 </div>
@@ -313,14 +331,14 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
                   <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
                     Dosen Pembimbing
                   </p>
-                  <p className="mt-1 font-black text-slate-950 dark:text-white dark:text-white">
+                  <p className="mt-1 font-black text-slate-950 dark:text-white">
                   Dosen pembimbing yang ditentukan admin.
                   </p>
                 </div>
 
                 <div className="app-panel p-4">
                   <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Nilai Akhir</p>
-                  <p className="mt-1 font-black text-slate-950 dark:text-white dark:text-white">
+                  <p className="mt-1 font-black text-slate-950 dark:text-white">
                     {pengajuan.nilai_dari_dosen || 'Belum dinilai'}
                   </p>
                 </div>
@@ -329,7 +347,7 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
                   <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
                     Periode Magang
                   </p>
-                  <p className="mt-1 font-black text-slate-950 dark:text-white dark:text-white">
+                  <p className="mt-1 font-black text-slate-950 dark:text-white">
                     {pengajuan.tgl_mulai || '-'} sampai{' '}
                     {pengajuan.tgl_berakhir || '-'}
                   </p>
@@ -374,45 +392,12 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
               </div>
             )}
           </div>
-
-          <div className="app-card p-6">
-            <h2 className="text-xl font-black text-slate-950 dark:text-white dark:text-white">Menu Cepat</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Akses fitur utama mahasiswa.
-            </p>
-
-            <div className="mt-5 space-y-3">
-              <Link
-                href="/pengajuan"
-                className="flex items-center justify-between rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 font-bold text-[#1e3a8a] hover:bg-blue-100"
-              >
-                Pengajuan Magang
-                <span>→</span>
-              </Link>
-
-              <Link
-                href="/logbook"
-                className="flex items-center justify-between rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:bg-slate-900 dark:bg-slate-900 px-5 py-4 font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-800/70 dark:bg-slate-800/70"
-              >
-                Logbook Harian
-                <span>→</span>
-              </Link>
-
-              <Link
-                href="/lowongan"
-                className="flex items-center justify-between rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:bg-slate-900 dark:bg-slate-900 px-5 py-4 font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-800/70 dark:bg-slate-800/70"
-              >
-                Bursa Magang
-                <span>→</span>
-              </Link>
-            </div>
-          </div>
         </section>
 
         <section className="app-card mt-6 p-6">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-xl font-black text-slate-950 dark:text-white dark:text-white">
+              <h2 className="text-xl font-black text-slate-950 dark:text-white">
                 Logbook Terbaru
               </h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400">
@@ -437,7 +422,7 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
               {latestLogbooks.map((item) => (
                 <div
                   key={item.id}
-                  className="flex flex-col gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:bg-slate-900 dark:bg-slate-900 p-4 md:flex-row md:items-center md:justify-between"
+                  className="flex flex-col gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 md:flex-row md:items-center md:justify-between"
                 >
                   <div>
                     <p className="font-black text-slate-950 dark:text-white">
