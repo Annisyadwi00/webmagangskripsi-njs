@@ -241,7 +241,7 @@ export default function SuperAdminAlokasiDosenPage() {
       <main className="min-h-screen py-8">
         <div className="app-container">
           <PageHeader
-            eyebrow="Super Admin"
+            eyebrow="staff"
             title="Alokasi Dosen Pembimbing"
             description="Tetapkan dosen pembimbing untuk mahasiswa yang pengajuan magangnya telah masuk."
             action={

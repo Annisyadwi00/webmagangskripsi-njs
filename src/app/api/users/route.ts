@@ -26,7 +26,7 @@ export async function GET() {
 
 if (!superAdmin) {
   return forbiddenResponse(
-    'Akses ditolak. Hanya Super Admin yang dapat melihat data pengguna.'
+    'Akses ditolak. Hanya staff yang dapat melihat data pengguna.'
   );
 }
 
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
 if (!superAdmin) {
   return forbiddenResponse(
-    'Akses ditolak. Hanya Super Admin yang dapat mengubah pengguna.'
+    'Akses ditolak. Hanya staff yang dapat mengubah pengguna.'
   );
 }
 
@@ -140,7 +140,7 @@ export async function PUT(request: Request) {
 
 if (!superAdmin) {
   return forbiddenResponse(
-    'Akses ditolak. Hanya Super Admin yang dapat menambahkan pengguna.'
+    'Akses ditolak. Hanya staff yang dapat menambahkan pengguna.'
   );
 }
 
@@ -184,7 +184,7 @@ if (
   user.getDataValue('role') !== 'Super Admin'
 ) {
   return forbiddenResponse(
-    'User management hanya dapat mengelola akun Admin dan Super Admin.'
+    'User management hanya dapat mengelola akun Admin dan staff.'
   );
 }
     return badRequestResponse('Aksi tidak valid.');

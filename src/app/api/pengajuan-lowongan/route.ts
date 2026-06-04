@@ -50,7 +50,7 @@ export async function GET() {
 
     if (!user || user.role !== 'Super Admin') {
       return forbiddenResponse(
-        'Akses ditolak. Hanya Super Admin yang dapat melihat pengajuan lowongan.'
+        'Akses ditolak. Hanya staff yang dapat melihat pengajuan lowongan.'
       );
     }
 
@@ -177,7 +177,7 @@ export async function PUT(request: Request) {
 
     if (!user || user.role !== 'Super Admin') {
       return forbiddenResponse(
-        'Akses ditolak. Hanya Super Admin yang dapat memverifikasi pengajuan lowongan.'
+        'Akses ditolak. Hanya staff yang dapat memverifikasi pengajuan lowongan.'
       );
     }
 
@@ -198,7 +198,7 @@ export async function PUT(request: Request) {
 
     if (status === 'Ditolak' && !catatan_super_admin) {
       return badRequestResponse(
-        'Catatan Super Admin wajib diisi jika pengajuan lowongan ditolak.'
+        'Catatan staff wajib diisi jika pengajuan lowongan ditolak.'
       );
     }
 

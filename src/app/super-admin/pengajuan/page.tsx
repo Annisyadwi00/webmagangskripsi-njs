@@ -315,7 +315,7 @@ export default function AdminPengajuanPage() {
     <main className="min-h-screen py-8">
       <div className="app-container">
         <PageHeader
-          eyebrow="Super Admin"
+          eyebrow="staff"
 title="Pengajuan Mahasiswa Magang"
           description="Pantau pengajuan magang mahasiswa, verifikasi data, dan tetapkan dosen pembimbing."
           action={

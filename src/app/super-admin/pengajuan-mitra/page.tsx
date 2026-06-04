@@ -219,7 +219,7 @@ export default function AdminPengajuanMitraPage() {
     <main className="min-h-screen py-8">
       <div className="app-container">
         <PageHeader
-          eyebrow="Super Admin"
+          eyebrow="staff"
 title="Pengajuan Mitra"
          description="Periksa pengajuan mitra dari mahasiswa, lalu setujui atau tolak berdasarkan kelayakan data mitra."
           action={

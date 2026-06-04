@@ -50,12 +50,12 @@ const faqs: FAQ[] = [
   {
     tanya: 'Siapa saja yang bisa menggunakan SI Magang?',
     jawab:
-      'Sistem ini digunakan oleh Mahasiswa, Dosen Pembimbing, Admin/Staff TU, dan Super Admin untuk mengelola proses magang sesuai kewenangan masing-masing.',
+      'Sistem ini digunakan oleh Mahasiswa, Dosen Pembimbing, Admin/Staff TU, dan staff untuk mengelola proses magang sesuai kewenangan masing-masing.',
   },
   {
     tanya: 'Bagaimana alur pengajuan magang?',
     jawab:
-      'Mahasiswa mengisi pendataan magang dan bukti penerimaan, kemudian Super Admin memverifikasi data serta menetapkan dosen pembimbing.',
+      'Mahasiswa mengisi pendataan magang dan bukti penerimaan, kemudian staff memverifikasi data serta menetapkan dosen pembimbing.',
   },
   {
     tanya: 'Apakah logbook masih digunakan di sistem?',
@@ -90,7 +90,7 @@ const features = [
 const steps = [
   'Mahasiswa melakukan registrasi menggunakan NPM/NIM dan email kampus.',
   'Mahasiswa mengisi pendataan magang dan mengunggah bukti penerimaan.',
-  'Super Admin memverifikasi pengajuan dan menetapkan dosen pembimbing.',
+  'staff memverifikasi pengajuan dan menetapkan dosen pembimbing.',
   'Mahasiswa melaksanakan magang sesuai periode yang diajukan.',
   'Mahasiswa mengunggah laporan akhir dalam bentuk PDF.',
   'Dosen pembimbing memeriksa laporan akhir dan menginput nilai akhir.',

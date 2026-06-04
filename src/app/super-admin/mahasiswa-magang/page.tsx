@@ -186,7 +186,7 @@ export default function SuperAdminMahasiswaMagangPage() {
       <main className="min-h-screen py-8">
         <div className="app-container">
           <PageHeader
-            eyebrow="Super Admin"
+            eyebrow="staff"
             title="Data Mahasiswa Magang"
             description={`Kelola rekap mahasiswa magang dan export data ke CSV. Halo, ${
               currentUser?.name || 'Super Admin'

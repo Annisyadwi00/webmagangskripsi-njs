@@ -32,7 +32,7 @@ export default function SuperAdminDashboardPage() {
         const message =
           error instanceof Error
             ? error.message
-            : 'Gagal memuat dashboard super admin.';
+            : 'Gagal memuat dashboard staff.';
 
         setErrorMsg(message);
       } finally {
@@ -83,7 +83,7 @@ export default function SuperAdminDashboardPage() {
       <main className="min-h-screen py-8">
         <div className="app-container">
           <PageHeader
-            eyebrow="Dashboard Super Admin"
+            eyebrow="Dashboard staff"
             title={`Halo, ${user?.name || 'Super Admin'}`}
             description="Kelola data mahasiswa magang, pengajuan magang, alokasi dosen pembimbing, pengajuan mitra, lowongan, dan user admin."
           />
@@ -113,7 +113,7 @@ export default function SuperAdminDashboardPage() {
             <StatCard
               title="Lowongan"
               value="-"
-              description="Lowongan magang yang dikelola super admin."
+              description="Lowongan magang yang dikelola staff."
               icon="check"
             />
           </section>
@@ -121,7 +121,7 @@ export default function SuperAdminDashboardPage() {
           <section className="app-card p-6">
             <div className="mb-5">
               <h2 className="text-xl font-black text-slate-950 dark:text-white">
-                Akses Cepat Super Admin
+                Akses Cepat staff
               </h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Pilih menu utama untuk mengelola proses magang.
@@ -197,7 +197,7 @@ export default function SuperAdminDashboardPage() {
                   User Management
                 </p>
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                  Kelola akun admin dan super admin.
+                  Kelola akun admin dan staff.
                 </p>
               </Link>
             </div>

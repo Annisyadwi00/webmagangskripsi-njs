@@ -216,9 +216,9 @@ export default function SuperAdminUsersPage() {
       <main className="min-h-screen py-8">
         <div className="app-container">
           <PageHeader
-            eyebrow="Super Admin"
+            eyebrow="staff"
             title="User Management"
-            description="Kelola akun Admin dan Super Admin. Akun mahasiswa dan dosen tidak ditampilkan pada halaman ini."
+            description="Kelola akun Admin dan staff. Akun mahasiswa dan dosen tidak ditampilkan pada halaman ini."
           />
 
           {message && <Alert variant="success">{message}</Alert>}
@@ -237,7 +237,7 @@ export default function SuperAdminUsersPage() {
                 Tambah User
               </h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Tambahkan akun Admin atau Super Admin.
+                Tambahkan akun Admin atau staff.
               </p>
 
               <form onSubmit={handleCreateUser} className="mt-6 space-y-5">
@@ -274,7 +274,7 @@ export default function SuperAdminUsersPage() {
                     className="app-input"
                   >
                     <option value="Admin">Admin / Staff TU</option>
-                    <option value="Super Admin">Super Admin</option>
+                    <option value="Super Admin">staff</option>
                   </select>
                 </div>
 

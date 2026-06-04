@@ -66,9 +66,9 @@ function getMagangSteps(status?: string) {
       status: getStatus('Belum_Ada'),
     },
     {
-      title: 'Verifikasi Admin',
-      description:
-        'Admin memeriksa data magang dan menentukan dosen pembimbing.',
+      title: 'Verifikasi Staff',
+description:
+  'Staff sedang memeriksa data magang dan menyiapkan penetapan dosen pembimbing.',
       status: getStatus('Menunggu_Verifikasi'),
     },
     {
@@ -278,7 +278,7 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
 
 {pengajuanAktif && (
   <Alert variant="success">
-    Pengajuan kamu sudah aktif. Dosen pembimbing telah ditentukan oleh admin.
+    Pengajuan kamu sudah aktif. Dosen pembimbing telah ditentukan oleh staff.
   </Alert>
 )}
 

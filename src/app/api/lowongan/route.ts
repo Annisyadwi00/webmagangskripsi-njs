@@ -58,7 +58,7 @@ export async function POST(request: Request) {
 
 if (!superAdmin) {
   return forbiddenResponse(
-    'Akses ditolak. Hanya Super Admin yang dapat membuat lowongan.'
+    'Akses ditolak. Hanya staff yang dapat membuat lowongan.'
   );
 }
 
@@ -137,7 +137,7 @@ export async function PUT(request: Request) {
 
 if (!superAdmin) {
   return forbiddenResponse(
-    'Akses ditolak. Hanya Super Admin yang dapat mengubah lowongan.'
+    'Akses ditolak. Hanya staff yang dapat mengubah lowongan.'
   );
 }
 

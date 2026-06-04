@@ -428,7 +428,7 @@ const handleUsePengajuanAsLowongan = (item: PengajuanLowongan) => {
     <main className="min-h-screen py-8">
       <div className="app-container">
         <PageHeader
-          eyebrow="Super Admin"
+          eyebrow="staff"
 title="Kelola Lowongan Magang"
 description="Tambah, ubah, nonaktifkan, hapus, dan validasi lowongan magang yang tampil di halaman pengguna."
           action={
@@ -1020,7 +1020,7 @@ description="Tambah, ubah, nonaktifkan, hapus, dan validasi lowongan magang yang
       </div>
 
       <div className="mt-5">
-        <label className="app-label">Catatan Super Admin</label>
+        <label className="app-label">Catatan staff</label>
         <textarea
           value={catatanSuperAdmin}
           onChange={(e) => setCatatanSuperAdmin(e.target.value)}
