@@ -44,10 +44,10 @@ User.init(
       allowNull: false,
     },
     role: {
-      type: DataTypes.ENUM('Admin', 'Mahasiswa', 'Dosen'),
-      allowNull: false,
-      defaultValue: 'Mahasiswa',
-    },
+  type: DataTypes.ENUM('Admin', 'Super Admin', 'Mahasiswa', 'Dosen'),
+  allowNull: false,
+  defaultValue: 'Mahasiswa',
+},
     nim_nidn: {
       type: DataTypes.STRING,
       allowNull: false,

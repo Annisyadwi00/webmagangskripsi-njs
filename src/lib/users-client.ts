@@ -1,6 +1,6 @@
 import { apiClient } from '@/lib/api-client';
 
-export type UserRole = 'Admin' | 'Mahasiswa' | 'Dosen';
+export type UserRole = 'Admin' | 'Super Admin' | 'Mahasiswa' | 'Dosen';
 
 export type User = {
   id: number;

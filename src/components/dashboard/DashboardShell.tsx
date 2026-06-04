@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import ThemeIcon from '@/components/ui/ThemeIcon';
 
-type DashboardRole = 'Mahasiswa' | 'Admin' | 'Dosen';
+type DashboardRole = 'Mahasiswa' | 'Admin' | 'Super Admin' | 'Dosen';
 
 type NavItem = {
   label: string;
@@ -23,32 +23,39 @@ const navItems: Record<DashboardRole, NavItem[]> = {
     { label: 'Dashboard', href: '/dashboard' },
     { label: 'Pengajuan Magang', href: '/pengajuan' },
     { label: 'Pengajuan Mitra', href: '/pengajuan-mitra' },
-    { label: 'Pengajuan Dokumen', href: '/pengajuan-dokumen' },
-    { label: 'Logbook', href: '/logbook' },
+    { label: 'Upload Laporan Akhir', href: '/laporan-akhir' },
     { label: 'Lowongan', href: '/lowongan' },
     { label: 'Settings', href: '/settings' },
   ],
+
   Admin: [
     { label: 'Dashboard', href: '/admin/dashboard' },
-    { label: 'Pengajuan Magang', href: '/admin/pengajuan' },
     { label: 'Pengajuan Mitra', href: '/admin/pengajuan-mitra' },
-    { label: 'Pengajuan Dokumen', href: '/admin/pengajuan-dokumen' },
-    { label: 'Pengguna', href: '/admin/users' },
     { label: 'Lowongan', href: '/admin/lowongan' },
-    { label: 'Feedback', href: '/admin/feedback' },
     { label: 'Activity Log', href: '/admin/activity' },
   ],
+
+  'Super Admin': [
+    { label: 'Dashboard', href: '/super-admin/dashboard' },
+    { label: 'Data Mahasiswa Magang', href: '/super-admin/mahasiswa-magang' },
+    { label: 'Pengajuan Magang', href: '/super-admin/pengajuan' },
+    { label: 'Alokasi Dosen', href: '/super-admin/alokasi-dosen' },
+    { label: 'Pengajuan Mitra', href: '/super-admin/pengajuan-mitra' },
+    { label: 'Lowongan', href: '/super-admin/lowongan' },
+    { label: 'User Management', href: '/super-admin/users' },
+  ],
+
   Dosen: [
     { label: 'Dashboard', href: '/dosen/dashboard' },
-    { label: 'Bimbingan', href: '/dosen/bimbingan' },
-    { label: 'Logbook', href: '/dosen/logbook' },
+    { label: 'Laporan Akhir', href: '/dosen/laporan-akhir' },
     { label: 'Penilaian', href: '/dosen/penilaian' },
     { label: 'Settings', href: '/settings' },
   ],
 };
 
 function getRoleLabel(role: DashboardRole) {
-  if (role === 'Admin') return 'Administrator';
+  if (role === 'Super Admin') return 'Super Admin';
+  if (role === 'Admin') return 'Staff TU';
   if (role === 'Dosen') return 'Dosen Pembimbing';
 
   return 'Mahasiswa';
@@ -129,7 +136,7 @@ export default function DashboardShell({ role, children }: DashboardShellProps) 
           </div>
         </Link>
 
-        <nav className="mt-8 space-y-2">
+     <nav className="mt-8 max-h-[calc(100vh-220px)] space-y-2 overflow-y-auto pr-1">
           {navItems[role].map((item) => (
             <Link
               key={item.href}
