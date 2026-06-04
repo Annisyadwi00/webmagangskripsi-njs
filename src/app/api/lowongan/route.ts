@@ -1,6 +1,6 @@
 import Job, { JobStatus, JobTipeKonversi, JobType } from '@/models/Job';
 import { connectDB } from '@/lib/db';
-import { requireAdmin } from '@/lib/auth';
+import { requireSuperAdmin } from '@/lib/auth';
 import {
   isValidEmail,
   isValidUrl,
@@ -17,7 +17,7 @@ import {
 } from '@/lib/api-response';
 
 const allowedJobTypes: JobType[] = ['Onsite', 'Hybrid', 'Remote'];
-const allowedTipeKonversi: JobTipeKonversi[] = ['Full', 'Parsial', 'Tidak'];
+const allowedTipeKonversi: JobTipeKonversi[] = [ 'Konversi 20 SKS', 'Tidak Konversi', 'Konversi 2 SKS',];
 const allowedStatus: JobStatus[] = ['Aktif', 'Nonaktif'];
 
 function parseKuota(value: unknown) {
@@ -52,15 +52,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    await connectDB();
+    await connectDB();    
 
-    const admin = await requireAdmin();
+    const superAdmin = await requireSuperAdmin();
 
-    if (!admin) {
-      return forbiddenResponse(
-        'Akses ditolak. Hanya Admin yang dapat membuat lowongan.'
-      );
-    }
+if (!superAdmin) {
+  return forbiddenResponse(
+    'Akses ditolak. Hanya Super Admin yang dapat membuat lowongan.'
+  );
+}
 
     const body = await request.json();
 
@@ -133,13 +133,13 @@ export async function PUT(request: Request) {
   try {
     await connectDB();
 
-    const admin = await requireAdmin();
+   const superAdmin = await requireSuperAdmin();
 
-    if (!admin) {
-      return forbiddenResponse(
-        'Akses ditolak. Hanya Admin yang dapat mengubah lowongan.'
-      );
-    }
+if (!superAdmin) {
+  return forbiddenResponse(
+    'Akses ditolak. Hanya Super Admin yang dapat mengubah lowongan.'
+  );
+}
 
     const body = await request.json();
     const { id, action } = body;

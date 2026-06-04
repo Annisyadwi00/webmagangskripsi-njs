@@ -1,7 +1,10 @@
 import { apiClient } from '@/lib/api-client';
 
 export type JobType = 'Onsite' | 'Hybrid' | 'Remote';
-export type JobTipeKonversi = 'Full' | 'Parsial' | 'Tidak';
+export type JobTipeKonversi =
+  | 'Konversi 20 SKS'
+  | 'Tidak Konversi'
+  | 'Konversi 2 SKS';
 export type JobStatus = 'Aktif' | 'Nonaktif';
 
 export type Lowongan = {

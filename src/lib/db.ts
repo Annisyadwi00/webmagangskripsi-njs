@@ -1,6 +1,6 @@
 import { Sequelize } from 'sequelize';
 import mysql2 from 'mysql2';
-
+import '@/models/PengajuanLowongan';
 const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {

@@ -57,18 +57,18 @@ export async function GET(request: Request) {
     const offset = (page - 1) * limit;
 
     const where =
-      user.role === 'Mahasiswa'
-        ? { user_id: user.id }
-        : user.role === 'Dosen'
-          ? { dosenId: user.id }
-          : undefined;
+  user.role === 'Mahasiswa'
+    ? { user_id: user.id }
+    : user.role === 'Dosen'
+      ? { dosenId: user.id }
+      : undefined;
 
-    if (!['Admin', 'Dosen', 'Mahasiswa'].includes(user.role)) {
-      return NextResponse.json(
-        { message: 'Role tidak valid.' },
-        { status: 403 }
-      );
-    }
+   if (!['Super Admin', 'Admin', 'Dosen', 'Mahasiswa'].includes(user.role)) {
+  return NextResponse.json(
+    { message: 'Role tidak valid.' },
+    { status: 403 }
+  );
+}
 
     const result = await Pengajuan.findAndCountAll({
       where,
@@ -387,7 +387,7 @@ await pengajuan.destroy();
       }
     }
 
-    if (user.role === 'Admin') {
+    if (user.role === 'Super Admin') {
       if (!body.id) {
         return NextResponse.json(
           { message: 'ID pengajuan wajib dikirim.' },
@@ -407,7 +407,7 @@ await pengajuan.destroy();
       if (action === 'setujui') {
   if (!body.dosenId || !body.nama_dosen) {
     return NextResponse.json(
-      { message: 'Dosen pembimbing wajib dipilih oleh admin.' },
+      { message: 'Dosen pembimbing wajib dipilih oleh staff.' },
       { status: 400 }
     );
   }
