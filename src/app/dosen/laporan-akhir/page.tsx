@@ -18,7 +18,7 @@ function getStatusBadgeClass(status?: string | null) {
 }
 
 function getStatusLabel(status?: string | null) {
-  if (status === 'Menunggu_Verifikasi') return 'Menunggu Verifikasi';
+  if (status === 'Menunggu_Verifikasi') return 'Menunggu Pemeriksaan';
   if (status === 'Aktif') return 'Aktif';
   if (status === 'Selesai') return 'Selesai';
   if (status === 'Ditolak') return 'Ditolak';
@@ -70,9 +70,11 @@ export default function DosenLaporanAkhirPage() {
   }, []);
 
   const filteredPengajuans = useMemo(() => {
-    const keyword = search.toLowerCase();
+  const keyword = search.toLowerCase();
 
-    return pengajuans.filter((item) => {
+  return pengajuans
+    .filter((item) => item.status === 'Aktif' || item.status === 'Selesai')
+    .filter((item) => {
       const matchesKeyword =
         item.nama_mahasiswa.toLowerCase().includes(keyword) ||
         (item.npm || '').toLowerCase().includes(keyword) ||
@@ -88,15 +90,19 @@ export default function DosenLaporanAkhirPage() {
 
       return matchesKeyword && matchesFilter;
     });
-  }, [pengajuans, search, filter]);
+}, [pengajuans, search, filter]);
 
-  const totalSudahUpload = pengajuans.filter(
-    (item) => item.link_laporan_akhir
-  ).length;
+const mahasiswaBimbingan = pengajuans.filter(
+  (item) => item.status === 'Aktif' || item.status === 'Selesai'
+);
 
-  const totalBelumUpload = pengajuans.filter(
-    (item) => !item.link_laporan_akhir
-  ).length;
+  const totalSudahUpload = mahasiswaBimbingan.filter(
+  (item) => item.link_laporan_akhir
+).length;
+
+const totalBelumUpload = mahasiswaBimbingan.filter(
+  (item) => !item.link_laporan_akhir
+).length;
 
   if (isLoading) {
     return (
@@ -132,19 +138,24 @@ export default function DosenLaporanAkhirPage() {
         <div className="app-container">
           <PageHeader
             eyebrow="Laporan Akhir"
-            title={`Laporan Akhir Mahasiswa ${user?.name || ''}`}
-            description="Lihat laporan akhir mahasiswa bimbingan yang sudah mengunggah file PDF."
+            title="Laporan Akhir Mahasiswa"
+description={`Lihat laporan akhir mahasiswa bimbingan yang sudah ditetapkan. ${user?.name ? `Dosen: ${user.name}` : ''}`}
             action={
-              <Link href="/dosen/penilaian" className="app-btn-primary">
-                Input Penilaian
-              </Link>
+              <div className="flex flex-col gap-3 sm:flex-row">
+  <Link href="/dosen/dashboard" className="app-btn-secondary">
+    Kembali ke Dashboard
+  </Link>
+
+  <Link href="/dosen/penilaian" className="app-btn-primary">
+    Input Penilaian
+  </Link>
+</div>
             }
           />
 
           {totalBelumUpload > 0 && (
             <Alert variant="warning">
-              Ada {totalBelumUpload} mahasiswa yang belum mengunggah laporan
-              akhir.
+              Ada {totalBelumUpload} mahasiswa bimbingan yang belum mengunggah laporan akhir.
             </Alert>
           )}
 
@@ -154,7 +165,7 @@ export default function DosenLaporanAkhirPage() {
                 Total Mahasiswa
               </p>
               <p className="mt-2 text-3xl font-black text-slate-950 dark:text-white">
-                {pengajuans.length}
+                {mahasiswaBimbingan.length}
               </p>
             </div>
 
