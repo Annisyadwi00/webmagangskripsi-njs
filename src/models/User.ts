@@ -44,7 +44,7 @@ User.init(
       allowNull: false,
     },
     role: {
-  type: DataTypes.ENUM('Admin', 'Super Admin', 'Mahasiswa', 'Dosen'),
+  type: DataTypes.ENUM('Admin', ' ', 'Mahasiswa', 'Dosen'),
   allowNull: false,
   defaultValue: 'Mahasiswa',
 },

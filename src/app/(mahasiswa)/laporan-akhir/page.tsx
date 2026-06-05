@@ -85,6 +85,25 @@ export default function LaporanAkhirMahasiswaPage() {
       return;
     }
 
+    if (!canUploadLaporan(pengajuan?.status)) {
+  setErrorMsg(
+    'Laporan akhir hanya dapat diunggah setelah pengajuan magang aktif.'
+  );
+  return;
+}
+
+function getStatusLabel(status?: string | null) {
+  if (status === 'Menunggu_Verifikasi') return 'Menunggu Pemeriksaan Staff';
+  if (status === 'Aktif') return 'Aktif';
+  if (status === 'Selesai') return 'Selesai';
+  if (status === 'Ditolak') return 'Ditolak';
+
+  return 'Belum Ada';
+}
+
+function canUploadLaporan(status?: string | null) {
+  return status === 'Aktif' || status === 'Selesai';
+}
     setIsSubmitting(true);
 
     try {
@@ -103,6 +122,8 @@ export default function LaporanAkhirMahasiswaPage() {
       setIsSubmitting(false);
     }
   };
+
+  const bolehUploadLaporan = canUploadLaporan(pengajuan?.status);
 
   if (isLoading) {
     return (
@@ -127,7 +148,7 @@ export default function LaporanAkhirMahasiswaPage() {
           <PageHeader
             eyebrow="Laporan Akhir"
             title="Upload Laporan Akhir Magang"
-            description="Unggah laporan akhir dalam bentuk PDF melalui link Google Drive kampus atau Drive pribadi yang dapat diakses."
+            description="Unggah laporan akhir dalam bentuk PDF melalui link Google Drive yang dapat diakses oleh dosen pembimbing."
             action={
               <Link href="/dashboard" className="app-btn-secondary">
                 Kembali ke Dashboard
@@ -145,19 +166,19 @@ export default function LaporanAkhirMahasiswaPage() {
             </Alert>
           )}
 
-          {pengajuan && pengajuan.status !== 'Aktif' && pengajuan.status !== 'Selesai' && (
-            <Alert variant="info">
-              Laporan akhir dapat diunggah setelah pengajuan magang aktif atau
-              selesai.
-            </Alert>
-          )}
+         {pengajuan && !bolehUploadLaporan && (
+  <Alert variant="info">
+    Laporan akhir dapat diunggah setelah pengajuan magang aktif. Saat ini
+    staff masih memeriksa data pengajuan kamu.
+  </Alert>
+)}
 
-          {pengajuan && !pengajuan.link_laporan_akhir && (
-            <Alert variant="warning">
-              Kamu belum mengunggah laporan akhir. Laporan akhir wajib diunggah
-              sebelum proses penilaian akhir.
-            </Alert>
-          )}
+          {pengajuan && bolehUploadLaporan && !pengajuan.link_laporan_akhir && (
+  <Alert variant="warning">
+    Kamu belum mengunggah laporan akhir. Laporan akhir wajib diunggah sebelum
+    dosen pembimbing dapat memproses penilaian akhir.
+  </Alert>
+)}
 
           <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="app-card p-6 lg:col-span-2">
@@ -179,13 +200,16 @@ export default function LaporanAkhirMahasiswaPage() {
                     onChange={(e) => setLinkLaporan(e.target.value)}
                     className="app-input"
                     placeholder="https://drive.google.com/..."
-                    disabled={!pengajuan}
+                    disabled={!pengajuan || !bolehUploadLaporan}
                   />
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+  Pastikan file berbentuk PDF dan akses link Google Drive tidak terkunci.
+</p>
                 </div>
 
                 <button
                   type="submit"
-                  disabled={!pengajuan || isSubmitting}
+                  disabled={!pengajuan || !bolehUploadLaporan || isSubmitting}
                   className="app-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? 'Menyimpan...' : 'Simpan Laporan Akhir'}
@@ -204,7 +228,7 @@ export default function LaporanAkhirMahasiswaPage() {
                     Status Pengajuan
                   </p>
                   <p className="mt-1 font-black text-slate-950 dark:text-white">
-                    {pengajuan?.status || 'Belum Ada'}
+                    {getStatusLabel(pengajuan?.status)}
                   </p>
                 </div>
 

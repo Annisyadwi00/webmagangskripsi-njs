@@ -145,7 +145,10 @@ export default function PengajuanMitraMahasiswaPage() {
         kelas: form.kelas.trim(),
       });
 
-      setMessage(result.message || 'Pengajuan mitra berhasil dikirim.');
+      setMessage(
+  result.message ||
+    'Pengajuan mitra berhasil dikirim dan akan diperiksa oleh staff.'
+);
       setForm(initialForm);
       await fetchData();
     } catch (error) {
@@ -191,7 +194,10 @@ export default function PengajuanMitraMahasiswaPage() {
 
           {message && <Alert variant="success">{message}</Alert>}
           {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
-
+              <Alert variant="info">
+  Pengajuan mitra yang dikirim akan diperiksa oleh staff terlebih dahulu sebelum
+  dinyatakan disetujui atau ditolak.
+</Alert>
           <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="app-card p-6 lg:col-span-2">
               <div className="mb-6">
@@ -273,7 +279,12 @@ export default function PengajuanMitraMahasiswaPage() {
                       name="kontak_narahubung_mitra"
                       required
                       value={form.kontak_narahubung_mitra}
-                      onChange={handleChange}
+                      onChange={(e) =>
+  setForm({
+    ...form,
+    kontak_narahubung_mitra: e.target.value.replace(/[^0-9]/g, ''),
+  })
+}
                       className="app-input"
                       placeholder="6285456123"
                     />
@@ -293,43 +304,41 @@ export default function PengajuanMitraMahasiswaPage() {
                   <div>
                     <label className="app-label">Nama Mahasiswa Pengusul</label>
                     <input
-                      type="text"
-                      name="nama_mahasiswa_pengusul"
-                      required
-                      value={form.nama_mahasiswa_pengusul}
-                      onChange={handleChange}
-                      className="app-input"
-                      placeholder="Nama lengkap"
-                    />
-                  </div>
+  type="text"
+  name="nama_mahasiswa_pengusul"
+  required
+  readOnly
+  value={form.nama_mahasiswa_pengusul}
+  onChange={handleChange}
+  className="app-input cursor-not-allowed bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+  placeholder="Nama lengkap"
+/>
+
+                  <input
+  type="text"
+  name="npm_mahasiswa_pengusul"
+  required
+  readOnly
+  value={form.npm_mahasiswa_pengusul}
+  onChange={handleChange}
+  className="app-input cursor-not-allowed bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+  placeholder="NPM dari data akademik"
+/>
 
                   <div>
-                    <label className="app-label">NPM Mahasiswa</label>
-                    <input
-                      type="text"
-                      name="npm_mahasiswa_pengusul"
-                      required
-                      value={form.npm_mahasiswa_pengusul}
-                      onChange={handleChange}
-                      className="app-input"
-                      placeholder="2210631170112"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="app-label">Program Studi</label>
-                    <select
-                      name="program_studi_mahasiswa"
-                      required
-                      value={form.program_studi_mahasiswa}
-                      onChange={handleChange}
-                      className="app-input"
-                    >
-                      <option value="">Pilih Program Studi</option>
-                      <option value="Informatika">Informatika</option>
-                      <option value="Sistem Informasi">Sistem Informasi</option>
-                    </select>
-                  </div>
+  <label className="app-label">Program Studi</label>
+  <input
+    type="text"
+    name="program_studi_mahasiswa"
+    required
+    readOnly
+    value={form.program_studi_mahasiswa}
+    onChange={handleChange}
+    className="app-input cursor-not-allowed bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+    placeholder="Program studi dari data akademik"
+  />
+</div>
+</div>
 
                   <div>
                     <label className="app-label">Angkatan</label>
@@ -351,7 +360,12 @@ export default function PengajuanMitraMahasiswaPage() {
                       name="kontak_mahasiswa"
                       required
                       value={form.kontak_mahasiswa}
-                      onChange={handleChange}
+                      onChange={(e) =>
+  setForm({
+    ...form,
+    kontak_mahasiswa: e.target.value.replace(/[^0-9]/g, ''),
+  })
+}
                       className="app-input"
                       placeholder="6285456123"
                     />

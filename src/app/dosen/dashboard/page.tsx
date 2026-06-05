@@ -8,6 +8,7 @@ import Alert from '@/components/ui/Alert';
 import { getDashboardPathByRole } from '@/lib/role-redirect';
 import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
 import { Pengajuan, getPengajuanList } from '@/lib/pengajuan-client';
+import DashboardShell from '@/components/dashboard/DashboardShell';
 
 function getStatusBadgeClass(status?: string) {
   if (status === 'Disetujui' || status === 'Aktif' || status === 'Selesai') {
@@ -92,6 +93,7 @@ const belumUploadLaporan = pengajuans.filter(
 
   if (isLoading) {
     return (
+      <DashboardShell role="Dosen">
       <main className="min-h-screen py-8">
         <div className="app-container">
           <div className="app-card p-8">
@@ -109,31 +111,30 @@ const belumUploadLaporan = pengajuans.filter(
           </div>
         </div>
       </main>
+      </DashboardShell>
     );
   }
 
   if (errorMsg) {
     return (
+      <DashboardShell role="Dosen">
       <main className="min-h-screen py-8">
         <div className="app-container">
           <Alert variant="error">{errorMsg}</Alert>
         </div>
       </main>
+      </DashboardShell>
     );
   }
 
   return (
+    <DashboardShell role="Dosen">
     <main className="min-h-screen py-8">
       <div className="app-container">
         <PageHeader
           eyebrow="Dashboard Dosen"
           title={`Halo, ${user?.name || 'Dosen'}`}
-          description="Pantau mahasiswa bimbingan yang telah ditetapkan admin, laporan akhir yang perlu diupload, dan penilaian akhir dari satu halaman."
-          action={
-            <Link href="/dosen/laporan-akhir" className="app-btn-primary">
-              Laporan
-            </Link>
-          }
+          description="Pantau mahasiswa bimbingan yang telah ditetapkan staff, laporan akhir yang perlu diperiksa, dan penilaian akhir dari satu halaman."
         />
 
         {belumDinilai.length > 0 && (
@@ -189,7 +190,7 @@ const belumUploadLaporan = pengajuans.filter(
                   Mahasiswa Bimbingan Aktif
                 </h2>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Mahasiswa yang telah ditetapkan admin/koorprodi sebagai bimbingan akan muncul di sini.
+                Mahasiswa yang telah ditetapkan sebagai bimbingan akan muncul di sini.
                 </p>
               </div>
 
@@ -230,7 +231,15 @@ const belumUploadLaporan = pengajuans.filter(
                       </div>
 
                       <span className={getStatusBadgeClass(item.status)}>
-                        {item.status}
+                       {getStatusLabel(item.status)}
+                       function getStatusLabel(status?: string | null) {
+  if (status === 'Menunggu_Verifikasi') return 'Menunggu Pemeriksaan';
+  if (status === 'Aktif') return 'Aktif';
+  if (status === 'Selesai') return 'Selesai';
+  if (status === 'Ditolak') return 'Ditolak';
+
+  return status || '-';
+}
                       </span>
                     </div>
 
@@ -277,14 +286,13 @@ const belumUploadLaporan = pengajuans.filter(
             </p>
 
             <div className="mt-5 space-y-3">
-              <Link
-                href="/dosen/bimbingan"
-                className="flex items-center justify-between rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 font-bold text-[#1e3a8a] hover:bg-blue-100 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300 dark:hover:bg-blue-400/20"
-              >
-                Mahasiswa Bimbingan
-                <span>→</span>
-              </Link>
-
+<Link
+  href="/dosen/laporan-akhir"
+  className="flex items-center justify-between rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 font-bold text-[#1e3a8a] hover:bg-blue-100 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300 dark:hover:bg-blue-400/20"
+>
+  Laporan Akhir
+  <span>→</span>
+</Link>
               action={
   <div className="flex flex-col gap-3 sm:flex-row">
     <Link href="/dosen/laporan-akhir" className="app-btn-primary">
@@ -394,5 +402,6 @@ const belumUploadLaporan = pengajuans.filter(
         </section>
       </div>
     </main>
+    </DashboardShell>
   );
 }
