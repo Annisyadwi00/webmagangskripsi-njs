@@ -274,7 +274,7 @@ if (tanggalMulai >= tanggalBerakhir) {
 
     return NextResponse.json(
       {
-        message: 'Pengajuan magang berhasil dikirim!',
+        message: 'Pengajuan magang berhasil dikirim dan akan diperiksa oleh staff.',
         data: newPengajuan,
       },
       { status: 201 }
@@ -333,7 +333,9 @@ export async function PUT(request: Request) {
 
         if (!pengajuan) {
           return NextResponse.json(
-            { message: 'Pengajuan aktif tidak ditemukan.' },
+            {message:
+    'Pengajuan aktif tidak ditemukan. Laporan akhir dapat diunggah setelah pengajuan disetujui oleh staff.',
+},
             { status: 404 }
           );
         }
@@ -488,7 +490,7 @@ await pengajuan.destroy();
     
       if (!pengajuan) {
         return NextResponse.json(
-          { message: 'Pengajuan bimbingan tidak ditemukan.' },
+          { message: 'Data mahasiswa bimbingan tidak ditemukan.' },
           { status: 404 }
         );
       }
@@ -525,6 +527,20 @@ await pengajuan.destroy();
     { status: 400 }
   );
 }
+
+if (
+  pengajuan.getDataValue('status') !== 'Aktif' &&
+  pengajuan.getDataValue('status') !== 'Selesai'
+) {
+  return NextResponse.json(
+    {
+      message:
+        'Penilaian akhir hanya dapat diproses untuk mahasiswa dengan status magang aktif atau selesai.',
+    },
+    { status: 400 }
+  );
+}
+
         await pengajuan.update({
   nilai_dari_dosen,
   nilai_kedisiplinan,
@@ -546,7 +562,7 @@ await pengajuan.destroy();
         });
     
         return NextResponse.json(
-          { message: 'Nilai dan rubrik evaluasi berhasil disimpan!' },
+          { message: 'Nilai akhir mahasiswa berhasil disimpan.' },
           { status: 200 }
         );
       }

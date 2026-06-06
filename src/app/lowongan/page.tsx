@@ -2,19 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import PageHeader from '@/components/ui/PageHeader';
-import StatCard from '@/components/ui/StatCard';
 import Alert from '@/components/ui/Alert';
 import { Lowongan, getLowonganList } from '@/lib/lowongan-client';
 
-function getTypeBadgeClass(type: string) {
-  if (type === 'Remote') {
-    return 'app-badge app-badge-green';
-  }
-
-  if (type === 'Hybrid') {
-    return 'app-badge app-badge-yellow';
-  }
+function getTypeBadgeClass(type?: string) {
+  if (type === 'Remote') return 'app-badge app-badge-green';
+  if (type === 'Hybrid') return 'app-badge app-badge-yellow';
 
   return 'app-badge app-badge-blue';
 }
@@ -31,32 +24,37 @@ function formatDate(date?: string | null) {
 
 export default function LowonganPage() {
   const [lowongan, setLowongan] = useState<Lowongan[]>([]);
+  const [selectedLowongan, setSelectedLowongan] = useState<Lowongan | null>(
+    null
+  );
+
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('Semua');
+  const [konversiFilter, setKonversiFilter] = useState('Semua');
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const fetchLowongan = async () => {
+    try {
+      setIsLoading(true);
+      setErrorMsg('');
+
+      const data = await getLowonganList();
+      setLowongan(data || []);
+    } catch (error) {
+      const msg =
+        error instanceof Error
+          ? error.message
+          : 'Gagal memuat data lowongan.';
+
+      setErrorMsg(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchLowongan = async () => {
-      try {
-        setIsLoading(true);
-        setErrorMsg('');
-
-        const data = await getLowonganList();
-        setLowongan(data);
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'Gagal mengambil data lowongan.';
-
-        setErrorMsg(message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchLowongan();
   }, []);
 
@@ -68,29 +66,31 @@ export default function LowonganPage() {
         item.title.toLowerCase().includes(keyword) ||
         item.company.toLowerCase().includes(keyword) ||
         item.location.toLowerCase().includes(keyword) ||
-        item.kategori.toLowerCase().includes(keyword);
+        item.kategori.toLowerCase().includes(keyword) ||
+        item.description.toLowerCase().includes(keyword);
 
       const matchesType = typeFilter === 'Semua' || item.type === typeFilter;
 
-      return matchesKeyword && matchesType;
-    });
-  }, [lowongan, search, typeFilter]);
+      const matchesKonversi =
+        konversiFilter === 'Semua' || item.tipeKonversi === konversiFilter;
 
-  const totalRemote = lowongan.filter((item) => item.type === 'Remote').length;
-  const totalHybrid = lowongan.filter((item) => item.type === 'Hybrid').length;
+      return matchesKeyword && matchesType && matchesKonversi;
+    });
+  }, [lowongan, search, typeFilter, konversiFilter]);
 
   if (isLoading) {
     return (
-      <main className="min-h-screen py-8">
+      <main className="min-h-screen bg-slate-50 py-10 dark:bg-slate-950">
         <div className="app-container">
           <div className="app-card p-8">
-            <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200" />
-            <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200" />
-            <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
-              {[1, 2, 3].map((item) => (
+            <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+            <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+
+            <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {[1, 2, 3, 4, 5, 6].map((item) => (
                 <div
                   key={item}
-                  className="h-36 animate-pulse rounded-2xl bg-slate-100"
+                  className="h-64 animate-pulse rounded-3xl bg-slate-100 dark:bg-slate-800"
                 />
               ))}
             </div>
@@ -100,55 +100,44 @@ export default function LowonganPage() {
     );
   }
 
-  if (errorMsg) {
-    return (
-      <main className="min-h-screen py-8">
-        <div className="app-container">
-          <Alert variant="error">{errorMsg}</Alert>
-        </div>
-      </main>
-    );
-  }
-
   return (
-    <main className="min-h-screen py-8">
+    <main className="min-h-screen bg-slate-50 py-10 dark:bg-slate-950">
       <div className="app-container">
-        <PageHeader
-          eyebrow="Bursa Magang"
-          title="Lowongan Magang"
-          description="Temukan informasi lowongan magang yang tersedia dan sesuai dengan minat serta kebutuhan konversi akademik."
-          action={
-            <Link href="/" className="app-btn-secondary">
-              Kembali ke Beranda
+        <section className="mb-8">
+          <Link
+            href="/"
+            className="text-sm font-black text-[#1e3a8a] dark:text-blue-300"
+          >
+            ← Kembali ke Landing Page
+          </Link>
+
+          <div className="mt-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a] dark:text-blue-300">
+                Lowongan Magang
+              </p>
+
+              <h1 className="mt-3 text-3xl font-black text-slate-950 dark:text-white md:text-5xl">
+                Cari lowongan magang yang sesuai.
+              </h1>
+
+              <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">
+                Pilih lowongan magang berdasarkan perusahaan, posisi, sistem
+                kerja, dan jenis konversi. Detail lowongan akan muncul tanpa
+                meninggalkan halaman ini.
+              </p>
+            </div>
+
+            <Link href="/ajukan-lowongan" className="app-btn-secondary">
+              Mitra Ajukan Lowongan
             </Link>
-          }
-        />
-
-        <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
-          <StatCard
-            title="Lowongan Aktif"
-            value={lowongan.length}
-            description="Total lowongan yang sedang tersedia."
-            icon="briefcase"
-          />
-
-          <StatCard
-            title="Remote"
-            value={totalRemote}
-            description="Lowongan yang dapat dikerjakan jarak jauh."
-            icon="document"
-          />
-
-          <StatCard
-            title="Hybrid"
-            value={totalHybrid}
-            description="Lowongan dengan kombinasi onsite dan remote."
-            icon="chart"
-          />
+          </div>
         </section>
 
-        <section className="app-card mb-6 p-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_220px]">
+        {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
+
+        <section className="app-card mb-8 p-6">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_220px_260px]">
             <div>
               <label className="app-label">Cari Lowongan</label>
               <input
@@ -161,7 +150,7 @@ export default function LowonganPage() {
             </div>
 
             <div>
-              <label className="app-label">Tipe Kerja</label>
+              <label className="app-label">Sistem Kerja</label>
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
@@ -173,121 +162,220 @@ export default function LowonganPage() {
                 <option value="Remote">Remote</option>
               </select>
             </div>
+
+            <div>
+              <label className="app-label">Tipe Konversi</label>
+              <select
+                value={konversiFilter}
+                onChange={(e) => setKonversiFilter(e.target.value)}
+                className="app-input"
+              >
+                <option value="Semua">Semua</option>
+                <option value="Konversi 20 SKS">Konversi 20 SKS</option>
+                <option value="Tidak Konversi">Tidak Konversi</option>
+                <option value="Konversi 2 SKS">Konversi 2 SKS</option>
+              </select>
+            </div>
           </div>
         </section>
 
         {filteredLowongan.length === 0 ? (
           <section className="app-card p-8 text-center">
-            <p className="font-bold text-slate-700">
+            <p className="font-bold text-slate-700 dark:text-slate-300">
               Lowongan tidak ditemukan.
             </p>
-            <p className="mt-2 text-sm text-slate-500">
-              Coba ubah kata kunci pencarian atau filter tipe kerja.
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              Coba ubah kata kunci pencarian atau filter yang dipilih.
             </p>
           </section>
         ) : (
-          <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {filteredLowongan.map((item) => (
-              <article
-                key={item.id}
-                className="app-card group flex flex-col p-6 hover:-translate-y-1 hover:shadow-xl"
-              >
-                <div className="mb-5 flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-black uppercase tracking-wide text-[#1e3a8a]">
-                      {item.company}
-                    </p>
+              <article key={item.id} className="app-card app-card-hover p-6">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h2 className="text-xl font-black text-slate-950 dark:text-white">
+                        {item.company}
+                      </h2>
 
-                    <h2 className="mt-2 text-xl font-black text-slate-950">
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        {item.location || 'Menyesuaikan'}
+                      </p>
+                    </div>
+
+                    <span className={getTypeBadgeClass(item.type)}>
+                      {item.type}
+                    </span>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+                    <p className="font-black text-slate-950 dark:text-white">
                       {item.title}
-                    </h2>
+                    </p>
 
-                    <p className="mt-2 text-sm text-slate-500">
-                      {item.location}
+                    <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                      {item.description}
                     </p>
                   </div>
 
-                  <span className={getTypeBadgeClass(item.type)}>
-                    {item.type}
-                  </span>
-                </div>
-
-                <p className="line-clamp-4 text-sm leading-6 text-slate-600">
-                  {item.description}
-                </p>
-
-                <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="app-panel p-4">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                      Kategori
-                    </p>
-                    <p className="mt-1 font-bold text-slate-950">
-                      {item.kategori}
-                    </p>
-                  </div>
-
-                  <div className="app-panel p-4">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                      Konversi
-                    </p>
-                    <p className="mt-1 font-bold text-slate-950">
+                  <div className="flex flex-wrap gap-2">
+                    <span className="app-badge app-badge-blue">
                       {item.tipeKonversi}
-                    </p>
+                    </span>
+
+                    <span className="app-badge app-badge-yellow">
+                      Kuota {item.kuota}
+                    </span>
+
+                    {item.isPaid && (
+                      <span className="app-badge app-badge-green">
+                        Paid
+                      </span>
+                    )}
                   </div>
 
-                  <div className="app-panel p-4">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                      Kuota
+                  <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                      Berlaku sampai: {formatDate(item.valid_until)}
                     </p>
-                    <p className="mt-1 font-bold text-slate-950">
-                      {item.kuota} mahasiswa
-                    </p>
-                  </div>
 
-                  <div className="app-panel p-4">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                      Batas Daftar
-                    </p>
-                    <p className="mt-1 font-bold text-slate-950">
-                      {formatDate(item.valid_until)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                  {item.link_pendaftaran ? (
-                    <a
-                      href={item.link_pendaftaran}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="app-btn-primary flex-1"
-                    >
-                      Daftar Lowongan
-                    </a>
-                  ) : (
                     <button
                       type="button"
-                      disabled
-                      className="app-btn-primary flex-1 cursor-not-allowed opacity-60"
+                      onClick={() => setSelectedLowongan(item)}
+                      className="app-btn-primary px-4 py-2 text-sm"
                     >
-                      Link Belum Tersedia
+                      Lihat Detail
                     </button>
-                  )}
-
-                  {item.email_perusahaan && (
-                    <a
-                      href={`mailto:${item.email_perusahaan}`}
-                      className="app-btn-secondary flex-1"
-                    >
-                      Hubungi Perusahaan
-                    </a>
-                  )}
+                  </div>
                 </div>
               </article>
             ))}
           </section>
         )}
       </div>
+
+      {selectedLowongan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+            onClick={() => setSelectedLowongan(null)}
+          />
+
+          <div className="relative z-10 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
+            <div className="mb-6">
+              <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
+                Detail Lowongan
+              </p>
+
+              <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+                {selectedLowongan.title}
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {selectedLowongan.company} • {selectedLowongan.location}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="app-panel p-4">
+                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                  Sistem Kerja
+                </p>
+                <p className="mt-1 font-black text-slate-950 dark:text-white">
+                  {selectedLowongan.type}
+                </p>
+              </div>
+
+              <div className="app-panel p-4">
+                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                  Konversi
+                </p>
+                <p className="mt-1 font-black text-slate-950 dark:text-white">
+                  {selectedLowongan.tipeKonversi}
+                </p>
+              </div>
+
+              <div className="app-panel p-4">
+                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                  Kuota
+                </p>
+                <p className="mt-1 font-black text-slate-950 dark:text-white">
+                  {selectedLowongan.kuota} mahasiswa
+                </p>
+              </div>
+
+              <div className="app-panel p-4">
+                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                  Kategori
+                </p>
+                <p className="mt-1 font-black text-slate-950 dark:text-white">
+                  {selectedLowongan.kategori || '-'}
+                </p>
+              </div>
+
+              <div className="app-panel p-4">
+                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                  Status Benefit
+                </p>
+                <p className="mt-1 font-black text-slate-950 dark:text-white">
+                  {selectedLowongan.isPaid ? 'Paid' : 'Unpaid'}
+                </p>
+              </div>
+
+              <div className="app-panel p-4">
+                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                  Batas Pendaftaran
+                </p>
+                <p className="mt-1 font-black text-slate-950 dark:text-white">
+                  {formatDate(selectedLowongan.valid_until)}
+                </p>
+              </div>
+            </div>
+
+            <div className="app-panel mt-5 p-4">
+              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                Deskripsi
+              </p>
+              <p className="mt-2 whitespace-pre-line text-sm leading-7 text-slate-700 dark:text-slate-300">
+                {selectedLowongan.description}
+              </p>
+            </div>
+
+            {selectedLowongan.email_perusahaan && (
+              <div className="app-panel mt-4 p-4">
+                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                  Email Perusahaan
+                </p>
+                <p className="mt-1 break-words font-black text-slate-950 dark:text-white">
+                  {selectedLowongan.email_perusahaan}
+                </p>
+              </div>
+            )}
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              {selectedLowongan.link_pendaftaran && (
+                <a
+                  href={selectedLowongan.link_pendaftaran}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="app-btn-primary flex-1"
+                >
+                  Daftar Lowongan
+                </a>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setSelectedLowongan(null)}
+                className="app-btn-secondary flex-1"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
