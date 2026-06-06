@@ -117,15 +117,7 @@ export default function LandingPage() {
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link href="/login" className="app-btn-primary">
-                  Masuk ke Portal
-                </Link>
-
-                <Link href="/lowongan" className="app-btn-secondary">
-                  Lihat Lowongan
-                </Link>
-
-                <Link href="/ajukan-lowongan" className="app-btn-secondary">
-                  Mitra Ajukan Lowongan
+                  Masuk
                 </Link>
               </div>
             </div>

@@ -99,18 +99,19 @@ export default function Navbar({ user: propUser }: { user?: NavbarUser | null })
   }
 
   const navItems = [
-    { label: 'Beranda', href: '/' },
-    { label: 'Lowongan', href: '/lowongan' },
-    { label: 'FAQ', href: '/#faq' },
-    { label: 'Feedback', href: '/#feedback' },
-  ];
+  { label: 'Beranda', href: '/' },
+  { label: 'Lowongan', href: '/lowongan' },
+  { label: 'FAQ', href: '/#faq' },
+  { label: 'Mitra', href: '/ajukan-lowongan' },
+];
 
   const getDashboardPath = () => {
-    if (user?.role === 'Admin') return '/admin/dashboard';
-    if (user?.role === 'Dosen') return '/dosen/dashboard';
+  if (user?.role === 'Super Admin') return '/super-admin/dashboard';
+  if (user?.role === 'Admin') return '/admin/dashboard';
+  if (user?.role === 'Dosen') return '/dosen/dashboard';
 
-    return '/dashboard';
-  };
+  return '/dashboard';
+};
 
   const getLinkClass = (href: string) => {
     const isActive = href === '/' ? pathname === '/' : pathname?.startsWith(href);
