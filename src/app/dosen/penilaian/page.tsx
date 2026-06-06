@@ -373,17 +373,28 @@ const mahasiswaBelumUploadLaporan = mahasiswaAktif.filter(
 
                       <td className="px-5 py-4">
   
+  <td className="px-5 py-4">
   <div className="flex flex-col gap-2 sm:flex-row">
-  {item.link_laporan_akhir && (
-    <a
-      href={item.link_laporan_akhir}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="app-btn-secondary px-4 py-2 text-sm"
+    {item.link_laporan_akhir && (
+      <a
+        href={item.link_laporan_akhir}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="app-btn-secondary px-4 py-2 text-sm"
+      >
+        Buka Laporan
+      </a>
+    )}
+
+    <button
+      type="button"
+      onClick={() => openNilaiModal(item)}
+      className="app-btn-primary px-4 py-2 text-sm"
     >
-      Buka Laporan
-    </a>
-  )}
+      Beri Nilai
+    </button>
+  </div>
+</td>
 
                         <button
                           type="button"

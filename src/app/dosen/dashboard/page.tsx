@@ -26,6 +26,15 @@ function getStatusBadgeClass(status?: string) {
   return 'app-badge app-badge-blue';
 }
 
+function getStatusLabel(status?: string | null) {
+  if (status === 'Menunggu_Verifikasi') return 'Menunggu Pemeriksaan';
+  if (status === 'Aktif') return 'Aktif';
+  if (status === 'Selesai') return 'Selesai';
+  if (status === 'Ditolak') return 'Ditolak';
+
+  return status || '-';
+}
+
 export default function DosenDashboardPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [pengajuans, setPengajuans] = useState<Pengajuan[]>([]);
@@ -131,11 +140,22 @@ const belumUploadLaporan = pengajuans.filter(
     <DashboardShell role="Dosen">
     <main className="min-h-screen py-8">
       <div className="app-container">
-        <PageHeader
-          eyebrow="Dashboard Dosen"
-          title={`Halo, ${user?.name || 'Dosen'}`}
-          description="Pantau mahasiswa bimbingan yang telah ditetapkan staff, laporan akhir yang perlu diperiksa, dan penilaian akhir dari satu halaman."
-        />
+      <PageHeader
+  eyebrow="Dashboard Dosen"
+  title={`Halo, ${user?.name || 'Dosen'}`}
+  description="Pantau mahasiswa bimbingan yang telah ditetapkan staff, laporan akhir yang perlu diperiksa, dan penilaian akhir dari satu halaman."
+  action={
+    <div className="flex flex-col gap-3 sm:flex-row">
+      <Link href="/dosen/laporan-akhir" className="app-btn-primary">
+        Lihat Laporan Akhir
+      </Link>
+
+      <Link href="/dosen/penilaian" className="app-btn-secondary">
+        Input Penilaian
+      </Link>
+    </div>
+  }
+/>
 
         {belumDinilai.length > 0 && (
           <Alert variant="info">
@@ -230,17 +250,9 @@ const belumUploadLaporan = pengajuans.filter(
                         </p>
                       </div>
 
-                      <span className={getStatusBadgeClass(item.status)}>
-                       {getStatusLabel(item.status)}
-                       function getStatusLabel(status?: string | null) {
-  if (status === 'Menunggu_Verifikasi') return 'Menunggu Pemeriksaan';
-  if (status === 'Aktif') return 'Aktif';
-  if (status === 'Selesai') return 'Selesai';
-  if (status === 'Ditolak') return 'Ditolak';
-
-  return status || '-';
-}
-                      </span>
+                    <span className={getStatusBadgeClass(item.status)}>
+  {getStatusLabel(item.status)}
+</span>
                     </div>
 
                     <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -293,17 +305,6 @@ const belumUploadLaporan = pengajuans.filter(
   Laporan Akhir
   <span>→</span>
 </Link>
-              action={
-  <div className="flex flex-col gap-3 sm:flex-row">
-    <Link href="/dosen/laporan-akhir" className="app-btn-primary">
-      Lihat Laporan Akhir
-    </Link>
-
-    <Link href="/dosen/penilaian" className="app-btn-secondary">
-      Input Penilaian
-    </Link>
-  </div>
-}
 
               <Link
                 href="/dosen/penilaian"

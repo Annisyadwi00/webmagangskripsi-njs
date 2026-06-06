@@ -22,6 +22,19 @@ function isValidUrl(value: string) {
   }
 }
 
+function getStatusLabel(status?: string | null) {
+  if (status === 'Menunggu_Verifikasi') return 'Menunggu Pemeriksaan Staff';
+  if (status === 'Aktif') return 'Aktif';
+  if (status === 'Selesai') return 'Selesai';
+  if (status === 'Ditolak') return 'Ditolak';
+
+  return 'Belum Ada';
+}
+
+function canUploadLaporan(status?: string | null) {
+  return status === 'Aktif' || status === 'Selesai';
+}
+
 export default function LaporanAkhirMahasiswaPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [pengajuan, setPengajuan] = useState<Pengajuan | null>(null);
@@ -90,19 +103,6 @@ export default function LaporanAkhirMahasiswaPage() {
     'Laporan akhir hanya dapat diunggah setelah pengajuan magang aktif.'
   );
   return;
-}
-
-function getStatusLabel(status?: string | null) {
-  if (status === 'Menunggu_Verifikasi') return 'Menunggu Pemeriksaan Staff';
-  if (status === 'Aktif') return 'Aktif';
-  if (status === 'Selesai') return 'Selesai';
-  if (status === 'Ditolak') return 'Ditolak';
-
-  return 'Belum Ada';
-}
-
-function canUploadLaporan(status?: string | null) {
-  return status === 'Aktif' || status === 'Selesai';
 }
     setIsSubmitting(true);
 

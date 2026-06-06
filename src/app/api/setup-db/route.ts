@@ -5,8 +5,6 @@ import sequelize, { connectDB } from "@/lib/db";
 import "@/models/User";
 import "@/models/Job";
 import "@/models/Pengajuan";
-import "@/models/Logbook";
-import "@/models/Feedback";
 
 export async function GET() {
   try {
