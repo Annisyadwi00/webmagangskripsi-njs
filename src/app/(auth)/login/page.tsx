@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import Alert from '@/components/ui/Alert';
+import { getDashboardPathByRole } from '@/lib/role-redirect';
 
 type LoginData = {
-  role: 'Admin' | 'Mahasiswa' | 'Dosen';
+  role: 'Admin' | 'Super Admin' | 'Mahasiswa' | 'Dosen';
   name: string;
   prodi?: string | null;
 };
@@ -22,30 +23,15 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const redirectByRole = (role?: string) => {
-    if (role === 'Mahasiswa') {
-      router.push('/dashboard');
-      return;
-    }
+  
 
-    if (role === 'Dosen') {
-      router.push('/dosen/dashboard');
-      return;
-    }
-
-    if (role === 'Admin') {
-      router.push('/admin/dashboard');
-      return;
-    }
+    router.push(getDashboardPathByRole(result.data.user.role));
 
     throw new Error('Role pengguna tidak valid.');
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    setIsLoading(true);
-    setErrorMsg('');
 
     try {
       const result = await apiClient<LoginData>('/api/auth/login', {
@@ -56,7 +42,7 @@ export default function LoginPage() {
         },
       });
 
-      redirectByRole(result.data?.role);
+      router.push(getDashboardPathByRole(result.data?.role));
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Terjadi kesalahan saat login.';
@@ -82,8 +68,8 @@ export default function LoginPage() {
               </h1>
 
               <p className="mt-5 text-base leading-7 text-slate-600 dark:text-slate-300">
-                Kelola pengajuan, logbook, bimbingan, dan evaluasi magang dalam
-                satu sistem yang terintegrasi.
+                Kelola pendataan magang, laporan akhir, dan evaluasi magang dalam
+satu sistem yang terintegrasi.
               </p>
 
               <div className="mt-8 grid grid-cols-1 gap-4">
@@ -92,16 +78,16 @@ export default function LoginPage() {
                     Mahasiswa
                   </p>
                   <p className="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                    Ajukan LOA, isi logbook, dan pantau hasil evaluasi magang.
+                    Ajukan pendataan magang, upload laporan akhir, dan pantau hasil evaluasi.
                   </p>
                 </div>
 
                 <div className="rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
                   <p className="font-black text-slate-950 dark:text-white">
-                    Dosen & Admin
+                    Dosen & Staff
                   </p>
                   <p className="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                    Validasi, bimbing, dan kelola proses magang secara rapi.
+                    Periksa data magang, kelola laporan akhir, dan proses penilaian secara rapi.
                   </p>
                 </div>
               </div>
