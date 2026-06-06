@@ -67,3 +67,13 @@ export async function resetUserPassword(id: number) {
     },
   });
 }
+
+export async function updateCurrentUserProfile(payload: { phone: string }) {
+  return apiClient<null>('/api/auth/me', {
+    method: 'PUT',
+    body: {
+      action: 'update_profile',
+      ...payload,
+    },
+  });
+}

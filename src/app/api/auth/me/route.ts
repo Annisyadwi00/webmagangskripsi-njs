@@ -62,38 +62,24 @@ export async function PUT(request: Request) {
     }
 
     if (action === 'update_profile') {
-      const name = trimString(body.name);
-      const phone = optionalTrimString(body.phone);
-      const photo = optionalTrimString(body.photo);
-      const semester = optionalTrimString(body.semester);
-      const kategori_dosen = optionalTrimString(body.kategori_dosen);
+  const phone = optionalTrimString(body.phone);
 
-      if (!name) {
-        return badRequestResponse('Nama wajib diisi.');
-      }
+  if (!phone) {
+    return badRequestResponse('Nomor WhatsApp wajib diisi.');
+  }
 
-      if (photo && !isValidUrl(photo)) {
-        return badRequestResponse('Format URL foto tidak valid.');
-      }
+  if (!/^62\d{8,15}$/.test(phone)) {
+    return badRequestResponse(
+      'Nomor WhatsApp harus diawali 62 dan hanya berisi angka. Contoh: 6285456123.'
+    );
+  }
 
-      const updateData: Record<string, string | null> = {
-        name,
-        phone,
-        photo,
-      };
+  await user.update({
+    phone,
+  });
 
-      if (currentUser.role === 'Mahasiswa') {
-        updateData.semester = semester;
-      }
-
-      if (currentUser.role === 'Dosen') {
-        updateData.kategori_dosen = kategori_dosen;
-      }
-
-      await user.update(updateData);
-
-      return messageResponse('Profil berhasil diperbarui.');
-    }
+  return messageResponse('Nomor WhatsApp berhasil diperbarui.');
+}
 
     if (action === 'update_password') {
       const currentPassword = trimString(body.currentPassword);

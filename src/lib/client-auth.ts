@@ -4,7 +4,7 @@ export type CurrentUser = {
   id: number;
   name: string;
   email: string;
-  role: 'Admin' | 'Mahasiswa' | 'Dosen';
+  role: 'Admin' | 'Super Admin' | 'Mahasiswa' | 'Dosen';
   nim_nidn: string;
   prodi?: string | null;
   semester?: string | null;
