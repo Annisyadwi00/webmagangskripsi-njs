@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 import Alert from '@/components/ui/Alert';
 import { createPengajuanLowongan } from '@/lib/pengajuan-lowongan-client';
 
@@ -122,8 +120,7 @@ export default function AjukanLowonganPage() {
   };
 
   return (
-    <>
-      <Navbar user={null} />
+  <main className="min-h-screen bg-slate-50 py-12 dark:bg-slate-950">
 
       <main className="min-h-screen bg-slate-50 py-12 dark:bg-slate-950">
         <div className="app-container">
@@ -398,9 +395,7 @@ export default function AjukanLowonganPage() {
             </div>
           </form>
         </div>
+      </main> 
       </main>
-
-      <Footer />
-    </>
   );
-}
+  }
