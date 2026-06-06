@@ -2,7 +2,12 @@ import { DataTypes, Model } from 'sequelize';
 import sequelize from '@/lib/db';
 
 export type JobType = 'Onsite' | 'Hybrid' | 'Remote';
-export type JobTipeKonversi = '20 sks' | 'Tidak Konversi' | 'Konversi 2 SKS';
+
+export type JobTipeKonversi =
+  | 'Konversi 20 SKS'
+  | 'Tidak Konversi'
+  | 'Konversi 2 SKS';
+
 export type JobStatus = 'Aktif' | 'Nonaktif';
 
 class Job extends Model {
@@ -55,12 +60,12 @@ Job.init(
     },
     tipeKonversi: {
       type: DataTypes.ENUM(
-  'Konversi 20 SKS',
-  'Tidak Konversi',
-  'Konversi 2 SKS'
-),
+        'Konversi 20 SKS',
+        'Tidak Konversi',
+        'Konversi 2 SKS'
+      ),
       allowNull: false,
-      defaultValue: 'Full',
+      defaultValue: 'Konversi 20 SKS',
     },
     kategori: {
       type: DataTypes.STRING,

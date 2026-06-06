@@ -1,7 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
 import sequelize from '@/lib/db';
 
-export type UserRole = 'Admin' | 'Mahasiswa' | 'Dosen';
+export type UserRole = 'Admin' | 'Super Admin' | 'Mahasiswa' | 'Dosen';
 
 class User extends Model {
   declare id: number;
@@ -14,10 +14,10 @@ class User extends Model {
   declare semester: string | null;
   declare kategori_dosen: string | null;
   declare kuota_bimbingan: number;
-  declare createdAt: Date;
-  declare updatedAt: Date;
   declare phone: string | null;
   declare photo: string | null;
+  declare createdAt: Date;
+  declare updatedAt: Date;
 }
 
 User.init(
@@ -44,10 +44,10 @@ User.init(
       allowNull: false,
     },
     role: {
-  type: DataTypes.ENUM('Admin', ' ', 'Mahasiswa', 'Dosen'),
-  allowNull: false,
-  defaultValue: 'Mahasiswa',
-},
+      type: DataTypes.ENUM('Admin', 'Super Admin', 'Mahasiswa', 'Dosen'),
+      allowNull: false,
+      defaultValue: 'Mahasiswa',
+    },
     nim_nidn: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -55,7 +55,7 @@ User.init(
     prodi: {
       type: DataTypes.STRING,
       allowNull: true,
-      defaultValue: 'S1 Informatika',
+      defaultValue: 'Belum Terverifikasi',
     },
     semester: {
       type: DataTypes.STRING,
@@ -74,13 +74,13 @@ User.init(
       },
     },
     phone: {
-  type: DataTypes.STRING,
-  allowNull: true,
-},
-photo: {
-  type: DataTypes.TEXT('long'),
-  allowNull: true,
-},
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    photo: {
+      type: DataTypes.TEXT('long'),
+      allowNull: true,
+    },
   },
   {
     sequelize,
