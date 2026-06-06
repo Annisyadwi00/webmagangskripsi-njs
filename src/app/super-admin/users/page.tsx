@@ -216,7 +216,7 @@ export default function SuperAdminUsersPage() {
       <main className="min-h-screen py-8">
         <div className="app-container">
           <PageHeader
-            eyebrow="staff"
+            eyebrow="Super Admin"
             title="User Management"
             description="Kelola akun Admin dan staff. Akun mahasiswa dan dosen tidak ditampilkan pada halaman ini."
           />

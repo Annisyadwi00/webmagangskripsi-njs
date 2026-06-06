@@ -79,10 +79,10 @@ const faqs: FAQ[] = [
       'Mahasiswa mengisi pendataan magang dan bukti penerimaan, kemudian staff memeriksa data serta menetapkan dosen pembimbing.',
   },
   {
-    tanya: 'Apakah logbook masih digunakan di sistem?',
-    jawab:
-      'Tidak. Pada alur terbaru, fitur logbook diganti dengan upload laporan akhir dalam bentuk PDF.',
-  },
+  tanya: 'Apakah laporan akhir wajib diunggah?',
+  jawab:
+    'Ya. Mahasiswa wajib mengunggah laporan akhir dalam bentuk PDF sebelum dosen pembimbing dapat memproses penilaian akhir.',
+},
   {
     tanya: 'Bagaimana proses penilaian akhir?',
     jawab:

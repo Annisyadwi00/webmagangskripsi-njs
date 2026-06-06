@@ -88,14 +88,6 @@ if (!superAdmin) {
       return badRequestResponse('Password minimal 8 karakter.');
     }
 
-    if (role === 'Mahasiswa' && !prodi) {
-  return badRequestResponse('Program studi wajib diisi untuk Mahasiswa.');
-}
-
-if (role === 'Dosen' && !kategori_dosen) {
-  return badRequestResponse('Kategori dosen wajib diisi untuk Dosen.');
-}
-
     const existingUser = await User.findOne({
       where: { email },
     });
@@ -158,6 +150,15 @@ if (!superAdmin) {
       return notFoundResponse('Pengguna tidak ditemukan.');
     }
 
+    if (
+  user.getDataValue('role') !== 'Admin' &&
+  user.getDataValue('role') !== 'Super Admin'
+) {
+  return forbiddenResponse(
+    'User management hanya dapat mengelola akun Admin dan staff.'
+  );
+}
+
     if (action === 'delete') {
       await user.destroy();
 
@@ -179,14 +180,6 @@ if (!superAdmin) {
         'Password berhasil direset.'
       );
     }
-if (
-  user.getDataValue('role') !== 'Admin' &&
-  user.getDataValue('role') !== 'Super Admin'
-) {
-  return forbiddenResponse(
-    'User management hanya dapat mengelola akun Admin dan staff.'
-  );
-}
     return badRequestResponse('Aksi tidak valid.');
   } catch (error) {
     console.error('UPDATE_USER_ERROR:', error);

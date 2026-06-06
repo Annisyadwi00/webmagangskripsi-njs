@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import User from '@/models/User';
 import { connectDB } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
-import { isValidUrl, optionalTrimString, trimString } from '@/lib/validators';
+import { optionalTrimString, trimString } from '@/lib/validators';
 import {
   successResponse,
   messageResponse,
