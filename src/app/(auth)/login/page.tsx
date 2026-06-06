@@ -23,15 +23,11 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  
-
-    router.push(getDashboardPathByRole(result.data.user.role));
-
-    throw new Error('Role pengguna tidak valid.');
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    setIsLoading(true);
+    setErrorMsg('');
 
     try {
       const result = await apiClient<LoginData>('/api/auth/login', {
@@ -68,8 +64,8 @@ export default function LoginPage() {
               </h1>
 
               <p className="mt-5 text-base leading-7 text-slate-600 dark:text-slate-300">
-                Kelola pendataan magang, laporan akhir, dan evaluasi magang dalam
-satu sistem yang terintegrasi.
+                Kelola pendataan magang, laporan akhir, dan evaluasi magang
+                dalam satu sistem yang terintegrasi.
               </p>
 
               <div className="mt-8 grid grid-cols-1 gap-4">
@@ -78,7 +74,8 @@ satu sistem yang terintegrasi.
                     Mahasiswa
                   </p>
                   <p className="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                    Ajukan pendataan magang, upload laporan akhir, dan pantau hasil evaluasi.
+                    Ajukan pendataan magang, upload laporan akhir, dan pantau
+                    hasil evaluasi.
                   </p>
                 </div>
 
@@ -87,7 +84,8 @@ satu sistem yang terintegrasi.
                     Dosen & Staff
                   </p>
                   <p className="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                    Periksa data magang, kelola laporan akhir, dan proses penilaian secara rapi.
+                    Periksa data magang, kelola laporan akhir, dan proses
+                    penilaian secara rapi.
                   </p>
                 </div>
               </div>
@@ -133,12 +131,9 @@ satu sistem yang terintegrasi.
                     Password
                   </label>
 
-                  <a
-                    href="#"
-                    className="text-sm font-bold text-[#1e3a8a] hover:underline dark:text-blue-300"
-                  >
-                    Lupa password?
-                  </a>
+                  <span className="text-sm font-bold text-slate-400">
+                    Hubungi staff jika lupa password
+                  </span>
                 </div>
 
                 <div className="relative">
