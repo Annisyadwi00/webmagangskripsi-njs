@@ -1,95 +1,73 @@
-# Sistem Informasi Magang Berbasis Web
+# SI Magang - Sistem Informasi Magang Berbasis Web
 
-Sistem Informasi Magang atau SI Magang adalah aplikasi berbasis web yang dikembangkan untuk membantu proses administrasi, monitoring, pelaporan, dan evaluasi kegiatan magang mahasiswa.
+SI Magang adalah aplikasi berbasis web yang dikembangkan untuk membantu proses pengelolaan kegiatan magang mahasiswa secara lebih terpusat dan terstruktur. Sistem ini dirancang untuk mendukung alur pendataan magang, pengajuan mitra, pengelolaan lowongan, upload laporan akhir, alokasi dosen pembimbing, hingga proses penilaian akhir magang.
 
-Project ini dibuat sebagai bagian dari tugas akhir/skripsi dan ditujukan untuk kebutuhan akademik, bukan untuk penggunaan komersial.
+Project ini dibuat sebagai bagian dari tugas akhir/skripsi dan digunakan untuk kebutuhan akademik, bukan untuk tujuan komersial.
 
-## Deskripsi Singkat
+## Fitur Utama
 
-SI Magang memfasilitasi beberapa proses utama dalam kegiatan magang, yaitu:
+### Mahasiswa
+- Registrasi menggunakan NPM/NIM dan email kampus.
+- Mengisi data pengajuan magang.
+- Mengajukan mitra magang.
+- Melihat daftar lowongan magang.
+- Mengunggah laporan akhir magang dalam bentuk link PDF.
+- Melihat status pengajuan dan proses magang.
+- Mengatur nomor WhatsApp pada halaman settings.
 
-- Pendaftaran dan pengajuan Letter of Acceptance (LOA)
-- Verifikasi pengajuan magang oleh Admin
-- Pemilihan dosen pembimbing oleh Mahasiswa
-- Pengisian logbook kegiatan magang
-- Evaluasi logbook oleh Dosen Pembimbing
-- Upload laporan akhir
-- Pemberian nilai akhir magang
-- Pengelolaan data pengguna
-- Pengelolaan informasi lowongan magang
-- Pengiriman pesan dan masukan melalui halaman landing page
+### Dosen Pembimbing
+- Melihat mahasiswa bimbingan.
+- Melihat laporan akhir mahasiswa.
+- Menginput penilaian akhir magang.
+- Menginput nilai mitra berdasarkan dokumen atau informasi resmi dari tempat magang.
 
-## Role Pengguna
+### Admin / Staff TU
+- Melihat pengajuan mitra.
+- Melihat data lowongan magang.
+- Melihat activity log sistem.
 
-Sistem ini memiliki tiga role utama:
+### Super Admin
+- Mengelola data mahasiswa magang.
+- Memverifikasi pengajuan magang.
+- Mengalokasikan dosen pembimbing.
+- Mengelola pengajuan mitra.
+- Mengelola lowongan magang.
+- Mengelola akun admin/staff.
 
-### 1. Admin
-
-Admin bertugas untuk:
-
-- Mengelola data pengguna
-- Memverifikasi pengajuan LOA mahasiswa
-- Mengelola data lowongan magang
-- Melihat feedback/pesan dari pengguna
-- Mengatur proses administrasi magang
-
-### 2. Mahasiswa
-
-Mahasiswa dapat:
-
-- Melakukan registrasi dan login
-- Mengajukan LOA magang
-- Memilih dosen pembimbing setelah pengajuan disetujui
-- Mengisi logbook kegiatan magang
-- Memperbaiki logbook jika diminta revisi
-- Mengunggah laporan akhir
-- Melihat status pengajuan dan evaluasi
-
-### 3. Dosen
-
-Dosen dapat:
-
-- Melihat daftar mahasiswa bimbingan
-- Menyetujui atau menolak permintaan bimbingan
-- Mengevaluasi logbook mahasiswa
-- Memberikan komentar revisi logbook
-- Memberikan nilai akhir magang
+### Mitra
+- Mengajukan lowongan magang melalui form publik.
+- Lowongan yang diajukan akan diperiksa terlebih dahulu sebelum ditampilkan pada sistem.
 
 ## Teknologi yang Digunakan
 
-Project ini dibangun menggunakan:
-
 - Next.js
-- React
 - TypeScript
 - Tailwind CSS
+- Node.js
 - Sequelize
 - MySQL
-- JSON Web Token
+- JWT Authentication
 - bcryptjs
 
-## Struktur Folder Utama
+## Struktur Role
 
-```txt
-src/
-├── app/
-│   ├── api/
-│   │   ├── auth/
-│   │   ├── feedback/
-│   │   ├── logbook/
-│   │   ├── lowongan/
-│   │   ├── pengajuan/
-│   │   └── users/
-│   └── ...
-├── lib/
-│   ├── auth.ts
-│   ├── db.ts
-│   ├── validators.ts
-│   └── api-response.ts
-├── models/
-│   ├── Feedback.ts
-│   ├── Job.ts
-│   ├── Logbook.ts
-│   ├── Pengajuan.ts
-│   └── User.ts
-└── components/
+Sistem ini memiliki 4 role utama:
+
+1. Mahasiswa
+2. Dosen
+3. Admin / Staff TU
+4. Super Admin
+
+Setiap role memiliki hak akses dan tampilan dashboard yang berbeda sesuai kebutuhan proses magang.
+
+## Alur Sistem
+
+1. Mahasiswa melakukan registrasi menggunakan NPM/NIM dan email kampus.
+2. Mahasiswa mengisi pengajuan magang.
+3. Staff memeriksa data pengajuan.
+4. Staff menetapkan dosen pembimbing.
+5. Mahasiswa melaksanakan magang sesuai periode yang diajukan.
+6. Mahasiswa mengunggah laporan akhir.
+7. Dosen pembimbing memeriksa laporan akhir.
+8. Dosen pembimbing menginput nilai akhir.
+9. Data magang dapat direkap oleh staff sesuai kebutuhan.
