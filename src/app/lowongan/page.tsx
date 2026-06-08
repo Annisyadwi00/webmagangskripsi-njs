@@ -108,13 +108,6 @@ export default function LowonganPage() {
 
   <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
     <div>
-      <Link
-        href="/"
-        className="inline-flex rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-black text-[#1e3a8a] hover:bg-blue-100 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300"
-      >
-        ← Kembali ke Beranda
-      </Link>
-
       <p className="mt-8 text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a] dark:text-blue-300">
         Lowongan Magang
       </p>
