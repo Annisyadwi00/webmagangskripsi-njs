@@ -22,12 +22,15 @@ type PengajuanForm = {
   npm: string;
   program_studi: string;
   angkatan: string;
+  semester: string;
   kelas: string;
 
   jenis_magang: string;
   no_hp_mahasiswa: string;
   foto_diri: string;
   bukti_penerimaan: string;
+
+  status_mitra: 'Terdaftar' | 'Belum Terdaftar';
 
   perusahaan: string;
   posisi: string;
@@ -47,9 +50,11 @@ const initialForm: PengajuanForm = {
   npm: '',
   program_studi: '',
   angkatan: '',
+  semester: '',
   kelas: '',
 
-  jenis_magang: 'Magang Berdampak',
+  jenis_magang: 'Maksimal 20 SKS',
+  status_mitra: 'Terdaftar',
   no_hp_mahasiswa: '',
   foto_diri: '',
   bukti_penerimaan: '',
@@ -66,6 +71,8 @@ const initialForm: PengajuanForm = {
   tgl_berakhir: '',
   rencana_magang: '',
 };
+
+const DRAFT_KEY = 'draft_pengajuan_magang';
 
 function getStatusBadgeClass(status?: string | null) {
   if (status === 'Aktif' || status === 'Selesai' || status === 'Disetujui') {
@@ -174,6 +181,9 @@ export default function PengajuanMahasiswaPage() {
   const [pengajuan, setPengajuan] = useState<Pengajuan | null>(null);
 
   const [form, setForm] = useState<PengajuanForm>(initialForm);
+  const isSistemInformasi =
+  form.program_studi.toLowerCase().includes('sistem informasi') ||
+  user?.prodi?.toLowerCase().includes('sistem informasi');
   const [linkLaporanAkhir, setLinkLaporanAkhir] = useState('');
 
   const [isLoading, setIsLoading] = useState(true);
@@ -202,19 +212,26 @@ export default function PengajuanMahasiswaPage() {
         : pengajuanData?.items || [];
 
       const userData = currentUser as CurrentUser & {
-        nim_nidn?: string | null;
-        prodi?: string | null;
-        kelas?: string | null;
-      };
+  nim_nidn?: string | null;
+  prodi?: string | null;
+  angkatan?: string | null;
+  semester?: string | null;
+  kelas?: string | null;
+  phone?: string | null;
+};
 
       setUser(currentUser);
       setForm((prev) => ({
-        ...prev,
-        nama_mahasiswa: prev.nama_mahasiswa || userData.name || '',
-        npm: prev.npm || userData.nim_nidn || '',
-        program_studi: prev.program_studi || userData.prodi || '',
-        kelas: prev.kelas || userData.kelas || '',
-      }));
+  ...prev,
+  nama_mahasiswa: userData.name || prev.nama_mahasiswa || '',
+  npm: userData.nim_nidn || prev.npm || '',
+  program_studi: userData.prodi || prev.program_studi || '',
+  angkatan: userData.angkatan || prev.angkatan || '',
+  semester: userData.semester || prev.semester || '',
+  kelas: userData.kelas || prev.kelas || '',
+  no_hp_mahasiswa: userData.phone || prev.no_hp_mahasiswa || '',
+}));
+
       setPengajuan(pengajuanItems[0] || null);
     } catch (error) {
       const errMessage =
@@ -231,6 +248,32 @@ export default function PengajuanMahasiswaPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+useEffect(() => {
+  const savedDraft = localStorage.getItem(DRAFT_KEY);
+
+  if (savedDraft && !pengajuan) {
+    try {
+      const parsedDraft = JSON.parse(savedDraft) as PengajuanForm;
+
+      setForm((prev) => ({
+        ...prev,
+        ...parsedDraft,
+        nama_mahasiswa: prev.nama_mahasiswa || parsedDraft.nama_mahasiswa,
+        npm: prev.npm || parsedDraft.npm,
+        program_studi: prev.program_studi || parsedDraft.program_studi,
+      }));
+    } catch {
+      localStorage.removeItem(DRAFT_KEY);
+    }
+  }
+}, [pengajuan]);
+
+useEffect(() => {
+  if (!pengajuan) {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
+  }
+}, [form, pengajuan]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -279,7 +322,8 @@ export default function PengajuanMahasiswaPage() {
       });
 
       setMessage(result.message || 'Pendataan magang berhasil dikirim.');
-      setForm(initialForm);
+      localStorage.removeItem(DRAFT_KEY);
+setForm(initialForm);
       await fetchData();
     } catch (error) {
       const errMessage =
@@ -424,7 +468,7 @@ export default function PengajuanMahasiswaPage() {
           {currentPengajuan?.status === 'Aktif' && (
             <Alert variant="success">
               Pengajuan kamu sudah aktif. Dosen pembimbing telah ditentukan oleh
-              admin.
+            staff.
             </Alert>
           )}
 
@@ -604,15 +648,13 @@ export default function PengajuanMahasiswaPage() {
                         onChange={handleChange}
                         className="app-input"
                       >
-                        <option value="Magang Berdampak">
-                          Magang Berdampak
-                        </option>
-                        <option value="Mandiri Konversi">
-                          Mandiri Konversi
-                        </option>
-                        <option value="Umum Mandiri Non-Konversi">
-                          Umum / Mandiri Non-Konversi
-                        </option>
+                        <option value="Maksimal 20 SKS">Maksimal 20 SKS</option>
+<option value="Tidak Konversi">Tidak Konversi</option>
+{isSistemInformasi && (
+  <option value="Magang 2 SKS Khusus SI">
+    Magang 2 SKS Khusus SI
+  </option>
+)}
                       </select>
                     </div>
 
@@ -808,19 +850,48 @@ export default function PengajuanMahasiswaPage() {
               ) : (
                 <div className="space-y-5">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <DetailItem
-                      label="Nama Mahasiswa"
-                      value={currentPengajuan.nama_mahasiswa}
-                    />
-                    <DetailItem label="NPM" value={currentPengajuan.npm} />
-                    <DetailItem
-                      label="Program Studi"
-                      value={currentPengajuan.program_studi}
-                    />
-                    <DetailItem
-                      label="Angkatan"
-                      value={currentPengajuan.angkatan}
-                    />
+                    <input
+  type="text"
+  name="nama_mahasiswa"
+  required
+  value={form.nama_mahasiswa}
+  readOnly
+  className="app-input cursor-not-allowed bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+  placeholder="Nama lengkap mahasiswa"
+/>
+                    <div>
+  <label className="app-label">Program Studi</label>
+  <input
+    type="text"
+    name="program_studi"
+    required
+    value={form.program_studi}
+    readOnly
+    className="app-input cursor-not-allowed bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+    placeholder="Program studi"
+  />
+</div>
+                   <div>
+  <label className="app-label">Semester</label>
+  <input
+    type="text"
+    name="semester"
+    required
+    value={form.semester}
+    readOnly
+    className="app-input cursor-not-allowed bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+    placeholder="Semester"
+  />
+</div>
+<input
+  type="text"
+  name="no_hp_mahasiswa"
+  required
+  value={form.no_hp_mahasiswa}
+  readOnly
+  className="app-input cursor-not-allowed bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+  placeholder="6285456123"
+/>
                     <DetailItem label="Kelas" value={currentPengajuan.kelas} />
                     <DetailItem
                       label="Jenis Magang"
@@ -925,7 +996,7 @@ export default function PengajuanMahasiswaPage() {
                     2. Verifikasi Admin
                   </p>
                   <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                    Admin memeriksa data dan dokumen pendukung.
+                  staff memeriksa data dan dokumen pendukung.
                   </p>
                 </div>
 
@@ -934,7 +1005,7 @@ export default function PengajuanMahasiswaPage() {
                     3. Penentuan Dosen
                   </p>
                   <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                    Admin/koorprodi menentukan dosen pembimbing magang.
+                  staff/koorprodi menentukan dosen pembimbing magang.
                   </p>
                 </div>
 

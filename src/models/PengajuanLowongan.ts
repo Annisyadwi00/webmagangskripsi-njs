@@ -10,6 +10,18 @@ export type PengajuanLowonganAttributes = {
   alamat_mitra: string | null;
   website_mitra: string | null;
 
+link_akta_pendirian: string | null;
+link_akta_direksi: string | null;
+link_ktp_penandatangan: string | null;
+link_npwp: string | null;
+link_izin_usaha: string | null;
+
+dokumen_akta_pendirian: string | null;
+dokumen_akta_direksi: string | null;
+dokumen_ktp_penandatangan: string | null;
+dokumen_npwp: string | null;
+dokumen_izin_usaha: string | null;
+
   nama_pic: string;
   kontak_pic: string;
   email_pic: string | null;
@@ -43,6 +55,11 @@ export type PengajuanLowonganCreationAttributes = Optional<
   | 'catatan_super_admin'
   | 'createdAt'
   | 'updatedAt'
+  | 'link_akta_pendirian'
+| 'link_akta_direksi'
+| 'link_ktp_penandatangan'
+| 'link_npwp'
+| 'link_izin_usaha'
 >;
 
 class PengajuanLowongan extends Model<
@@ -50,6 +67,18 @@ class PengajuanLowongan extends Model<
   PengajuanLowonganCreationAttributes
 > implements PengajuanLowonganAttributes {
   declare id: number;
+
+declare link_akta_pendirian: string | null;
+declare link_akta_direksi: string | null;
+declare link_ktp_penandatangan: string | null;
+declare link_npwp: string | null;
+declare link_izin_usaha: string | null;
+
+declare dokumen_akta_pendirian: string | null;
+declare dokumen_akta_direksi: string | null;
+declare dokumen_ktp_penandatangan: string | null;
+declare dokumen_npwp: string | null;
+declare dokumen_izin_usaha: string | null;
 
   declare nama_mitra: string;
   declare alamat_mitra: string | null;
@@ -151,6 +180,47 @@ PengajuanLowongan.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
+dokumen_akta_pendirian: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+dokumen_akta_direksi: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+dokumen_ktp_penandatangan: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+dokumen_npwp: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+dokumen_izin_usaha: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+
+link_akta_pendirian: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+link_akta_direksi: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+link_ktp_penandatangan: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+link_npwp: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+link_izin_usaha: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
 
     status: {
       type: DataTypes.ENUM('Menunggu', 'Disetujui', 'Ditolak'),
