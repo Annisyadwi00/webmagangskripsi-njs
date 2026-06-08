@@ -13,6 +13,41 @@ import {
   uploadLaporanAkhir,
 } from '@/lib/pengajuan-client';
 
+function getLaporanRequirement(jenisMagang?: string | null) {
+  if (jenisMagang === 'Maksimal 20 SKS') {
+    return {
+      showForm: true,
+      needLaporan: true,
+      needOutput: true,
+      labelLaporan: 'Laporan Akhir PDF',
+      labelOutput: 'Output Magang PDF',
+      emptyMessage:
+        'Laporan akhir dan output magang wajib diunggah sebelum penilaian akhir diproses.',
+    };
+  }
+
+  if (jenisMagang === 'Magang 2 SKS Khusus SI') {
+    return {
+      showForm: true,
+      needLaporan: true,
+      needOutput: false,
+      labelLaporan: 'Laporan Magang PDF',
+      labelOutput: '',
+      emptyMessage:
+        'Laporan magang wajib diunggah sebelum penilaian akhir diproses.',
+    };
+  }
+
+  return {
+    showForm: false,
+    needLaporan: false,
+    needOutput: false,
+    labelLaporan: '',
+    labelOutput: '',
+    emptyMessage: '',
+  };
+}
+
 function isValidUrl(value: string) {
   try {
     new URL(value);
@@ -32,19 +67,24 @@ function getStatusLabel(status?: string | null) {
 }
 
 function canUploadLaporan(status?: string | null) {
-  return status === 'Aktif' || status === 'Selesai';
+  return status === 'Aktif';
 }
 
 export default function LaporanAkhirMahasiswaPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [pengajuan, setPengajuan] = useState<Pengajuan | null>(null);
+
   const [linkLaporan, setLinkLaporan] = useState('');
+  const [linkOutputMagang, setLinkOutputMagang] = useState('');
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [message, setMessage] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  const requirement = getLaporanRequirement(pengajuan?.jenis_magang);
+  const bolehUploadLaporan = canUploadLaporan(pengajuan?.status);
 
   const fetchData = async () => {
     try {
@@ -66,11 +106,12 @@ export default function LaporanAkhirMahasiswaPage() {
       setUser(currentUser);
       setPengajuan(currentPengajuan);
       setLinkLaporan(currentPengajuan?.link_laporan_akhir || '');
+      setLinkOutputMagang(currentPengajuan?.link_output_magang || '');
     } catch (error) {
       const msg =
         error instanceof Error
           ? error.message
-          : 'Gagal memuat data laporan akhir.';
+          : 'Gagal memuat data laporan.';
 
       setErrorMsg(msg);
     } finally {
@@ -88,42 +129,66 @@ export default function LaporanAkhirMahasiswaPage() {
     setMessage('');
     setErrorMsg('');
 
-    if (!linkLaporan.trim()) {
-      setErrorMsg('Link laporan akhir wajib diisi.');
+    if (!pengajuan) {
+      setErrorMsg('Data pengajuan magang tidak ditemukan.');
       return;
     }
 
-    if (!isValidUrl(linkLaporan.trim())) {
-      setErrorMsg('Format link laporan akhir tidak valid.');
+    if (!bolehUploadLaporan) {
+      setErrorMsg(
+        'Dokumen hanya dapat diunggah setelah pengajuan magang aktif.'
+      );
       return;
     }
 
-    if (!canUploadLaporan(pengajuan?.status)) {
-  setErrorMsg(
-    'Laporan akhir hanya dapat diunggah setelah pengajuan magang aktif.'
-  );
-  return;
-}
+    if (!requirement.showForm) {
+      setErrorMsg('Jenis magang ini tidak memerlukan upload laporan.');
+      return;
+    }
+
+    if (requirement.needLaporan && !linkLaporan.trim()) {
+      setErrorMsg(`${requirement.labelLaporan} wajib diisi.`);
+      return;
+    }
+
+    if (linkLaporan.trim() && !isValidUrl(linkLaporan.trim())) {
+      setErrorMsg(`Format link ${requirement.labelLaporan} tidak valid.`);
+      return;
+    }
+
+    if (requirement.needOutput && !linkOutputMagang.trim()) {
+      setErrorMsg(`${requirement.labelOutput} wajib diisi.`);
+      return;
+    }
+
+    if (linkOutputMagang.trim() && !isValidUrl(linkOutputMagang.trim())) {
+      setErrorMsg(`Format link ${requirement.labelOutput} tidak valid.`);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const result = await uploadLaporanAkhir(linkLaporan.trim());
+      const result = await uploadLaporanAkhir({
+        link_laporan_akhir: linkLaporan.trim(),
+        link_output_magang: requirement.needOutput
+          ? linkOutputMagang.trim()
+          : null,
+      });
 
-      setMessage(result.message || 'Laporan akhir berhasil disimpan.');
+      setMessage(result.message || 'Dokumen magang berhasil disimpan.');
       await fetchData();
     } catch (error) {
       const msg =
         error instanceof Error
           ? error.message
-          : 'Gagal menyimpan laporan akhir.';
+          : 'Gagal menyimpan dokumen magang.';
 
       setErrorMsg(msg);
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const bolehUploadLaporan = canUploadLaporan(pengajuan?.status);
 
   if (isLoading) {
     return (
@@ -146,9 +211,9 @@ export default function LaporanAkhirMahasiswaPage() {
       <main className="min-h-screen py-8">
         <div className="app-container">
           <PageHeader
-            eyebrow="Laporan Akhir"
-            title="Upload Laporan Akhir Magang"
-            description="Unggah laporan akhir dalam bentuk PDF melalui link Google Drive yang dapat diakses oleh dosen pembimbing."
+            eyebrow="Laporan Magang"
+            title="Upload Dokumen Magang"
+            description="Lengkapi dokumen sesuai jenis magang yang kamu pilih."
             action={
               <Link href="/dashboard" className="app-btn-secondary">
                 Kembali ke Dashboard
@@ -162,112 +227,164 @@ export default function LaporanAkhirMahasiswaPage() {
           {!pengajuan && (
             <Alert variant="warning">
               Kamu belum memiliki pengajuan magang. Silakan isi pendataan magang
-              terlebih dahulu sebelum mengunggah laporan akhir.
+              terlebih dahulu.
             </Alert>
           )}
 
-         {pengajuan && !bolehUploadLaporan && (
-  <Alert variant="info">
-    Laporan akhir dapat diunggah setelah pengajuan magang aktif. Saat ini
-    staff masih memeriksa data pengajuan kamu.
-  </Alert>
-)}
+          {pengajuan && !bolehUploadLaporan && (
+            <Alert variant="info">
+              Dokumen magang dapat diunggah setelah pengajuan magang aktif.
+              Saat ini staff masih memeriksa data pengajuan kamu.
+            </Alert>
+          )}
 
-          {pengajuan && bolehUploadLaporan && !pengajuan.link_laporan_akhir && (
-  <Alert variant="warning">
-    Kamu belum mengunggah laporan akhir. Laporan akhir wajib diunggah sebelum
-    dosen pembimbing dapat memproses penilaian akhir.
-  </Alert>
-)}
+          {pengajuan && !requirement.showForm && (
+            <Alert variant="info">
+              Jenis magang Tidak Konversi tidak memerlukan pengunggahan laporan
+              melalui sistem.
+            </Alert>
+          )}
 
-          <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="app-card p-6 lg:col-span-2">
-              <h2 className="text-xl font-black text-slate-950 dark:text-white">
-                Form Upload Laporan Akhir
-              </h2>
+          {pengajuan && bolehUploadLaporan && requirement.showForm && (
+            <>
+              {!pengajuan.link_laporan_akhir && (
+                <Alert variant="warning">{requirement.emptyMessage}</Alert>
+              )}
 
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Masukkan link file PDF laporan akhir. Pastikan akses file tidak
-                terkunci agar dapat dilihat oleh dosen pembimbing.
-              </p>
+              <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                <div className="app-card p-6 lg:col-span-2">
+                  <h2 className="text-xl font-black text-slate-950 dark:text-white">
+                    Form Upload Dokumen
+                  </h2>
 
-              <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-                <div>
-                  <label className="app-label">Link Laporan Akhir PDF</label>
-                  <input
-                    type="url"
-                    value={linkLaporan}
-                    onChange={(e) => setLinkLaporan(e.target.value)}
-                    className="app-input"
-                    placeholder="https://drive.google.com/..."
-                    disabled={!pengajuan || !bolehUploadLaporan}
-                  />
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-  Pastikan file berbentuk PDF dan akses link Google Drive tidak terkunci.
-</p>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={!pengajuan || !bolehUploadLaporan || isSubmitting}
-                  className="app-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isSubmitting ? 'Menyimpan...' : 'Simpan Laporan Akhir'}
-                </button>
-              </form>
-            </div>
-
-            <div className="app-card p-6">
-              <h2 className="text-xl font-black text-slate-950 dark:text-white">
-                Status Laporan
-              </h2>
-
-              <div className="mt-5 space-y-4">
-                <div className="app-panel p-4">
-                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                    Status Pengajuan
-                  </p>
-                  <p className="mt-1 font-black text-slate-950 dark:text-white">
-                    {getStatusLabel(pengajuan?.status)}
-                  </p>
-                </div>
-
-                <div className="app-panel p-4">
-                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                    Periode Magang
-                  </p>
-                  <p className="mt-1 font-black text-slate-950 dark:text-white">
-                    {pengajuan
-                      ? `${pengajuan.tgl_mulai || '-'} sampai ${
-                          pengajuan.tgl_berakhir || '-'
-                        }`
-                      : '-'}
-                  </p>
-                </div>
-
-                <div className="app-panel p-4">
-                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                    Laporan Akhir
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Masukkan link dokumen PDF yang dapat diakses oleh dosen
+                    pembimbing dan staff.
                   </p>
 
-                  {pengajuan?.link_laporan_akhir ? (
-                    <a
-                      href={pengajuan.link_laporan_akhir}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2 inline-flex font-black text-[#1e3a8a] dark:text-blue-300"
+                  <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+                    <div>
+                      <label className="app-label">
+                        {requirement.labelLaporan}
+                      </label>
+                      <input
+                        type="url"
+                        required={requirement.needLaporan}
+                        value={linkLaporan}
+                        onChange={(e) => setLinkLaporan(e.target.value)}
+                        className="app-input"
+                        placeholder="https://drive.google.com/..."
+                      />
+                    </div>
+
+                    {requirement.needOutput && (
+                      <div>
+                        <label className="app-label">
+                          {requirement.labelOutput}
+                        </label>
+                        <input
+                          type="url"
+                          required
+                          value={linkOutputMagang}
+                          onChange={(e) => setLinkOutputMagang(e.target.value)}
+                          className="app-input"
+                          placeholder="https://drive.google.com/..."
+                        />
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="app-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Buka Laporan Akhir →
-                    </a>
-                  ) : (
-                    <p className="mt-1 font-black text-red-600 dark:text-red-400">
-                      Belum diunggah
-                    </p>
-                  )}
+                      {isSubmitting ? 'Menyimpan...' : 'Simpan Dokumen'}
+                    </button>
+                  </form>
                 </div>
-              </div>
-            </div>
-          </section>
+
+                <div className="app-card p-6">
+                  <h2 className="text-xl font-black text-slate-950 dark:text-white">
+                    Status Dokumen
+                  </h2>
+
+                  <div className="mt-5 space-y-4">
+                    <div className="app-panel p-4">
+                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                        Status Pengajuan
+                      </p>
+                      <p className="mt-1 font-black text-slate-950 dark:text-white">
+                        {getStatusLabel(pengajuan.status)}
+                      </p>
+                    </div>
+
+                    <div className="app-panel p-4">
+                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                        Jenis Magang
+                      </p>
+                      <p className="mt-1 font-black text-slate-950 dark:text-white">
+                        {pengajuan.jenis_magang || '-'}
+                      </p>
+                    </div>
+
+                    <div className="app-panel p-4">
+                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                        Periode Magang
+                      </p>
+                      <p className="mt-1 font-black text-slate-950 dark:text-white">
+                        {pengajuan.tgl_mulai || '-'} sampai{' '}
+                        {pengajuan.tgl_berakhir || '-'}
+                      </p>
+                    </div>
+
+                    <div className="app-panel p-4">
+                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                        {requirement.labelLaporan || 'Laporan'}
+                      </p>
+
+                      {pengajuan.link_laporan_akhir ? (
+                        <a
+                          href={pengajuan.link_laporan_akhir}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 inline-flex font-black text-[#1e3a8a] dark:text-blue-300"
+                        >
+                          Buka Dokumen →
+                        </a>
+                      ) : (
+                        <p className="mt-1 font-black text-red-600 dark:text-red-400">
+                          Belum diunggah
+                        </p>
+                      )}
+                    </div>
+
+                    {requirement.needOutput && (
+                      <div className="app-panel p-4">
+                        <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                          {requirement.labelOutput}
+                        </p>
+
+                        {pengajuan.link_output_magang ? (
+                          <a
+                            href={pengajuan.link_output_magang}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 inline-flex font-black text-[#1e3a8a] dark:text-blue-300"
+                          >
+                            Buka Output →
+                          </a>
+                        ) : (
+                          <p className="mt-1 font-black text-red-600 dark:text-red-400">
+                            Belum diunggah
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+            </>
+          )}
         </div>
       </main>
     </DashboardShell>

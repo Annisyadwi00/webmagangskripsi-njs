@@ -42,6 +42,7 @@ export type PengajuanAttributes = {
   semester_konversi: string | null;
 
   link_laporan_akhir: string | null;
+link_output_magang: string | null;
 
   nilai_dari_dosen: string | null;
   nilai_kedisiplinan: number | null;
@@ -85,6 +86,7 @@ export type PengajuanCreationAttributes = Optional<
   | 'matkulKonversi'
   | 'semester_konversi'
   | 'link_laporan_akhir'
+  | 'link_output_magang'
   | 'nilai_dari_dosen'
   | 'nilai_kedisiplinan'
   | 'nilai_materi'
@@ -136,7 +138,7 @@ class Pengajuan extends Model<
   declare semester_konversi: string | null;
 
   declare link_laporan_akhir: string | null;
-
+declare link_laporan_akhir: string | null;
   declare nilai_dari_dosen: string | null;
   declare nilai_kedisiplinan: number | null;
   declare nilai_materi: number | null;
@@ -268,7 +270,10 @@ Pengajuan.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
-
+link_output_magang: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
     nilai_dari_dosen: {
       type: DataTypes.STRING,
       allowNull: true,

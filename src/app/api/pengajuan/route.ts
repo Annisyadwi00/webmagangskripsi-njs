@@ -315,44 +315,58 @@ export async function PUT(request: Request) {
     if (user.role === 'Mahasiswa') {
 
       if (action === 'upload_laporan_akhir') {
-        const link_laporan_akhir = body.link_laporan_akhir?.trim();
+  const link_laporan_akhir = body.link_laporan_akhir?.trim();
+  const link_output_magang = body.link_output_magang?.trim() || null;
 
-        if (!link_laporan_akhir || !isValidUrl(link_laporan_akhir)) {
-          return NextResponse.json(
-            { message: 'Link laporan akhir tidak valid.' },
-            { status: 400 }
-          );
-        }
+  if (!link_laporan_akhir || !isValidUrl(link_laporan_akhir)) {
+    return NextResponse.json(
+      { message: 'Link laporan tidak valid.' },
+      { status: 400 }
+    );
+  }
 
-        const pengajuan = await Pengajuan.findOne({
-          where: {
-            user_id: user.id,
-            status: 'Aktif',
-          },
-        });
+  if (link_output_magang && !isValidUrl(link_output_magang)) {
+    return NextResponse.json(
+      { message: 'Link output magang tidak valid.' },
+      { status: 400 }
+    );
+  }
 
-        if (!pengajuan) {
-          return NextResponse.json(
-            {message:
-    'Pengajuan aktif tidak ditemukan. Laporan akhir dapat diunggah setelah pengajuan disetujui oleh staff.',
-},
-            { status: 404 }
-          );
-        }
+  const pengajuan = await Pengajuan.findOne({
+    where: {
+      user_id: user.id,
+      status: 'Aktif',
+    },
+  });
 
-        await pengajuan.update({ link_laporan_akhir });
-          await createActivityLog({
-  actor: user,
-  action: 'UPLOAD_LAPORAN_AKHIR',
-  description: `${user.name} mengunggah link laporan akhir magang.`,
-  target_id: pengajuan.getDataValue('id'),
-  target_type: 'Pengajuan',
-});
-        return NextResponse.json(
-          { message: 'Laporan akhir berhasil disimpan!' },
-          { status: 200 }
-        );
-      }
+  if (!pengajuan) {
+    return NextResponse.json(
+      {
+        message:
+          'Pengajuan aktif tidak ditemukan. Dokumen dapat diunggah setelah pengajuan disetujui oleh staff.',
+      },
+      { status: 404 }
+    );
+  }
+
+  await pengajuan.update({
+    link_laporan_akhir,
+    link_output_magang,
+  });
+
+  await createActivityLog({
+    actor: user,
+    action: 'UPLOAD_LAPORAN_AKHIR',
+    description: `${user.name} mengunggah dokumen magang.`,
+    target_id: pengajuan.getDataValue('id'),
+    target_type: 'Pengajuan',
+  });
+
+  return NextResponse.json(
+    { message: 'Dokumen magang berhasil disimpan!' },
+    { status: 200 }
+  );
+}
 
       if (action === 'batal') {
         const pengajuan = await Pengajuan.findOne({

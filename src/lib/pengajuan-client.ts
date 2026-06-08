@@ -41,6 +41,7 @@ export type Pengajuan = {
   semester_konversi: string | null;
 
   link_laporan_akhir: string | null;
+link_output_magang: string | null;
 
   dosenId: number | null;
   nama_dosen: string | null;
@@ -159,12 +160,15 @@ export async function createPengajuan(payload: CreatePengajuanPayload) {
   });
 }
 
-export async function uploadLaporanAkhir(link_laporan_akhir: string) {
+export async function uploadLaporanAkhir(payload: {
+  link_laporan_akhir: string;
+  link_output_magang?: string | null;
+}) {
   return apiClient<null>('/api/pengajuan', {
     method: 'PUT',
     body: {
       action: 'upload_laporan_akhir',
-      link_laporan_akhir,
+      ...payload,
     },
   });
 }

@@ -16,6 +16,7 @@ import {
   uploadLaporanAkhir,
 } from '@/lib/pengajuan-client';
 import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
+import { Mitra, getMitraList } from '@/lib/mitra-client';
 
 type PengajuanForm = {
   nama_mahasiswa: string;
@@ -29,7 +30,7 @@ type PengajuanForm = {
   no_hp_mahasiswa: string;
   foto_diri: string;
   bukti_penerimaan: string;
-
+mitra_id: string;
   status_mitra: 'Terdaftar' | 'Belum Terdaftar';
 
   perusahaan: string;
@@ -55,6 +56,7 @@ const initialForm: PengajuanForm = {
 
   jenis_magang: 'Maksimal 20 SKS',
   status_mitra: 'Terdaftar',
+  mitra_id: '',
   no_hp_mahasiswa: '',
   foto_diri: '',
   bukti_penerimaan: '',
@@ -179,6 +181,7 @@ function DetailItem({
 export default function PengajuanMahasiswaPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [pengajuan, setPengajuan] = useState<Pengajuan | null>(null);
+const [mitraList, setMitraList] = useState<Mitra[]>([]);
 
   const [form, setForm] = useState<PengajuanForm>(initialForm);
   const isSistemInformasi =
@@ -197,10 +200,25 @@ export default function PengajuanMahasiswaPage() {
       setIsLoading(true);
       setErrorMsg('');
 
-      const [currentUser, pengajuanData] = await Promise.all([
-        getCurrentUserClient(),
-        getPengajuanList(1, 10),
-      ]);
+if (form.status_mitra === 'Belum Terdaftar') {
+  setErrorMsg(
+    'Silakan ajukan mitra terlebih dahulu sebelum mengirim pengajuan magang.'
+  );
+  setIsSubmitting(false);
+  return;
+}
+
+if (form.status_mitra === 'Terdaftar' && !form.mitra_id) {
+  setErrorMsg('Silakan pilih mitra terdaftar terlebih dahulu.');
+  setIsSubmitting(false);
+  return;
+}
+
+      const [currentUser, pengajuanData, mitraData] = await Promise.all([
+  getCurrentUserClient(),
+  getPengajuanList(1, 10),
+  getMitraList(),
+]);
 
       if (currentUser.role !== 'Mahasiswa') {
         window.location.href = getDashboardPathByRole(currentUser.role);
@@ -221,6 +239,7 @@ export default function PengajuanMahasiswaPage() {
 };
 
       setUser(currentUser);
+      setMitraList(mitraData);
       setForm((prev) => ({
   ...prev,
   nama_mahasiswa: userData.name || prev.nama_mahasiswa || '',
@@ -285,6 +304,19 @@ useEffect(() => {
       [e.target.name]: e.target.value,
     });
   };
+
+  const handleSelectMitra = (mitraId: string) => {
+  const selectedMitra = mitraList.find((item) => String(item.id) === mitraId);
+
+  setForm((prev) => ({
+    ...prev,
+    mitra_id: mitraId,
+    perusahaan: selectedMitra?.nama_mitra || '',
+    alamat_tempat_magang: selectedMitra?.alamat || '',
+    nama_penanggung_jawab: '',
+    kontak_penanggung_jawab: selectedMitra?.kontak_wa || '',
+  }));
+};
 
   const handleSubmitPengajuan = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -659,17 +691,54 @@ setForm(initialForm);
                     </div>
 
                     <div>
-                      <label className="app-label">Nama Tempat Magang</label>
-                      <input
-                        type="text"
-                        name="perusahaan"
-                        required
-                        value={form.perusahaan}
-                        onChange={handleChange}
-                        className="app-input"
-                        placeholder="Contoh: PT. Sukamaju"
-                      />
-                    </div>
+  <label className="app-label">Status Mitra</label>
+  <select
+    name="status_mitra"
+    required
+    value={form.status_mitra}
+    onChange={handleChange}
+    className="app-input"
+  >
+    <option value="Terdaftar">Mitra sudah terdaftar</option>
+    <option value="Belum Terdaftar">Mitra belum terdaftar</option>
+  </select>
+</div>
+
+{form.status_mitra === 'Belum Terdaftar' ? (
+  <div className="md:col-span-2 rounded-2xl border border-yellow-100 bg-yellow-50 p-5 dark:border-yellow-400/20 dark:bg-yellow-400/10">
+    <p className="font-black text-yellow-800 dark:text-yellow-300">
+      Mitra belum terdaftar
+    </p>
+
+    <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
+      Silakan ajukan data mitra terlebih dahulu. Setelah pengajuan mitra
+      disetujui staff, mahasiswa dapat memilih mitra tersebut pada form
+      pengajuan magang.
+    </p>
+
+    <Link href="/ajukan-mitra" className="app-btn-primary mt-4">
+      Ajukan Mitra
+    </Link>
+  </div>
+) : (
+  <div>
+    <label className="app-label">Pilih Mitra</label>
+    <select
+      name="mitra_id"
+      required
+      value={form.mitra_id}
+      onChange={(e) => handleSelectMitra(e.target.value)}
+      className="app-input"
+    >
+      <option value="">Pilih mitra terdaftar</option>
+      {mitraList.map((mitra) => (
+        <option key={mitra.id} value={mitra.id}>
+          {mitra.nama_mitra}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
 
                     <div>
                       <label className="app-label">Posisi / Unit Kerja</label>
@@ -685,7 +754,7 @@ setForm(initialForm);
 
                     <div>
                       <label className="app-label">
-                        Link Foto Diri Profesional
+                        Foto Diri Profesional
                       </label>
                       <input
                         type="url"
