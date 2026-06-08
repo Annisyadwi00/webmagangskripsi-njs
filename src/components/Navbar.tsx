@@ -98,11 +98,11 @@ export default function Navbar({ user: propUser }: { user?: NavbarUser | null })
     return null;
   }
 
-  const navItems = [
+ const navItems = [
   { label: 'Beranda', href: '/' },
   { label: 'Lowongan', href: '/lowongan' },
-  { label: 'FAQ', href: '/#faq' },
-  { label: 'Mitra', href: '/ajukan-lowongan' },
+  { label: 'Mitra', href: '/mitra' },
+  { label: 'Ajukan Mitra', href: '/ajukan-mitra' },
 ];
 
   const getDashboardPath = () => {

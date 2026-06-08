@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import sequelize, { connectDB } from "@/lib/db";
 
 // Memanggil semua model agar Sequelize tahu tabel apa saja yang harus dibuat
-import "@/models/User";
-import "@/models/Job";
-import "@/models/Pengajuan";
+import '@/models/User';
+import '@/models/Job';
+import '@/models/Mitra';
+import '@/models/Pengajuan';
+import '@/models/PengajuanMitra';
+import '@/models/PengajuanLowongan';
+import '@/models/ActivityLog';
 
 export async function GET() {
   try {
