@@ -46,6 +46,8 @@ link_output_magang: string | null;
   dosenId: number | null;
   nama_dosen: string | null;
   status_dosen: StatusDosen | null;
+dosenPengujiId: number | null;
+nama_dosen_penguji: string | null;
 
   nilai_dari_dosen: string | null;
   nilai_kedisiplinan: number | null;
@@ -189,6 +191,8 @@ export async function setujuiPengajuan(payload: {
   semester_konversi?: string;
   dosenId: number;
   nama_dosen: string;
+  dosenPengujiId?: number | null;
+  nama_dosen_penguji?: string | null;
 }) {
   return apiClient<null>('/api/pengajuan', {
     method: 'PUT',

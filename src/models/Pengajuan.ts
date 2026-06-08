@@ -54,7 +54,8 @@ export type PengajuanAttributes = {
   dosenId: number | null;
   nama_dosen: string | null;
   status_dosen: StatusDosen | null;
-
+dosenPengujiId: number | null;
+nama_dosen_penguji: string | null;
   status: PengajuanStatus;
   alasan_penolakan: string | null;
 
@@ -96,6 +97,8 @@ export type PengajuanCreationAttributes = Optional<
   | 'dosenId'
   | 'nama_dosen'
   | 'status_dosen'
+  | 'dosenPengujiId'
+| 'nama_dosen_penguji'
   | 'status'
   | 'alasan_penolakan'
   | 'createdAt'
@@ -149,6 +152,8 @@ class Pengajuan extends Model<
   declare dosenId: number | null;
   declare nama_dosen: string | null;
   declare status_dosen: StatusDosen | null;
+declare dosenPengujiId: number | null;
+declare nama_dosen_penguji: string | null;
 
   declare status: PengajuanStatus;
   declare alasan_penolakan: string | null;
@@ -312,6 +317,15 @@ link_output_magang: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+dosenPengujiId: {
+  type: DataTypes.INTEGER,
+  allowNull: true,
+},
+nama_dosen_penguji: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+
     status_dosen: {
       type: DataTypes.ENUM('Menunggu', 'Disetujui', 'Ditolak'),
       allowNull: true,

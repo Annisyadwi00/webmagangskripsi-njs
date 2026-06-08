@@ -19,22 +19,20 @@ type AlokasiForm = {
   id: number;
   nama_mahasiswa: string;
   perusahaan: string;
-  tipeKonversi: string;
-  matkulInput: string;
-  semester_konversi: string;
   dosenId: string;
   nama_dosen: string;
+  dosenPengujiId: string;
+  nama_dosen_penguji: string;
 };
 
 const initialForm: AlokasiForm = {
   id: 0,
   nama_mahasiswa: '',
   perusahaan: '',
-  tipeKonversi: 'Konversi 20 SKS',
-  matkulInput: '',
-  semester_konversi: '',
   dosenId: '',
   nama_dosen: '',
+  dosenPengujiId: '',
+  nama_dosen_penguji: '',
 };
 
 function getStatusBadgeClass(status?: string | null) {
@@ -146,16 +144,17 @@ export default function SuperAdminAlokasiDosenPage() {
     setMessage('');
     setErrorMsg('');
 
-    setForm({
-      id: pengajuan.id,
-      nama_mahasiswa: pengajuan.nama_mahasiswa,
-      perusahaan: pengajuan.perusahaan,
-      tipeKonversi: pengajuan.tipeKonversi || 'Konversi 20 SKS',
-      matkulInput: pengajuan.matkulKonversi || '',
-      semester_konversi: pengajuan.semester_konversi || '',
-      dosenId: pengajuan.dosenId ? String(pengajuan.dosenId) : '',
-      nama_dosen: pengajuan.nama_dosen || '',
-    });
+   setForm({
+  id: pengajuan.id,
+  nama_mahasiswa: pengajuan.nama_mahasiswa,
+  perusahaan: pengajuan.perusahaan,
+  dosenId: pengajuan.dosenId ? String(pengajuan.dosenId) : '',
+  nama_dosen: pengajuan.nama_dosen || '',
+  dosenPengujiId: pengajuan.dosenPengujiId
+    ? String(pengajuan.dosenPengujiId)
+    : '',
+  nama_dosen_penguji: pengajuan.nama_dosen_penguji || '',
+});
   };
 
   const closeModal = () => {
@@ -173,36 +172,47 @@ export default function SuperAdminAlokasiDosenPage() {
     });
   };
 
+const handleDosenPengujiChange = (dosenId: string) => {
+  const dosen = dosens.find((item) => String(item.id) === dosenId);
+
+  setForm({
+    ...form,
+    dosenPengujiId: dosenId,
+    nama_dosen_penguji: dosen?.name || '',
+  });
+};
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.dosenId || !form.nama_dosen) {
-      setErrorMsg('Dosen pembimbing wajib dipilih.');
-      return;
-    }
+   if (!form.dosenId || !form.nama_dosen) {
+  setErrorMsg('Dosen pembimbing wajib dipilih.');
+  return;
+}
+
+if (!form.dosenPengujiId || !form.nama_dosen_penguji) {
+  setErrorMsg('Dosen penguji wajib dipilih.');
+  return;
+}
+
+if (form.dosenId === form.dosenPengujiId) {
+  setErrorMsg('Dosen pembimbing dan dosen penguji tidak boleh sama.');
+  return;
+}
 
     setIsSubmitting(true);
     setMessage('');
     setErrorMsg('');
 
     try {
-      const matkulKonversi =
-        form.tipeKonversi === 'Tidak Konversi'
-          ? []
-          : form.matkulInput
-              .split(',')
-              .map((item) => item.trim())
-              .filter(Boolean);
 
-      const result = await setujuiPengajuan({
-        id: form.id,
-        tipeKonversi: form.tipeKonversi,
-        matkulKonversi,
-        semester_konversi: form.semester_konversi,
-        dosenId: Number(form.dosenId),
-        nama_dosen: form.nama_dosen,
-      });
-
+     const result = await setujuiPengajuan({
+  id: form.id,
+  dosenId: Number(form.dosenId),
+  nama_dosen: form.nama_dosen,
+  dosenPengujiId: Number(form.dosenPengujiId),
+  nama_dosen_penguji: form.nama_dosen_penguji,
+});
       setMessage(
         result.message ||
           'Dosen pembimbing berhasil dialokasikan dan pengajuan disetujui.'
@@ -297,6 +307,8 @@ export default function SuperAdminAlokasiDosenPage() {
               />
             </div>
 
+
+
             {filteredPengajuans.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/70">
                 <p className="font-bold text-slate-700 dark:text-slate-300">
@@ -327,7 +339,11 @@ export default function SuperAdminAlokasiDosenPage() {
                           {item.perusahaan} - {item.posisi}
                         </p>
                       </div>
-
+{item.nama_dosen_penguji && (
+  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+    Penguji: {item.nama_dosen_penguji}
+  </p>
+)}
                       <button
                         type="button"
                         onClick={() => openModal(item)}
@@ -364,89 +380,62 @@ export default function SuperAdminAlokasiDosenPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <label className="app-label">Dosen Pembimbing</label>
-                  <select
-                    value={form.dosenId}
-                    onChange={(e) => handleDosenChange(e.target.value)}
-                    className="app-input"
-                  >
-                    <option value="">Pilih dosen</option>
-                    {dosens.map((dosen) => (
-                      <option key={dosen.id} value={dosen.id}>
-                        {dosen.name} - {dosen.prodi || '-'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+  <div>
+    <label className="app-label">Dosen Pembimbing</label>
+    <select
+      required
+      value={form.dosenId}
+      onChange={(e) => handleDosenChange(e.target.value)}
+      className="app-input"
+    >
+      <option value="">Pilih dosen pembimbing</option>
+      {dosens.map((dosen) => (
+        <option key={dosen.id} value={dosen.id}>
+          {dosen.name} - {dosen.prodi || '-'}
+        </option>
+      ))}
+    </select>
+  </div>
 
-                <div>
-                  <label className="app-label">Tipe Konversi</label>
-                  <select
-                    value={form.tipeKonversi}
-                    onChange={(e) =>
-                      setForm({ ...form, tipeKonversi: e.target.value })
-                    }
-                    className="app-input"
-                  >
-                    <option value="Konversi 20 SKS">Konversi 20 SKS</option>
-                    <option value="Tidak Konversi">Tidak Konversi</option>
-                    <option value="Konversi 2 SKS">
-                      Konversi 2 SKS khusus Sistem Informasi
-                    </option>
-                  </select>
-                </div>
+  <div>
+    <label className="app-label">Dosen Penguji</label>
+    <select
+      required
+      value={form.dosenPengujiId}
+      onChange={(e) => handleDosenPengujiChange(e.target.value)}
+      className="app-input"
+    >
+      <option value="">Pilih dosen penguji</option>
+      {dosens.map((dosen) => (
+        <option key={dosen.id} value={dosen.id}>
+          {dosen.name} - {dosen.prodi || '-'}
+        </option>
+      ))}
+    </select>
+    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+      Dosen penguji hanya digunakan untuk kebutuhan pengelolaan internal staff.
+    </p>
+  </div>
 
-                {form.tipeKonversi !== 'Tidak Konversi' && (
-                  <div>
-                    <label className="app-label">Mata Kuliah Konversi</label>
-                    <input
-                      type="text"
-                      value={form.matkulInput}
-                      onChange={(e) =>
-                        setForm({ ...form, matkulInput: e.target.value })
-                      }
-                      className="app-input"
-                      placeholder="Pisahkan dengan koma, contoh: Magang, Proyek Independen"
-                    />
-                  </div>
-                )}
+  <div className="flex flex-col gap-3 sm:flex-row">
+    <button
+      type="submit"
+      disabled={isSubmitting}
+      className="app-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {isSubmitting ? 'Menyimpan...' : 'Simpan Alokasi'}
+    </button>
 
-                <div>
-                  <label className="app-label">Semester Konversi</label>
-                  <input
-                    type="text"
-                    value={form.semester_konversi}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        semester_konversi: e.target.value,
-                      })
-                    }
-                    className="app-input"
-                    placeholder="Contoh: Semester 7"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="app-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isSubmitting ? 'Menyimpan...' : 'Simpan Alokasi'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    disabled={isSubmitting}
-                    className="app-btn-secondary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Batal
-                  </button>
-                </div>
-              </form>
+    <button
+      type="button"
+      onClick={closeModal}
+      disabled={isSubmitting}
+      className="app-btn-secondary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      Batal
+    </button>
+  </div>
+</form>
             </div>
           </div>
         )}

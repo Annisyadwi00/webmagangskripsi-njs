@@ -439,6 +439,8 @@ await pengajuan.destroy();
     status: 'Aktif',
     status_dosen: 'Disetujui',
     alasan_penolakan: null,
+    dosenPengujiId: body.dosenPengujiId || null,
+    nama_dosen_penguji: body.nama_dosen_penguji || null,
   });
 
   await createActivityLog({
