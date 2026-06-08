@@ -76,6 +76,13 @@ const initialForm: PengajuanForm = {
 
 const DRAFT_KEY = 'draft_pengajuan_magang';
 
+function getBuktiPenerimaanLink(item: {
+  bukti_penerimaan?: string | null;
+  link_loa?: string | null;
+}) {
+  return item.bukti_penerimaan || item.link_loa || '';
+}
+
 function getStatusBadgeClass(status?: string | null) {
   if (status === 'Aktif' || status === 'Selesai' || status === 'Disetujui') {
     return 'app-badge app-badge-green';
@@ -140,17 +147,17 @@ function getMagangSteps(status?: string | null) {
       status: getStatus('Belum_Ada'),
     },
     {
-      title: 'Verifikasi Admin',
+      title: 'Verifikasi Staff',
       description:
-        'Admin memeriksa data magang dan menentukan dosen pembimbing.',
+        'Staff memeriksa data magang dan menentukan dosen pembimbing.',
       status: getStatus('Menunggu_Verifikasi'),
     },
     {
-      title: 'Magang Aktif',
-      description:
-        'Mahasiswa melaksanakan magang dan mengisi logbook kegiatan.',
-      status: getStatus('Aktif'),
-    },
+  title: 'Magang Aktif',
+  description:
+    'Mahasiswa melaksanakan magang dan dapat mengunggah dokumen magang sesuai jenis magang.',
+  status: getStatus('Aktif'),
+},
     {
       title: 'Selesai',
       description: 'Dosen memberi evaluasi dan nilai akhir magang.',
@@ -471,7 +478,7 @@ setForm(initialForm);
           <PageHeader
             eyebrow="Pendataan Magang"
             title={`Pengajuan Magang ${user?.name || ''}`}
-            description="Isi data pendataan magang, pantau status verifikasi, dan unggah laporan akhir setelah magang aktif."
+            description="Isi data pendataan magang, pantau status pemeriksaan, dan unggah dokumen magang setelah status magang aktif."
             action={
               <Link href="/dashboard" className="app-btn-secondary">
                 Kembali ke Dashboard
@@ -492,7 +499,7 @@ setForm(initialForm);
 
           {currentPengajuan?.status === 'Menunggu_Verifikasi' && (
             <Alert variant="warning">
-              Pengajuan kamu sedang menunggu verifikasi admin. Pastikan bukti
+              Pengajuan kamu sedang menunggu verifikasi staff. Pastikan bukti
               penerimaan dan dokumen pendukung dapat diakses.
             </Alert>
           )}
@@ -526,7 +533,7 @@ setForm(initialForm);
             <StatCard
               title="Dosen Pembimbing"
               value={currentPengajuan?.nama_dosen || '-'}
-              description="Dosen pembimbing ditentukan oleh admin."
+              description="Dosen pembimbing ditentukan oleh staff."
               icon="users"
             />
 
@@ -986,7 +993,7 @@ setForm(initialForm);
                       label="Dosen Pembimbing"
                       value={
                         currentPengajuan.nama_dosen ||
-                        'Menunggu penentuan admin'
+                        'Menunggu penentuan staff'
                       }
                     />
                     <DetailItem
@@ -1062,7 +1069,7 @@ setForm(initialForm);
 
                 <div className="app-panel p-4">
                   <p className="font-black text-slate-950 dark:text-white">
-                    2. Verifikasi Admin
+                    2. Verifikasi Staff
                   </p>
                   <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                   staff memeriksa data dan dokumen pendukung.
@@ -1080,10 +1087,10 @@ setForm(initialForm);
 
                 <div className="app-panel p-4">
                   <p className="font-black text-slate-950 dark:text-white">
-                    4. Logbook & Nilai
+                    4. Laporan Akhir & Nilai
                   </p>
                   <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                    Mahasiswa mengisi logbook dan dosen memberi evaluasi akhir.
+                    Mahasiswa unggah laporan akhir dan dosen memberi evaluasi akhir.
                   </p>
                 </div>
               </div>

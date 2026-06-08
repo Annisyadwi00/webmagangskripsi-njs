@@ -74,7 +74,7 @@ description:
     {
       title: 'Magang Aktif',
       description:
-        'Mahasiswa melaksanakan magang dan mengisi logbook kegiatan.',
+        'Mahasiswa melaksanakan magang dan mengisi laporan/dokumen magang.',
       status: getStatus('Aktif'),
     },
     {
@@ -178,7 +178,7 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
         <PageHeader
           eyebrow="Dashboard Mahasiswa"
           title={`Halo, ${user?.name || 'Mahasiswa'}`}
-          description="Pantau progres magang, logbook, dan evaluasi akhir kamu dari satu halaman yang lebih ringkas."
+          description="Pantau progres magang, laporan/dokumen magang, dan evaluasi akhir kamu dari satu halaman yang lebih ringkas."
           action={
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link href="/pengajuan" className="app-btn-primary">
@@ -217,13 +217,13 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
     value={getStatusLabel(pengajuan?.status)}
     description={
       pengajuan?.status === 'Menunggu_Verifikasi'
-        ? 'Menunggu admin memverifikasi data magang.'
+        ? 'Menunggu staff memverifikasi data magang.'
         : pengajuan?.status === 'Aktif'
           ? 'Magang sudah aktif.'
           : pengajuan?.status === 'Selesai'
             ? 'Magang selesai dan nilai akhir tersedia.'
             : pengajuan?.status === 'Ditolak'
-              ? 'Pengajuan ditolak. Periksa catatan admin.'
+              ? 'Pengajuan ditolak. Periksa catatan staff.'
               : 'Belum ada pengajuan magang.'
     }
     icon="document"
@@ -272,7 +272,7 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
 
 {pengajuanMenunggu && (
   <Alert variant="warning">
-    Pengajuan kamu sedang menunggu verifikasi admin. Pastikan bukti penerimaan dan dokumen pendukung dapat diakses.
+    Pengajuan kamu sedang menunggu verifikasi staff. Pastikan bukti penerimaan dan dokumen pendukung dapat diakses.
   </Alert>
 )}
 
@@ -315,7 +315,7 @@ const pengajuanAktif = pengajuan?.status === 'Aktif';
                     Dosen Pembimbing
                   </p>
                   <p className="mt-1 font-black text-slate-950 dark:text-white">
-                  Dosen pembimbing yang ditentukan admin.
+                  Dosen pembimbing yang ditentukan staff.
                   </p>
                 </div>
 

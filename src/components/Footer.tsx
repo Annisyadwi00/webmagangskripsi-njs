@@ -41,7 +41,7 @@ export default function Footer() {
 
             <p className="mt-5 max-w-md text-sm leading-7 text-slate-500">
               Sistem informasi magang berbasis web untuk membantu proses
-              pengajuan LOA, pengisian logbook, bimbingan dosen, dan evaluasi
+              unggah dokumen magang, bimbingan dosen, dan evaluasi
               akhir mahasiswa.
             </p>
           </div>

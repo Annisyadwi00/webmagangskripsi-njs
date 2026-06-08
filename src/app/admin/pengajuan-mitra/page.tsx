@@ -244,7 +244,7 @@ export default function AdminPengajuanMitraPage() {
           <StatCard
             title="Disetujui"
             value={totalDisetujui}
-            description="Mitra yang sudah disetujui admin."
+            description="Mitra yang sudah disetujui staff."
             icon="check"
           />
 
@@ -398,7 +398,7 @@ export default function AdminPengajuanMitraPage() {
                 {item.catatan_admin && (
                   <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-400/20 dark:bg-blue-400/10">
                     <p className="text-xs font-black uppercase tracking-wide text-[#1e3a8a] dark:text-blue-300">
-                      Catatan Admin
+                      Catatan Staff
                     </p>
                     <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
                       {item.catatan_admin}
@@ -451,7 +451,7 @@ export default function AdminPengajuanMitraPage() {
 
               <div>
                 <label className="app-label">
-                  Catatan Admin{' '}
+                  Catatan Staff{' '}
                   {selectedStatus === 'Ditolak' ? '(Wajib)' : '(Opsional)'}
                 </label>
                 <textarea

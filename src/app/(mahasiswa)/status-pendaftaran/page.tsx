@@ -85,8 +85,8 @@ export default function StatusPendaftaranPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-orange-800">Pendaftaran Sedang Diproses</h3>
-                  <p className="mt-1 text-sm text-orange-700">Admin sedang mereview pendaftaran magang Anda. Proses review biasanya memakan waktu 1-3 hari kerja.</p>
-                  <p className="mt-2 text-sm text-orange-700 font-medium">Anda akan menerima notifikasi melalui email setelah admin memberikan keputusan.</p>
+                  <p className="mt-1 text-sm text-orange-700">Staff sedang mereview pendaftaran magang Anda. Proses review biasanya memakan waktu 1-3 hari kerja.</p>
+                  <p className="mt-2 text-sm text-orange-700 font-medium">Anda akan menerima notifikasi melalui email setelah staff memberikan keputusan.</p>
                 </div>
               </motion.div>
 
@@ -108,7 +108,7 @@ export default function StatusPendaftaranPage() {
                   {/* Step 2: Review (Current) */}
                   <div className="relative pl-8">
                     <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-orange-400 ring-4 ring-orange-50 animate-pulse"></div>
-                    <h4 className="font-bold text-[#1e3a8a]">Review Admin</h4>
+                    <h4 className="font-bold text-[#1e3a8a]">Review Staff</h4>
                     <p className="text-sm text-orange-600 font-medium mt-1">Sedang diproses...</p>
                   </div>
 
@@ -116,7 +116,7 @@ export default function StatusPendaftaranPage() {
                   <div className="relative pl-8 opacity-50">
                     <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-gray-300 border-2 border-white"></div>
                     <h4 className="font-medium text-gray-600">Pilih Dosen Pembimbing</h4>
-                    <p className="text-sm text-gray-500 mt-1">Menunggu approval admin</p>
+                    <p className="text-sm text-gray-500 mt-1">Menunggu approval staff</p>
                   </div>
 
                   {/* Step 4: Mulai */}

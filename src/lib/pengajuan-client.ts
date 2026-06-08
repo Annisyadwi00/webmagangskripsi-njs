@@ -25,6 +25,7 @@ export type Pengajuan = {
 
   perusahaan: string;
   posisi: string;
+  link_loa: string | null;
 
   alamat_tempat_magang: string | null;
   nama_penanggung_jawab: string | null;

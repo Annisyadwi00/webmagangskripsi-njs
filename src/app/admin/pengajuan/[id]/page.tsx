@@ -9,6 +9,13 @@ import { getDashboardPathByRole } from '@/lib/role-redirect';
 import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
 import { Pengajuan, getPengajuanById } from '@/lib/pengajuan-client';
 
+function getBuktiPenerimaanLink(item: {
+  bukti_penerimaan?: string | null;
+  link_loa?: string | null;
+}) {
+  return item.bukti_penerimaan || item.link_loa || '';
+}
+
 function getStatusBadgeClass(status?: string | null) {
   if (status === 'Aktif' || status === 'Selesai' || status === 'Disetujui') {
     return 'app-badge app-badge-green';

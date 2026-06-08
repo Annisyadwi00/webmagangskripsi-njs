@@ -26,6 +26,7 @@ export type PengajuanAttributes = {
 
   perusahaan: string;
   posisi: string;
+  link_loa: string | null;
 
   alamat_tempat_magang: string | null;
   nama_penanggung_jawab: string | null;
@@ -41,7 +42,7 @@ export type PengajuanAttributes = {
   semester_konversi: string | null;
 
   link_laporan_akhir: string | null;
-link_output_magang: string | null;
+  link_output_magang: string | null;
 
   nilai_dari_dosen: string | null;
   nilai_kedisiplinan: number | null;
@@ -121,6 +122,7 @@ class Pengajuan extends Model<
 
   declare perusahaan: string;
   declare posisi: string;
+  declare link_loa: string | null;
 
   declare alamat_tempat_magang: string | null;
   declare nama_penanggung_jawab: string | null;
@@ -136,7 +138,7 @@ class Pengajuan extends Model<
   declare semester_konversi: string | null;
 
   declare link_laporan_akhir: string | null;
-declare link_laporan_akhir: string | null;
+  declare link_output_magang: string | null;
   declare nilai_dari_dosen: string | null;
   declare nilai_kedisiplinan: number | null;
   declare nilai_materi: number | null;
@@ -187,6 +189,7 @@ Pengajuan.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    
 
     jenis_magang: {
       type: DataTypes.STRING,

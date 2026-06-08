@@ -36,7 +36,12 @@ const initialVerifikasiForm: VerifikasiForm = {
   dosenId: '',
   nama_dosen: '',
 };
-
+function getBuktiPenerimaanLink(item: {
+  bukti_penerimaan?: string | null;
+  link_loa?: string | null;
+}) {
+  return item.bukti_penerimaan || item.link_loa || '';
+}
 function getStatusBadgeClass(status?: string | null) {
   if (status === 'Aktif' || status === 'Selesai' || status === 'Disetujui') {
     return 'app-badge app-badge-green';

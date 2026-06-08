@@ -26,7 +26,7 @@ export default function KemitraanPage() {
               </li>
               <li className="flex gap-4">
                 <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0 font-bold">2</div>
-                <p className="text-gray-700 font-medium"><strong>Verifikasi Admin:</strong> Setiap lowongan yang dikirim akan diperiksa oleh admin fakultas dalam waktu maksimal 2x24 jam.</p>
+                <p className="text-gray-700 font-medium"><strong>Verifikasi Staff:</strong> Setiap lowongan yang dikirim akan diperiksa oleh staff fakultas dalam waktu maksimal 2x24 jam.</p>
               </li>
               <li className="flex gap-4">
                 <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0 font-bold">3</div>
