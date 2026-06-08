@@ -44,7 +44,7 @@ export async function GET() {
       );
     }
 
-    if (user.role === 'Admin') {
+    if (user.role === 'Admin' || user.role === 'Super Admin') {
       const data = await PengajuanMitra.findAll({
         order: [['createdAt', 'DESC']],
       });
@@ -231,12 +231,12 @@ export async function PUT(request: Request) {
       );
     }
 
-    if (user.role !== 'Admin') {
-      return NextResponse.json(
-        { message: 'Hanya admin yang dapat memverifikasi pengajuan mitra.' },
-        { status: 403 }
-      );
-    }
+    if (user.role !== 'Admin' && user.role !== 'Super Admin') {
+  return NextResponse.json(
+    { message: 'Hanya staff yang dapat memverifikasi pengajuan mitra.' },
+    { status: 403 }
+  );
+}
 
     const body = await request.json();
 

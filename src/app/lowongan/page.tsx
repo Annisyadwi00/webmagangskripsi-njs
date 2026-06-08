@@ -103,81 +103,124 @@ export default function LowonganPage() {
   return (
     <main className="min-h-screen bg-slate-50 py-10 dark:bg-slate-950">
       <div className="app-container">
-        <section className="mb-8">
-          <Link
-            href="/"
-            className="text-sm font-black text-[#1e3a8a] dark:text-blue-300"
-          >
-            ← Kembali ke Landing Page
-          </Link>
+        <section className="relative mb-8 overflow-hidden rounded-[2rem] border border-blue-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:p-8">
+  <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.14),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.10),transparent_30%)]" />
 
-          <div className="mt-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a] dark:text-blue-300">
-                Lowongan Magang
-              </p>
+  <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <Link
+        href="/"
+        className="inline-flex rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-black text-[#1e3a8a] hover:bg-blue-100 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300"
+      >
+        ← Kembali ke Beranda
+      </Link>
 
-              <h1 className="mt-3 text-3xl font-black text-slate-950 dark:text-white md:text-5xl">
-                Cari lowongan magang yang sesuai.
-              </h1>
+      <p className="mt-8 text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a] dark:text-blue-300">
+        Lowongan Magang
+      </p>
 
-              <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">
-                Pilih lowongan magang berdasarkan perusahaan, posisi, sistem
-                kerja, dan jenis konversi. Detail lowongan akan muncul tanpa
-                meninggalkan halaman ini.
-              </p>
-            </div>
+      <h1 className="mt-3 max-w-3xl text-4xl font-black leading-tight text-slate-950 dark:text-white md:text-5xl">
+        Temukan lowongan magang yang sesuai.
+      </h1>
 
-            <Link href="/ajukan-lowongan" className="app-btn-secondary">
-              Mitra Ajukan Lowongan
-            </Link>
-          </div>
-        </section>
+      <p className="mt-4 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300">
+        Jelajahi lowongan magang berdasarkan perusahaan, posisi, sistem kerja,
+        dan jenis konversi. Detail lowongan dapat dilihat tanpa meninggalkan
+        halaman ini.
+      </p>
+    </div>
+
+    <div className="rounded-3xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-400/20 dark:bg-blue-400/10 lg:w-72">
+      <p className="text-sm font-black text-[#1e3a8a] dark:text-blue-300">
+        Total Lowongan
+      </p>
+
+      <p className="mt-2 text-4xl font-black text-slate-950 dark:text-white">
+        {filteredLowongan.length}
+      </p>
+
+      <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">
+        lowongan sesuai filter
+      </p>
+    </div>
+  </div>
+</section>
 
         {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
 
-        <section className="app-card mb-8 p-6">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_220px_260px]">
-            <div>
-              <label className="app-label">Cari Lowongan</label>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="app-input"
-                placeholder="Cari posisi, perusahaan, lokasi, atau kategori..."
-              />
-            </div>
+        <section className="mb-8 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:p-6">
+  <div className="mb-5">
+    <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
+      Filter Lowongan
+    </p>
 
-            <div>
-              <label className="app-label">Sistem Kerja</label>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="app-input"
-              >
-                <option value="Semua">Semua</option>
-                <option value="Onsite">Onsite</option>
-                <option value="Hybrid">Hybrid</option>
-                <option value="Remote">Remote</option>
-              </select>
-            </div>
+    <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+      Cari berdasarkan kebutuhanmu
+    </h2>
+  </div>
 
-            <div>
-              <label className="app-label">Tipe Konversi</label>
-              <select
-                value={konversiFilter}
-                onChange={(e) => setKonversiFilter(e.target.value)}
-                className="app-input"
-              >
-                <option value="Semua">Semua</option>
-                <option value="Konversi 20 SKS">Konversi 20 SKS</option>
-                <option value="Tidak Konversi">Tidak Konversi</option>
-                <option value="Konversi 2 SKS">Konversi 2 SKS</option>
-              </select>
-            </div>
-          </div>
-        </section>
+  <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_220px_260px_auto]">
+    <div>
+      <label className="app-label">Kata Kunci</label>
+
+      <div className="relative">
+        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+          🔎
+        </span>
+
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="app-input pl-11"
+          placeholder="Cari posisi, perusahaan, lokasi..."
+        />
+      </div>
+    </div>
+
+    <div>
+      <label className="app-label">Sistem Kerja</label>
+      <select
+        value={typeFilter}
+        onChange={(e) => setTypeFilter(e.target.value)}
+        className="app-input"
+      >
+        <option value="Semua">Semua Sistem</option>
+        <option value="Onsite">Onsite</option>
+        <option value="Hybrid">Hybrid</option>
+        <option value="Remote">Remote</option>
+      </select>
+    </div>
+
+    <div>
+      <label className="app-label">Konversi</label>
+      <select
+        value={konversiFilter}
+        onChange={(e) => setKonversiFilter(e.target.value)}
+        className="app-input"
+      >
+        <option value="Semua">Semua Konversi</option>
+        <option value="Konversi 20 SKS">Konversi 20 SKS</option>
+        <option value="Tidak Konversi">Tidak Konversi</option>
+        <option value="Konversi 2 SKS">Konversi 2 SKS</option>
+      </select>
+    </div>
+
+    <div className="flex items-end">
+      <button
+        type="button"
+        onClick={() => {
+          setSearch('');
+          setTypeFilter('Semua');
+          setKonversiFilter('Semua');
+        }}
+        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 font-black text-slate-700 transition hover:border-[#1e3a8a] hover:bg-blue-50 hover:text-[#1e3a8a] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-blue-300 dark:hover:bg-blue-400/10 dark:hover:text-blue-300"
+      >
+        Reset
+      </button>
+    </div>
+  </div>
+</section>
 
         {filteredLowongan.length === 0 ? (
           <section className="app-card p-8 text-center">

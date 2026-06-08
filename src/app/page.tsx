@@ -280,10 +280,6 @@ export default function LandingPage() {
                 dahulu oleh staff sebelum ditampilkan kepada mahasiswa.
               </p>
             </div>
-
-            <Link href="/ajukan-lowongan" className="app-btn-primary">
-              Ajukan Lowongan
-            </Link>
           </div>
         </div>
       </section>
@@ -351,7 +347,7 @@ export default function LandingPage() {
             </div>
 
             <a
-              href="https://wa.me/628xxxxxxxxxx"
+              href="https://wa.me/6287896314494"
               target="_blank"
               rel="noopener noreferrer"
               className="app-btn-primary"

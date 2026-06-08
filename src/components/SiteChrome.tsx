@@ -19,12 +19,11 @@ const appRoutes = [
   '/dashboard',
   '/pengajuan',
   '/pengajuan-mitra',
-  '/pengajuan-dokumen',
-  '/logbook',
-  '/lowongan',
+  '/laporan-akhir',
   '/settings',
   '/admin',
   '/dosen',
+  '/super-admin',
 ];
 
 export default function SiteChrome({ children, user }: SiteChromeProps) {

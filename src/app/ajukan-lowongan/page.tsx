@@ -103,7 +103,7 @@ export default function AjukanLowonganPage() {
 
       setMessage(
         result.message ||
-          'Pengajuan lowongan berhasil dikirim. Tim akan memverifikasi data lowongan terlebih dahulu.'
+          'Pengajuan lowongan berhasil dikirim. Staff akan memeriksa data lowongan terlebih dahulu.'
       );
 
       setForm(initialForm);
@@ -122,36 +122,70 @@ export default function AjukanLowonganPage() {
   return (
   <main className="min-h-screen bg-slate-50 py-12 dark:bg-slate-950">
 
-      <main className="min-h-screen bg-slate-50 py-12 dark:bg-slate-950">
-        <div className="app-container">
-          <div className="mb-8">
-            <Link
-              href="/"
-              className="text-sm font-black text-[#1e3a8a] dark:text-blue-300"
-            >
-              ← Kembali ke Landing Page
-            </Link>
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-950">
+  <section className="relative overflow-hidden border-b border-slate-200 bg-white py-14 dark:border-slate-800 dark:bg-slate-900">
+    <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.14),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.12),transparent_30%)]" />
 
-            <p className="mt-6 text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a] dark:text-blue-300">
-              Pengajuan Lowongan Mitra
-            </p>
+    <div className="app-container">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px] lg:items-center">
+        <div>
+          <Link
+            href="/"
+            className="inline-flex rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-black text-[#1e3a8a] hover:bg-blue-100 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300"
+          >
+            ← Kembali ke Beranda
+          </Link>
 
-            <h1 className="mt-3 text-3xl font-black text-slate-950 dark:text-white md:text-5xl">
-              Ajukan Lowongan Magang
-            </h1>
+          <p className="mt-8 text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a] dark:text-blue-300">
+            Mitra SI Magang
+          </p>
 
-            <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">
-              Form ini digunakan oleh mitra/perusahaan/instansi untuk
-              mengajukan lowongan magang agar dapat ditampilkan pada website SI
-              Magang. Lowongan akan diverifikasi terlebih dahulu oleh Super
-              Admin sebelum dipublikasikan.
-            </p>
+          <h1 className="mt-3 text-4xl font-black leading-tight text-slate-950 dark:text-white md:text-5xl">
+            Ajukan lowongan magang untuk mahasiswa.
+          </h1>
+
+          <p className="mt-4 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300">
+            Form ini digunakan oleh mitra, perusahaan, atau instansi untuk
+            mengajukan lowongan magang agar dapat ditampilkan pada sistem.
+            Lowongan akan diperiksa terlebih dahulu oleh staff sebelum
+            dipublikasikan.
+          </p>
+        </div>
+
+        <div className="rounded-[2rem] border border-blue-100 bg-blue-50 p-6 dark:border-blue-400/20 dark:bg-blue-400/10">
+          <p className="text-sm font-black uppercase tracking-[0.16em] text-[#1e3a8a] dark:text-blue-300">
+            Alur Pengajuan
+          </p>
+
+          <div className="mt-5 space-y-4">
+            {[
+              'Mitra mengisi data lowongan.',
+              'Staff memeriksa kelengkapan data.',
+              'Lowongan yang sesuai akan dipublikasikan.',
+            ].map((item, index) => (
+              <div key={item} className="flex gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#1e3a8a] text-sm font-black text-white">
+                  {index + 1}
+                </div>
+
+                <p className="pt-1 text-sm font-bold leading-6 text-slate-700 dark:text-slate-300">
+                  {item}
+                </p>
+              </div>
+            ))}
           </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
+  <section className="py-10">
+    <div className="app-container">
           {message && <Alert variant="success">{message}</Alert>}
           {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
 
-          <form onSubmit={handleSubmit} className="app-card p-6 md:p-8">
+          <form onSubmit={handleSubmit}
+  className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:p-8">
             <section className="mb-8">
               <h2 className="text-xl font-black text-slate-950 dark:text-white">
                 Data Mitra
@@ -395,6 +429,7 @@ export default function AjukanLowonganPage() {
             </div>
           </form>
         </div>
+        </section>
       </main> 
       </main>
   );
