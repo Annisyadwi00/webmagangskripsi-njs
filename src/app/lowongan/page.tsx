@@ -59,16 +59,21 @@ export default function LowonganPage() {
   }, []);
 
   const filteredLowongan = useMemo(() => {
-    const keyword = search.toLowerCase();
+  const keyword = search.toLowerCase();
 
-    return lowongan.filter((item) => {
-      const matchesKeyword =
-        item.title.toLowerCase().includes(keyword) ||
-        item.company.toLowerCase().includes(keyword) ||
-        item.location.toLowerCase().includes(keyword) ||
-        item.kategori.toLowerCase().includes(keyword) ||
-        item.description.toLowerCase().includes(keyword);
+  return lowongan.filter((item) => {
+    const title = item.title || '';
+    const company = item.company || '';
+    const location = item.location || '';
+    const kategori = item.kategori || '';
+    const description = item.description || '';
 
+    const matchesKeyword =
+      title.toLowerCase().includes(keyword) ||
+      company.toLowerCase().includes(keyword) ||
+      location.toLowerCase().includes(keyword) ||
+      kategori.toLowerCase().includes(keyword) ||
+      description.toLowerCase().includes(keyword);
       const matchesType = typeFilter === 'Semua' || item.type === typeFilter;
 
       const matchesKonversi =
@@ -192,10 +197,11 @@ export default function LowonganPage() {
         onChange={(e) => setKonversiFilter(e.target.value)}
         className="app-input"
       >
-        <option value="Semua">Semua Konversi</option>
-        <option value="Konversi 20 SKS">Konversi 20 SKS</option>
-        <option value="Tidak Konversi">Tidak Konversi</option>
-        <option value="Konversi 2 SKS">Konversi 2 SKS</option>
+        <option value="Maksimal 20 SKS">Maksimal 20 SKS</option>
+<option value="Tidak Konversi">Tidak Konversi</option>
+<option value="Magang 2 SKS Khusus SI">
+  Magang 2 SKS Khusus SI
+</option>
       </select>
     </div>
 

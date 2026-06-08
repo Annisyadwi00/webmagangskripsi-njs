@@ -27,13 +27,19 @@ export type Lowongan = {
 };
 
 export async function getLowonganList() {
-  const result = await apiClient<Lowongan[]>('/api/lowongan');
+  const result = await apiClient<Lowongan[] | { data: Lowongan[] }>(
+    '/api/lowongan'
+  );
 
   if (!result.data) {
-    throw new Error('Data lowongan tidak ditemukan.');
+    return [];
   }
 
-  return result.data;
+  if (Array.isArray(result.data)) {
+    return result.data;
+  }
+
+  return result.data.data || [];
 }
 
 export async function createLowongan(payload: {
@@ -111,11 +117,17 @@ export async function deleteLowongan(id: number) {
   });
 }
 export async function getAllLowonganList() {
-  const result = await apiClient<Lowongan[]>('/api/lowongan?all=true');
+  const result = await apiClient<Lowongan[] | { data: Lowongan[] }>(
+    '/api/lowongan?all=true'
+  );
 
   if (!result.data) {
-    throw new Error('Data lowongan tidak ditemukan.');
+    return [];
   }
 
-  return result.data;
+  if (Array.isArray(result.data)) {
+    return result.data;
+  }
+
+  return result.data.data || [];
 }

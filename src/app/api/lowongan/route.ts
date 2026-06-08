@@ -1,6 +1,6 @@
 import Job, { JobStatus, JobTipeKonversi, JobType } from '@/models/Job';
 import { connectDB } from '@/lib/db';
-import { requireSuperAdmin } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth';
 import {
   isValidEmail,
   isValidUrl,
@@ -50,13 +50,23 @@ export async function GET(request: Request) {
   }
 }
 
+async function requireStaff() {
+  const user = await getCurrentUser();
+
+  if (!user || (user.role !== 'Super Admin' && user.role !== 'Admin')) {
+    return null;
+  }
+
+  return user;
+}
+
 export async function POST(request: Request) {
   try {
     await connectDB();    
 
-    const superAdmin = await requireSuperAdmin();
+   const staff = await requireStaff();
 
-if (!superAdmin) {
+if (!staff) {
   return forbiddenResponse(
     'Akses ditolak. Hanya staff yang dapat membuat lowongan.'
   );
@@ -133,9 +143,9 @@ export async function PUT(request: Request) {
   try {
     await connectDB();
 
-   const superAdmin = await requireSuperAdmin();
+  const staff = await requireStaff();
 
-if (!superAdmin) {
+if (!staff) {
   return forbiddenResponse(
     'Akses ditolak. Hanya staff yang dapat mengubah lowongan.'
   );
