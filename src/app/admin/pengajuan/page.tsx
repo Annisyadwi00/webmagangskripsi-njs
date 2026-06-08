@@ -14,14 +14,12 @@ import {
   tolakPengajuan,
 } from '@/lib/pengajuan-client';
 import { User, getUsers } from '@/lib/users-client';
+import DashboardShell from '@/components/dashboard/DashboardShell';
 
 type VerifikasiForm = {
   id: number;
   nama_mahasiswa: string;
   perusahaan: string;
-  tipeKonversi: string;
-  matkulInput: string;
-  semester_konversi: string;
   dosenId: string;
   nama_dosen: string;
 };
@@ -30,12 +28,10 @@ const initialVerifikasiForm: VerifikasiForm = {
   id: 0,
   nama_mahasiswa: '',
   perusahaan: '',
-  tipeKonversi: 'Full',
-  matkulInput: '',
-  semester_konversi: 'Semester 6',
   dosenId: '',
   nama_dosen: '',
 };
+
 function getBuktiPenerimaanLink(item: {
   bukti_penerimaan?: string | null;
   link_loa?: string | null;
@@ -84,7 +80,7 @@ export default function AdminPengajuanPage() {
 
   const [selectedPengajuan, setSelectedPengajuan] =
     useState<Pengajuan | null>(null);
-
+const [detailPengajuan, setDetailPengajuan] = useState<Pengajuan | null>(null);
   const [verifikasiForm, setVerifikasiForm] =
     useState<VerifikasiForm>(initialVerifikasiForm);
 
@@ -161,24 +157,22 @@ export default function AdminPengajuanPage() {
     (item) => item.status === 'Selesai'
   );
 
-  const openApproveModal = (pengajuan: Pengajuan) => {
-    setSelectedPengajuan(pengajuan);
-    setMessage('');
-    setErrorMsg('');
-    setRejectId(null);
-    setRejectReason('');
+ const openApproveModal = (pengajuan: Pengajuan) => {
+  setSelectedPengajuan(pengajuan);
+  setMessage('');
+  setErrorMsg('');
+  setRejectId(null);
+  setRejectReason('');
+  setDetailPengajuan(null);
 
-    setVerifikasiForm({
-      id: pengajuan.id,
-      nama_mahasiswa: pengajuan.nama_mahasiswa,
-      perusahaan: pengajuan.perusahaan,
-      tipeKonversi: pengajuan.tipeKonversi || 'Full',
-      matkulInput: pengajuan.matkulKonversi || '',
-      semester_konversi: pengajuan.semester_konversi || 'Semester 6',
-      dosenId: pengajuan.dosenId ? String(pengajuan.dosenId) : '',
-      nama_dosen: pengajuan.nama_dosen || '',
-    });
-  };
+  setVerifikasiForm({
+    id: pengajuan.id,
+    nama_mahasiswa: pengajuan.nama_mahasiswa,
+    perusahaan: pengajuan.perusahaan,
+    dosenId: pengajuan.dosenId ? String(pengajuan.dosenId) : '',
+    nama_dosen: pengajuan.nama_dosen || '',
+  });
+};
 
   const closeApproveModal = () => {
     setSelectedPengajuan(null);
@@ -186,17 +180,32 @@ export default function AdminPengajuanPage() {
   };
 
   const openRejectModal = (id: number) => {
-    setRejectId(id);
-    setRejectReason('');
-    setSelectedPengajuan(null);
-    setMessage('');
-    setErrorMsg('');
-  };
+  setRejectId(id);
+  setRejectReason('');
+  setSelectedPengajuan(null);
+  setDetailPengajuan(null);
+  setMessage('');
+  setErrorMsg('');
+};
+
+
 
   const closeRejectModal = () => {
     setRejectId(null);
     setRejectReason('');
   };
+
+const openDetailModal = (pengajuan: Pengajuan) => {
+  setDetailPengajuan(pengajuan);
+  setSelectedPengajuan(null);
+  setRejectId(null);
+  setMessage('');
+  setErrorMsg('');
+};
+
+const closeDetailModal = () => {
+  setDetailPengajuan(null);
+};
 
   const handleApprove = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,22 +221,11 @@ export default function AdminPengajuanPage() {
     }
 
     try {
-      const matkulKonversi =
-        verifikasiForm.tipeKonversi === 'Tidak'
-          ? []
-          : verifikasiForm.matkulInput
-              .split(',')
-              .map((item) => item.trim())
-              .filter(Boolean);
-
-      const result = await setujuiPengajuan({
-        id: verifikasiForm.id,
-        tipeKonversi: verifikasiForm.tipeKonversi,
-        matkulKonversi,
-        semester_konversi: verifikasiForm.semester_konversi,
-        dosenId: Number(verifikasiForm.dosenId),
-        nama_dosen: verifikasiForm.nama_dosen,
-      });
+const result = await setujuiPengajuan({
+  id: verifikasiForm.id,
+  dosenId: Number(verifikasiForm.dosenId),
+  nama_dosen: verifikasiForm.nama_dosen,
+});
 
       setMessage(
         result.message ||
@@ -283,6 +281,8 @@ export default function AdminPengajuanPage() {
 
   if (isLoading) {
     return (
+      <DashboardShell role="Admin">
+        
       <main className="min-h-screen py-8">
         <div className="app-container">
           <div className="app-card p-8">
@@ -294,26 +294,32 @@ export default function AdminPengajuanPage() {
                 <div
                   key={item}
                   className="h-36 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800"
-                />
+                  />
               ))}
             </div>
           </div>
         </div>
       </main>
+                  </DashboardShell>
     );
   }
 
   if (errorMsg && !message && !selectedPengajuan && !rejectId) {
     return (
+    <DashboardShell role="Admin">
+      
       <main className="min-h-screen py-8">
         <div className="app-container">
           <Alert variant="error">{errorMsg}</Alert>
         </div>
       </main>
+    </DashboardShell>
     );
   }
 
   return (
+    <DashboardShell role="Admin">
+
     <main className="min-h-screen py-8">
       <div className="app-container">
         <PageHeader
@@ -325,7 +331,7 @@ export default function AdminPengajuanPage() {
               Kembali ke Dashboard
             </Link>
           }
-        />
+          />
 
         {message && <Alert variant="success">{message}</Alert>}
         {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
@@ -403,199 +409,245 @@ export default function AdminPengajuanPage() {
           </div>
 
           {filteredPengajuans.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/70">
-              <p className="font-bold text-slate-700 dark:text-slate-300">
-                Pengajuan tidak ditemukan.
-              </p>
+  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/70">
+    <p className="font-bold text-slate-700 dark:text-slate-300">
+      Pengajuan tidak ditemukan.
+    </p>
 
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Coba ubah kata kunci pencarian atau filter status.
+    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+      Coba ubah kata kunci pencarian atau filter status.
+    </p>
+  </div>
+) : (
+  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+    {filteredPengajuans.map((item) => {
+      const buktiLink = getBuktiPenerimaanLink(item);
+
+      return (
+        <article
+          key={item.id}
+          className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-black text-slate-950 dark:text-white">
+                {item.nama_mahasiswa}
+              </h3>
+
+              <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                {item.npm || '-'} • {item.program_studi || '-'}
               </p>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredPengajuans.map((item) => (
-                <article
-                  key={item.id}
-                  className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900"
+
+            <span className={getStatusBadgeClass(item.status)}>
+              {getStatusLabel(item.status)}
+            </span>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/70">
+              <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Perusahaan
+              </p>
+              <p className="mt-1 font-black text-slate-950 dark:text-white">
+                {item.perusahaan || '-'}
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/70">
+              <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Jenis Magang
+              </p>
+              <p className="mt-1 font-black text-slate-950 dark:text-white">
+                {item.jenis_magang || '-'}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => openDetailModal(item)}
+              className="app-btn-secondary px-3 py-2 text-sm"
+            >
+              Lihat Detail
+            </button>
+
+            {buktiLink ? (
+              <a
+                href={buktiLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="app-btn-secondary px-3 py-2 text-center text-sm"
+              >
+                Lihat Bukti
+              </a>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="app-btn-secondary px-3 py-2 text-sm opacity-50"
+              >
+                Lihat Bukti
+              </button>
+            )}
+
+            {item.foto_diri ? (
+              <a
+                href={item.foto_diri}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="app-btn-secondary px-3 py-2 text-center text-sm"
+              >
+                Lihat Foto
+              </a>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="app-btn-secondary px-3 py-2 text-sm opacity-50"
+              >
+                Lihat Foto
+              </button>
+            )}
+
+            {item.status === 'Menunggu_Verifikasi' ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => openApproveModal(item)}
+                  className="app-btn-primary px-3 py-2 text-sm"
                 >
-                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-lg font-black text-slate-950 dark:text-white">
-                          {item.nama_mahasiswa}
-                        </h3>
+                  Setujui
+                </button>
 
-                        <span className={getStatusBadgeClass(item.status)}>
-                          {getStatusLabel(item.status)}
-                        </span>
-                      </div>
-
-                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        {item.npm || '-'} • {item.program_studi || '-'} •{' '}
-                        {item.kelas || '-'}
-                      </p>
-
-                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        {item.perusahaan} - {item.posisi}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <Link
-                        href={`/admin/pengajuan/${item.id}`}
-                        className="app-btn-secondary px-4 py-2 text-sm"
-                      >
-                        Detail
-                      </Link>
-
-                     {(item.bukti_penerimaan || item.bukti_penerimaan || item.link_loa) && (
-  <a
-    href={item.bukti_penerimaan || item.bukti_penerimaan || item.link_loa || '#'}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="app-btn-secondary px-4 py-2 text-sm"
-  >
-    Lihat Bukti
-  </a>
+                <button
+                  type="button"
+                  onClick={() => openRejectModal(item.id)}
+                  className="app-btn-danger col-span-2 px-3 py-2 text-sm"
+                >
+                  Tolak
+                </button>
+              </>
+            ) : (
+              <div className="col-span-2 rounded-2xl bg-slate-100 px-3 py-2 text-center text-sm font-black text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                Sudah Diproses
+              </div>
+            )}
+          </div>
+        </article>
+      );
+    })}
+  </div>
 )}
-
-                      {item.foto_diri && (
-                        <a
-                          href={item.foto_diri}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="app-btn-secondary px-4 py-2 text-sm"
-                        >
-                          Lihat Foto
-                        </a>
-                      )}
-
-                      {item.status === 'Menunggu_Verifikasi' && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => openApproveModal(item)}
-                            className="app-btn-primary px-4 py-2 text-sm"
-                          >
-                            Setujui
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => openRejectModal(item.id)}
-                            className="app-btn-danger px-4 py-2 text-sm"
-                          >
-                            Tolak
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-4 xl:grid-cols-6">
-                    <div className="app-panel p-3">
-                      <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        NPM
-                      </p>
-                      <p className="mt-1 font-bold text-slate-950 dark:text-white">
-                        {item.npm || '-'}
-                      </p>
-                    </div>
-
-                    <div className="app-panel p-3">
-                      <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Program Studi
-                      </p>
-                      <p className="mt-1 font-bold text-slate-950 dark:text-white">
-                        {item.program_studi || '-'}
-                      </p>
-                    </div>
-
-                    <div className="app-panel p-3">
-                      <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Jenis Magang
-                      </p>
-                      <p className="mt-1 font-bold text-slate-950 dark:text-white">
-                        {item.jenis_magang || '-'}
-                      </p>
-                    </div>
-
-                    <div className="app-panel p-3">
-                      <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Kelas
-                      </p>
-                      <p className="mt-1 font-bold text-slate-950 dark:text-white">
-                        {item.kelas || '-'}
-                      </p>
-                    </div>
-
-                    <div className="app-panel p-3">
-                      <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Tanggal Mulai
-                      </p>
-                      <p className="mt-1 font-bold text-slate-950 dark:text-white">
-                        {item.tgl_mulai || '-'}
-                      </p>
-                    </div>
-
-                    <div className="app-panel p-3">
-                      <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Tanggal Berakhir
-                      </p>
-                      <p className="mt-1 font-bold text-slate-950 dark:text-white">
-                        {item.tgl_berakhir || '-'}
-                      </p>
-                    </div>
-
-                    <div className="app-panel p-3">
-                      <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Konversi
-                      </p>
-                      <p className="mt-1 font-bold text-slate-950 dark:text-white">
-                        {item.tipeKonversi || '-'}
-                      </p>
-                    </div>
-
-                    <div className="app-panel p-3">
-                      <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Dosen
-                      </p>
-                      <p className="mt-1 font-bold text-slate-950 dark:text-white">
-                        {item.nama_dosen || '-'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {item.rencana_magang && (
-                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-                      <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Rencana Magang
-                      </p>
-
-                      <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                        {item.rencana_magang}
-                      </p>
-                    </div>
-                  )}
-
-                  {item.alasan_penolakan && (
-                    <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-4 dark:border-red-400/20 dark:bg-red-400/10">
-                      <p className="text-xs font-black uppercase tracking-wide text-red-600 dark:text-red-300">
-                        Alasan Penolakan
-                      </p>
-
-                      <p className="mt-2 text-sm leading-6 text-red-700 dark:text-red-300">
-                        {item.alasan_penolakan}
-                      </p>
-                    </div>
-                  )}
-                </article>
-              ))}
-            </div>
-          )}
         </section>
       </div>
+
+{detailPengajuan && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div
+      className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+      onClick={closeDetailModal}
+    />
+
+    <div className="relative z-10 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
+            Detail Pengajuan
+          </p>
+          <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+            {detailPengajuan.nama_mahasiswa}
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          onClick={closeDetailModal}
+          className="rounded-2xl border border-slate-200 px-4 py-2 font-black text-slate-600 dark:border-slate-700 dark:text-slate-300"
+        >
+          Tutup
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="app-panel p-4">
+          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Nama</p>
+          <p className="mt-1 font-black text-slate-950 dark:text-white">
+            {detailPengajuan.nama_mahasiswa || '-'}
+          </p>
+        </div>
+
+        <div className="app-panel p-4">
+          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">NPM</p>
+          <p className="mt-1 font-black text-slate-950 dark:text-white">
+            {detailPengajuan.npm || '-'}
+          </p>
+        </div>
+
+        <div className="app-panel p-4">
+          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Program Studi</p>
+          <p className="mt-1 font-black text-slate-950 dark:text-white">
+            {detailPengajuan.program_studi || '-'}
+          </p>
+        </div>
+
+        <div className="app-panel p-4">
+          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Kelas</p>
+          <p className="mt-1 font-black text-slate-950 dark:text-white">
+            {detailPengajuan.kelas || '-'}
+          </p>
+        </div>
+
+        <div className="app-panel p-4">
+          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Jenis Magang</p>
+          <p className="mt-1 font-black text-slate-950 dark:text-white">
+            {detailPengajuan.jenis_magang || '-'}
+          </p>
+        </div>
+
+        <div className="app-panel p-4">
+          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Perusahaan</p>
+          <p className="mt-1 font-black text-slate-950 dark:text-white">
+            {detailPengajuan.perusahaan || '-'}
+          </p>
+        </div>
+
+        <div className="app-panel p-4">
+          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Tanggal Mulai</p>
+          <p className="mt-1 font-black text-slate-950 dark:text-white">
+            {detailPengajuan.tgl_mulai || '-'}
+          </p>
+        </div>
+
+        <div className="app-panel p-4">
+          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Tanggal Berakhir</p>
+          <p className="mt-1 font-black text-slate-950 dark:text-white">
+            {detailPengajuan.tgl_berakhir || '-'}
+          </p>
+        </div>
+
+        <div className="app-panel p-4 md:col-span-2">
+          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+            Dosen Pembimbing
+          </p>
+          <p className="mt-1 font-black text-slate-950 dark:text-white">
+            {detailPengajuan.nama_dosen || 'Belum ditentukan'}
+          </p>
+        </div>
+
+        <div className="app-panel p-4 md:col-span-2">
+          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+            Rencana Magang
+          </p>
+          <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700 dark:text-slate-300">
+            {detailPengajuan.rencana_magang || '-'}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
       {selectedPengajuan && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -621,61 +673,6 @@ export default function AdminPengajuanPage() {
               </div>
 
               <form onSubmit={handleApprove} className="space-y-5">
-                <div>
-                  <label className="app-label">Tipe Konversi</label>
-                  <select
-                    value={verifikasiForm.tipeKonversi}
-                    onChange={(e) =>
-                      setVerifikasiForm({
-                        ...verifikasiForm,
-                        tipeKonversi: e.target.value,
-                      })
-                    }
-                    className="app-input"
-                  >
-                    <option value="Full">Full</option>
-                    <option value="Parsial">Parsial</option>
-                    <option value="Tidak">Tidak</option>
-                  </select>
-                </div>
-
-                {verifikasiForm.tipeKonversi !== 'Tidak' && (
-                  <div>
-                    <label className="app-label">Mata Kuliah Konversi</label>
-                    <input
-                      type="text"
-                      value={verifikasiForm.matkulInput}
-                      onChange={(e) =>
-                        setVerifikasiForm({
-                          ...verifikasiForm,
-                          matkulInput: e.target.value,
-                        })
-                      }
-                      className="app-input"
-                      placeholder="Contoh: Kerja Praktik, Etika Profesi"
-                    />
-
-                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                      Pisahkan dengan koma jika lebih dari satu mata kuliah.
-                    </p>
-                  </div>
-                )}
-
-                <div>
-                  <label className="app-label">Semester Konversi</label>
-                  <input
-                    type="text"
-                    value={verifikasiForm.semester_konversi}
-                    onChange={(e) =>
-                      setVerifikasiForm({
-                        ...verifikasiForm,
-                        semester_konversi: e.target.value,
-                      })
-                    }
-                    className="app-input"
-                    placeholder="Contoh: Semester 6"
-                  />
-                </div>
 
                 <div>
                   <label className="app-label">Dosen Pembimbing</label>
@@ -821,5 +818,6 @@ export default function AdminPengajuanPage() {
         </div>
       )}
     </main>
+                          </DashboardShell>
   );
 }
