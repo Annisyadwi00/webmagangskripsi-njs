@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { getDashboardPathByRole } from '@/lib/role-redirect';
 import Link from 'next/link';
+import { getDashboardPathByRole } from '@/lib/role-redirect';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import Alert from '@/components/ui/Alert';
@@ -11,12 +11,51 @@ import { Pengajuan, getPengajuanList } from '@/lib/pengajuan-client';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 import ProgressStepper from '@/components/ui/ProgressStepper';
 
-function getStatusBadgeClass(status?: string) {
+const templatePersuratan = [
+  {
+    label: 'Lembar Aktivitas Harian',
+    href: '#',
+  },
+  {
+    label: 'Lembar Bimbingan Magang',
+    href: '#',
+  },
+  {
+    label: 'Surat Tugas Dosen Pendamping Magang',
+    href: '#',
+  },
+  {
+    label: 'Implementation of Arrangement (IA)',
+    href: '#',
+  },
+  {
+    label: 'Surat Perpanjangan Waktu Magang',
+    href: '#',
+  },
+  {
+    label: 'Surat Keterangan Selesai Magang',
+    href: '#',
+  },
+  {
+    label: 'Lembar Penilaian Magang',
+    href: '#',
+  },
+  {
+    label: 'Lembar Penilaian Dosen Pembimbing',
+    href: '#',
+  },
+  {
+    label: 'Laporan Pelaksanaan Kerja Sama',
+    href: '#',
+  },
+];
+
+function getStatusBadgeClass(status?: string | null) {
   if (status === 'Aktif' || status === 'Selesai') {
     return 'app-badge app-badge-green';
   }
 
-  if (status === 'Menunggu_Verifikasi' ) {
+  if (status === 'Menunggu_Verifikasi') {
     return 'app-badge app-badge-yellow';
   }
 
@@ -26,15 +65,29 @@ function getStatusBadgeClass(status?: string) {
 
   return 'app-badge app-badge-blue';
 }
+
 function getStatusLabel(status?: string | null) {
-  if (status === 'Menunggu_Verifikasi') return 'Menunggu Verifikasi';
+  if (status === 'Menunggu_Verifikasi') return 'Menunggu Pemeriksaan';
   if (status === 'Aktif') return 'Aktif';
   if (status === 'Selesai') return 'Selesai';
   if (status === 'Ditolak') return 'Ditolak';
 
   return 'Belum Ada';
 }
-function getMagangSteps(status?: string) {
+
+function getLaporanLabel(jenisMagang?: string | null) {
+  if (jenisMagang === 'Magang 2 SKS Khusus SI') {
+    return 'Laporan Magang';
+  }
+
+  if (jenisMagang === 'Tidak Konversi') {
+    return 'Tidak Wajib';
+  }
+
+  return 'Laporan Akhir';
+}
+
+function getMagangSteps(status?: string | null) {
   const currentStatus = status || 'Belum_Ada';
 
   const order = ['Belum_Ada', 'Menunggu_Verifikasi', 'Aktif', 'Selesai'];
@@ -62,19 +115,19 @@ function getMagangSteps(status?: string) {
     {
       title: 'Pendataan Magang',
       description:
-        'Mahasiswa mengisi data magang, bukti penerimaan, dan permohonan dosen pembimbing.',
+        'Mahasiswa mengisi data magang dan bukti penerimaan dari tempat magang.',
       status: getStatus('Belum_Ada'),
     },
     {
-      title: 'Verifikasi Staff',
-description:
-  'Staff sedang memeriksa data magang dan menyiapkan penetapan dosen pembimbing.',
+      title: 'Pemeriksaan Staff',
+      description:
+        'Staff sedang memeriksa data magang dan menyiapkan penetapan dosen pembimbing.',
       status: getStatus('Menunggu_Verifikasi'),
     },
     {
       title: 'Magang Aktif',
       description:
-        'Mahasiswa melaksanakan magang dan mengisi laporan/dokumen magang.',
+        'Mahasiswa melaksanakan magang dan dapat mengunggah dokumen magang sesuai jenis magang.',
       status: getStatus('Aktif'),
     },
     {
@@ -98,23 +151,18 @@ export default function MahasiswaDashboardPage() {
         setIsLoading(true);
         setErrorMsg('');
 
-       const [currentUser, pengajuanData] = await Promise.all([
-  getCurrentUserClient(),
-  getPengajuanList(1, 10),
-]);
+        const [currentUser, pengajuanData] = await Promise.all([
+          getCurrentUserClient(),
+          getPengajuanList(1, 10),
+        ]);
 
-      if (currentUser.role !== 'Mahasiswa') {
-  window.location.href = getDashboardPathByRole(currentUser.role);
-  return;
-}
+        if (currentUser.role !== 'Mahasiswa') {
+          window.location.href = getDashboardPathByRole(currentUser.role);
+          return;
+        }
 
-const pengajuanItems = Array.isArray(pengajuanData)
-  ? pengajuanData
-  : pengajuanData?.items || [];
-
-setUser(currentUser);
-setPengajuan(pengajuanItems[0] || null);
-
+        setUser(currentUser);
+        setPengajuan(pengajuanData?.items?.[0] || null);
       } catch (error) {
         const message =
           error instanceof Error
@@ -130,18 +178,20 @@ setPengajuan(pengajuanItems[0] || null);
     fetchDashboard();
   }, []);
 
-
   if (isLoading) {
     return (
       <DashboardShell role="Mahasiswa">
         <main className="min-h-screen py-8">
           <div className="app-container">
             <div className="app-card p-8">
-              <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200" />
-              <div className="mt-4 h-8 w-72 animate-pulse rounded-full bg-slate-200" />
+              <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+              <div className="mt-4 h-8 w-72 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
               <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
                 {[1, 2, 3].map((item) => (
-                  <div key={item} className="h-36 animate-pulse rounded-2xl bg-slate-100" />
+                  <div
+                    key={item}
+                    className="h-36 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800"
+                  />
                 ))}
               </div>
             </div>
@@ -153,279 +203,385 @@ setPengajuan(pengajuanItems[0] || null);
 
   if (errorMsg) {
     return (
-  <DashboardShell role="Mahasiswa">
-    <main className="min-h-screen py-8">
-        <div className="app-container">
-          <Alert variant="error">{errorMsg}</Alert>
-        </div>
-      </main>
+      <DashboardShell role="Mahasiswa">
+        <main className="min-h-screen py-8">
+          <div className="app-container">
+            <Alert variant="error">{errorMsg}</Alert>
+          </div>
+        </main>
       </DashboardShell>
     );
   }
-const sudahUploadLaporan = Boolean(pengajuan?.link_laporan_akhir);
 
-const sudahAdaNilai = Boolean(pengajuan?.nilai_dari_dosen);
+  const belumPunyaPengajuan = !pengajuan;
+  const pengajuanMenunggu = pengajuan?.status === 'Menunggu_Verifikasi';
+  const pengajuanAktif = pengajuan?.status === 'Aktif';
+  const sudahUploadLaporan = Boolean(pengajuan?.link_laporan_akhir);
+  const sudahUploadOutput = Boolean(pengajuan?.link_output_magang);
+  const sudahAdaNilai = Boolean(pengajuan?.nilai_dari_dosen);
 
-const belumPunyaPengajuan = !pengajuan;
+  const laporanLabel = getLaporanLabel(pengajuan?.jenis_magang);
+  const tidakPerluLaporan = pengajuan?.jenis_magang === 'Tidak Konversi';
+  const wajibOutput = pengajuan?.jenis_magang === 'Maksimal 20 SKS';
 
-const pengajuanMenunggu = pengajuan?.status === 'Menunggu_Verifikasi';
-
-const pengajuanAktif = pengajuan?.status === 'Aktif';
   return (
-  <DashboardShell role="Mahasiswa">
-    <main className="min-h-screen py-8">
-      <div className="app-container">
-        <PageHeader
-          eyebrow="Dashboard Mahasiswa"
-          title={`Halo, ${user?.name || 'Mahasiswa'}`}
-          description="Pantau progres magang, laporan/dokumen magang, dan evaluasi akhir kamu dari satu halaman yang lebih ringkas."
-          action={
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Link href="/pengajuan" className="app-btn-primary">
-                Isi Pendataan Magang
-              </Link>
-            </div>
-          }
-        />
+    <DashboardShell role="Mahasiswa">
+      <main className="min-h-screen py-8">
+        <div className="app-container">
+          <PageHeader
+            eyebrow="Dashboard Mahasiswa"
+            title={`Halo, ${user?.name || 'Mahasiswa'}`}
+            description="Pantau progres magang, dokumen magang, dan evaluasi akhir dari satu halaman."
+            action={
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link href="/pengajuan" className="app-btn-primary">
+                  Isi Pendataan Magang
+                </Link>
+              </div>
+            }
+          />
 
-        {pengajuan?.status === 'Ditolak' && pengajuan.alasan_penolakan && (
-          <Alert variant="error">
-            Pengajuan kamu ditolak. Alasan: {pengajuan.alasan_penolakan}
-          </Alert>
-        )}
+          {pengajuan?.status === 'Ditolak' && pengajuan.alasan_penolakan && (
+            <Alert variant="error">
+              Pengajuan kamu ditolak. Alasan: {pengajuan.alasan_penolakan}
+            </Alert>
+          )}
 
           <section className="mb-6">
-  <div className="app-card p-5">
-    <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h2 className="text-lg font-black text-slate-950 dark:text-white">
-          Progres Magang
-        </h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Status kamu saat ini: {pengajuan?.status || 'Belum Ada'}
-        </p>
-      </div>
-    </div>
+            <div className="app-card p-5">
+              <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-black text-slate-950 dark:text-white">
+                    Progres Magang
+                  </h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Status kamu saat ini: {getStatusLabel(pengajuan?.status)}
+                  </p>
+                </div>
+              </div>
 
-    <ProgressStepper steps={getMagangSteps(pengajuan?.status)} />
-  </div>
-</section>
+              <ProgressStepper steps={getMagangSteps(pengajuan?.status)} />
+            </div>
+          </section>
 
-       <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
-  <StatCard
-    title="Status Pengajuan"
-    value={getStatusLabel(pengajuan?.status)}
-    description={
-      pengajuan?.status === 'Menunggu_Verifikasi'
-        ? 'Menunggu staff memverifikasi data magang.'
-        : pengajuan?.status === 'Aktif'
-          ? 'Magang sudah aktif.'
-          : pengajuan?.status === 'Selesai'
-            ? 'Magang selesai dan nilai akhir tersedia.'
-            : pengajuan?.status === 'Ditolak'
-              ? 'Pengajuan ditolak. Periksa catatan staff.'
-              : 'Belum ada pengajuan magang.'
-    }
-    icon="document"
-  />
+          <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+            <StatCard
+              title="Status Pengajuan"
+              value={getStatusLabel(pengajuan?.status)}
+              description={
+                pengajuan?.status === 'Menunggu_Verifikasi'
+                  ? 'Menunggu staff memeriksa data magang.'
+                  : pengajuan?.status === 'Aktif'
+                    ? 'Magang sudah aktif.'
+                    : pengajuan?.status === 'Selesai'
+                      ? 'Magang selesai dan nilai akhir tersedia.'
+                      : pengajuan?.status === 'Ditolak'
+                        ? 'Pengajuan ditolak. Periksa catatan staff.'
+                        : 'Belum ada pengajuan magang.'
+              }
+              icon="document"
+            />
 
-  <StatCard
-    title="Laporan Akhir"
-    value={sudahUploadLaporan ? 'Sudah Upload' : 'Belum Upload'}
-    description={
-      sudahUploadLaporan
-        ? 'Laporan akhir sudah tersimpan.'
-        : 'Laporan akhir wajib diunggah.'
-    }
-    icon="document"
-  />
+            <StatCard
+              title={laporanLabel}
+              value={
+                tidakPerluLaporan
+                  ? 'Tidak Wajib'
+                  : sudahUploadLaporan
+                    ? 'Sudah Upload'
+                    : 'Belum Upload'
+              }
+              description={
+                tidakPerluLaporan
+                  ? 'Jenis magang ini tidak memerlukan upload laporan.'
+                  : sudahUploadLaporan
+                    ? 'Dokumen laporan sudah tersimpan.'
+                    : 'Dokumen laporan belum diunggah.'
+              }
+              icon="document"
+            />
 
-  <StatCard
-    title="Nilai Akhir"
-    value={pengajuan?.nilai_dari_dosen || 'Belum Ada'}
-    description="Nilai akhir diinput oleh dosen pembimbing."
-    icon="check"
-  />
-</section>
+            <StatCard
+              title="Nilai Akhir"
+              value={pengajuan?.nilai_dari_dosen || 'Belum Ada'}
+              description="Nilai akhir diinput oleh dosen pembimbing."
+              icon="check"
+            />
+          </section>
 
-        <section className="grid grid-cols-1 gap-6">
-  <div className="app-card p-6">
-            <div className="mb-5 flex items-start justify-between gap-4">
+          <section className="grid grid-cols-1 gap-6">
+            <div className="app-card p-6">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-black text-slate-950 dark:text-white">
+                    Ringkasan Magang
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Informasi utama pengajuan magang kamu.
+                  </p>
+                </div>
+
+                <span className={getStatusBadgeClass(pengajuan?.status)}>
+                  {getStatusLabel(pengajuan?.status)}
+                </span>
+              </div>
+
+              {belumPunyaPengajuan && (
+                <Alert variant="info">
+                  Kamu belum memiliki pengajuan magang. Silakan isi pendataan
+                  magang dan unggah bukti penerimaan terlebih dahulu.
+                </Alert>
+              )}
+
+              {pengajuanMenunggu && (
+                <Alert variant="warning">
+                  Pengajuan kamu sedang menunggu pemeriksaan staff. Pastikan
+                  bukti penerimaan dapat diakses.
+                </Alert>
+              )}
+
+              {pengajuanAktif && (
+                <Alert variant="success">
+                  Pengajuan kamu sudah aktif. Dosen pembimbing telah ditentukan
+                  oleh staff.
+                </Alert>
+              )}
+
+              {pengajuanAktif && !tidakPerluLaporan && !sudahUploadLaporan && (
+                <Alert variant="warning">
+                  Kamu belum mengunggah {laporanLabel.toLowerCase()}. Dokumen
+                  ini diperlukan sebelum proses penilaian akhir.
+                </Alert>
+              )}
+
+              {pengajuanAktif && wajibOutput && !sudahUploadOutput && (
+                <Alert variant="warning">
+                  Kamu belum mengunggah output magang. Output magang wajib untuk
+                  jenis magang Maksimal 20 SKS.
+                </Alert>
+              )}
+
+              {sudahAdaNilai && (
+                <Alert variant="success">
+                  Nilai akhir magang kamu sudah tersedia:{' '}
+                  {pengajuan?.nilai_dari_dosen}.
+                </Alert>
+              )}
+
+              {pengajuan ? (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="app-panel p-4">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                      Perusahaan
+                    </p>
+                    <p className="mt-1 font-black text-slate-950 dark:text-white">
+                      {pengajuan.perusahaan}
+                    </p>
+                  </div>
+
+                  <div className="app-panel p-4">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                      Posisi
+                    </p>
+                    <p className="mt-1 font-black text-slate-950 dark:text-white">
+                      {pengajuan.posisi}
+                    </p>
+                  </div>
+
+                  <div className="app-panel p-4">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                      Dosen Pembimbing
+                    </p>
+                    <p className="mt-1 font-black text-slate-950 dark:text-white">
+                      {pengajuan.nama_dosen || 'Menunggu penentuan staff'}
+                    </p>
+                  </div>
+
+                  <div className="app-panel p-4">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                      Nilai Akhir
+                    </p>
+                    <p className="mt-1 font-black text-slate-950 dark:text-white">
+                      {pengajuan.nilai_dari_dosen || 'Belum dinilai'}
+                    </p>
+                  </div>
+
+                  <div className="app-panel p-4">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                      Periode Magang
+                    </p>
+                    <p className="mt-1 font-black text-slate-950 dark:text-white">
+                      {pengajuan.tgl_mulai || '-'} sampai{' '}
+                      {pengajuan.tgl_berakhir || '-'}
+                    </p>
+                  </div>
+
+                  <div className="app-panel p-4">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                      Jenis Magang
+                    </p>
+                    <p className="mt-1 font-black text-slate-950 dark:text-white">
+                      {pengajuan.jenis_magang || '-'}
+                    </p>
+                  </div>
+
+                  <div className="app-panel p-4">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                      Program Studi
+                    </p>
+                    <p className="mt-1 font-black text-slate-950 dark:text-white">
+                      {pengajuan.program_studi || '-'}
+                    </p>
+                  </div>
+
+                  <div className="app-panel p-4">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                      Bukti Penerimaan
+                    </p>
+                    {pengajuan.bukti_penerimaan ? (
+                      <a
+                        href={pengajuan.bukti_penerimaan}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-flex font-black text-[#1e3a8a] dark:text-blue-300"
+                      >
+                        Buka Dokumen →
+                      </a>
+                    ) : (
+                      <p className="mt-1 font-black text-slate-950 dark:text-white">
+                        -
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="app-panel p-4 md:col-span-2">
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                      Rencana Magang
+                    </p>
+                    <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
+                      {pengajuan.rencana_magang || '-'}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/70">
+                  <p className="font-bold text-slate-700 dark:text-slate-300">
+                    Kamu belum memiliki pengajuan magang.
+                  </p>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                    Silakan isi data magang dan bukti penerimaan terlebih
+                    dahulu.
+                  </p>
+                  <Link href="/pengajuan" className="app-btn-primary mt-5">
+                    Buat Pengajuan
+                  </Link>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="app-card mt-6 p-6">
+            <div className="mb-5 flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-black text-slate-950 dark:text-white">
-                  Ringkasan Magang
+                  Dokumen Magang
                 </h2>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Informasi utama pengajuan magang kamu.
+                  Kelola laporan atau output magang sesuai jenis magang kamu.
                 </p>
               </div>
 
-              <span className={getStatusBadgeClass(pengajuan?.status)}>
-  {getStatusLabel(pengajuan?.status)}
-</span>
+              <Link
+                href="/laporan-akhir"
+                className="text-sm font-black text-[#1e3a8a] dark:text-blue-300"
+              >
+                Kelola dokumen
+              </Link>
             </div>
-                  {belumPunyaPengajuan && (
-  <Alert variant="info">
-    Kamu belum memiliki pengajuan magang. Silakan isi pendataan magang dan unggah bukti penerimaan terlebih dahulu.
-  </Alert>
-)}
 
-{pengajuanMenunggu && (
-  <Alert variant="warning">
-    Pengajuan kamu sedang menunggu verifikasi staff. Pastikan bukti penerimaan dan dokumen pendukung dapat diakses.
-  </Alert>
-)}
-
-{pengajuanAktif && (
-  <Alert variant="success">
-    Pengajuan kamu sudah aktif. Dosen pembimbing telah ditentukan oleh staff.
-  </Alert>
-)}
-
-{pengajuanAktif && !sudahUploadLaporan && (
-  <Alert variant="warning">
-    Kamu belum mengunggah laporan akhir. Laporan akhir wajib diunggah sebelum
-    proses penilaian akhir.
-  </Alert>
-)}
-
-{sudahAdaNilai && (
-  <Alert variant="success">
-    Nilai akhir magang kamu sudah tersedia: {pengajuan?.nilai_dari_dosen}.
-  </Alert>
-)}
-            {pengajuan ? (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="app-panel p-4">
-                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Perusahaan</p>
-                  <p className="mt-1 font-black text-slate-950 dark:text-white">
-                    {pengajuan.perusahaan}
+            {tidakPerluLaporan ? (
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-400/20 dark:bg-blue-400/10">
+                <p className="font-black text-[#1e3a8a] dark:text-blue-300">
+                  Jenis magang ini tidak memerlukan upload laporan melalui
+                  sistem.
+                </p>
+              </div>
+            ) : sudahUploadLaporan ? (
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-green-100 bg-green-50 p-5 dark:border-green-400/20 dark:bg-green-400/10">
+                  <p className="font-black text-green-700 dark:text-green-300">
+                    {laporanLabel} sudah diunggah.
                   </p>
+
+                  <a
+                    href={pengajuan?.link_laporan_akhir || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex font-black text-[#1e3a8a] dark:text-blue-300"
+                  >
+                    Buka {laporanLabel} →
+                  </a>
                 </div>
 
-                <div className="app-panel p-4">
-                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Posisi</p>
-                  <p className="mt-1 font-black text-slate-950 dark:text-white">
-                    {pengajuan.posisi}
-                  </p>
-                </div>
+                {wajibOutput && pengajuan?.link_output_magang && (
+                  <div className="rounded-2xl border border-green-100 bg-green-50 p-5 dark:border-green-400/20 dark:bg-green-400/10">
+                    <p className="font-black text-green-700 dark:text-green-300">
+                      Output magang sudah diunggah.
+                    </p>
 
-                <div className="app-panel p-4">
-                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                    Dosen Pembimbing
-                  </p>
-                  <p className="mt-1 font-black text-slate-950 dark:text-white">
-                  Dosen pembimbing yang ditentukan staff.
-                  </p>
-                </div>
-
-                <div className="app-panel p-4">
-                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Nilai Akhir</p>
-                  <p className="mt-1 font-black text-slate-950 dark:text-white">
-                    {pengajuan.nilai_dari_dosen || 'Belum dinilai'}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 dark:bg-slate-800/70 p-4 md:col-span-2">
-                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                    Periode Magang
-                  </p>
-                  <p className="mt-1 font-black text-slate-950 dark:text-white">
-                    {pengajuan.tgl_mulai || '-'} sampai{' '}
-                    {pengajuan.tgl_berakhir || '-'}
-                  </p>
-                </div>
-                <div className="app-panel p-4">
-  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-    Jenis Magang
-  </p>
-  <p className="mt-1 font-black text-slate-950 dark:text-white">
-    {pengajuan.jenis_magang || '-'}
-  </p>
-</div>
-
-<div className="app-panel p-4">
-  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-    Program Studi
-  </p>
-  <p className="mt-1 font-black text-slate-950 dark:text-white">
-    {pengajuan.program_studi || '-'}
-  </p>
-</div>
-<div className="app-panel p-4 md:col-span-2">
-  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-    Rencana Magang
-  </p>
-  <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
-    {pengajuan.rencana_magang || '-'}
-  </p>
-</div>
+                    <a
+                      href={pengajuan.link_output_magang}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex font-black text-[#1e3a8a] dark:text-blue-300"
+                    >
+                      Buka Output Magang →
+                    </a>
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 dark:bg-slate-800/70 dark:bg-slate-800/70 p-8 text-center">
-                <p className="font-bold text-slate-700 dark:text-slate-300 dark:text-slate-300 dark:text-slate-300">
-                  Kamu belum memiliki pengajuan magang.
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/70">
+                <p className="font-bold text-slate-700 dark:text-slate-300">
+                  Belum ada dokumen magang.
                 </p>
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Silakan isi data magang dan bukti penerimaan terlebih dahulu.
+                  Dokumen dapat dikelola setelah pengajuan magang aktif.
                 </p>
-                <Link href="/pengajuan" className="app-btn-primary mt-5">
-                  Buat Pengajuan
+
+                <Link href="/laporan-akhir" className="app-btn-primary mt-5">
+                  Kelola Dokumen
                 </Link>
               </div>
             )}
-          </div>
-        </section>
+          </section>
 
-        <section className="app-card mt-6 p-6">
-  <div className="mb-5 flex items-center justify-between gap-4">
-    <div>
-      <h2 className="text-xl font-black text-slate-950 dark:text-white">
-        Laporan Akhir
-      </h2>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Upload file PDF laporan akhir magang kamu.
-      </p>
-    </div>
+          <section className="app-card mt-6 p-6">
+            <div className="mb-5">
+              <h2 className="text-xl font-black text-slate-950 dark:text-white">
+                Template Persuratan
+              </h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Akses template dokumen pendukung magang sesuai kebutuhan.
+              </p>
+            </div>
 
-    <Link href="/laporan-akhir" className="text-sm font-black text-[#1e3a8a] dark:text-blue-300">
-      Kelola laporan
-    </Link>
-  </div>
-
-  {sudahUploadLaporan ? (
-    <div className="rounded-2xl border border-green-100 bg-green-50 p-5 dark:border-green-400/20 dark:bg-green-400/10">
-      <p className="font-black text-green-700 dark:text-green-300">
-        Laporan akhir sudah diunggah.
-      </p>
-
-      <a
-        href={pengajuan?.link_laporan_akhir || '#'}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-3 inline-flex font-black text-[#1e3a8a] dark:text-blue-300"
-      >
-        Buka Laporan Akhir →
-      </a>
-    </div>
-  ) : (
-    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/70">
-      <p className="font-bold text-slate-700 dark:text-slate-300">
-        Belum ada laporan akhir.
-      </p>
-      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-        Upload laporan akhir dalam bentuk PDF setelah periode magang selesai.
-      </p>
-
-      <Link href="/laporan-akhir" className="app-btn-primary mt-5">
-        Upload Laporan Akhir
-      </Link>
-    </div>
-  )}
-</section>
-
-      </div>
-    </main>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {templatePersuratan.map((item) => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-2xl border border-slate-200 bg-white p-4 font-black text-slate-700 transition hover:-translate-y-0.5 hover:border-blue-200 hover:text-[#1e3a8a] hover:shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-blue-400/40 dark:hover:text-blue-300"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
+          </section>
+        </div>
+      </main>
     </DashboardShell>
   );
 }

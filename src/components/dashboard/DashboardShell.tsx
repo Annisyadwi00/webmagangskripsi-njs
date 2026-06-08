@@ -23,13 +23,14 @@ const navItems: Record<DashboardRole, NavItem[]> = {
     { label: 'Dashboard', href: '/dashboard' },
     { label: 'Pengajuan Magang', href: '/pengajuan' },
     { label: 'Pengajuan Mitra', href: '/pengajuan-mitra' },
-    { label: 'Upload Laporan Akhir', href: '/laporan-akhir' },
+    { label: 'Laporan Magang', href: '/laporan-akhir' },
     { label: 'Lowongan', href: '/lowongan' },
     { label: 'Settings', href: '/settings' },
   ],
 
   Admin: [
     { label: 'Dashboard', href: '/admin/dashboard' },
+    { label: 'Pengajuan Magang', href: '/admin/pengajuan' },
     { label: 'Pengajuan Mitra', href: '/admin/pengajuan-mitra' },
     { label: 'Lowongan', href: '/admin/lowongan' },
     { label: 'Activity Log', href: '/admin/activity' },
@@ -47,7 +48,7 @@ const navItems: Record<DashboardRole, NavItem[]> = {
 
   Dosen: [
     { label: 'Dashboard', href: '/dosen/dashboard' },
-    { label: 'Laporan Akhir', href: '/dosen/laporan-akhir' },
+    { label: 'Laporan Magang', href: '/dosen/laporan-akhir' },
     { label: 'Penilaian', href: '/dosen/penilaian' },
     { label: 'Settings', href: '/settings' },
   ],
@@ -111,8 +112,9 @@ export default function DashboardShell({ role, children }: DashboardShellProps) 
 
   const getLinkClass = (href: string) => {
     const isActive =
-      pathname === href || (href !== '/dashboard' && pathname.startsWith(`${href}/`));
-  
+      pathname === href ||
+      (href !== '/dashboard' && pathname.startsWith(`${href}/`));
+
     return isActive
       ? 'bg-blue-50 text-[#1e3a8a] ring-1 ring-blue-100 dark:bg-blue-400/10 dark:text-blue-300 dark:ring-blue-400/20'
       : 'text-slate-600 hover:bg-slate-50 hover:text-[#1e3a8a] dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-300';
@@ -136,7 +138,7 @@ export default function DashboardShell({ role, children }: DashboardShellProps) 
           </div>
         </Link>
 
-     <nav className="mt-8 max-h-[calc(100vh-220px)] space-y-2 overflow-y-auto pr-1">
+        <nav className="mt-8 max-h-[calc(100vh-130px)] space-y-2 overflow-y-auto pr-1">
           {navItems[role].map((item) => (
             <Link
               key={item.href}
@@ -149,67 +151,56 @@ export default function DashboardShell({ role, children }: DashboardShellProps) 
             </Link>
           ))}
         </nav>
-
-        <div className="absolute bottom-6 left-5 right-5 space-y-3">
-          <button
-            type="button"
-            onClick={toggleDarkMode}
-            className="app-btn-secondary w-full"
-          >
-            <ThemeIcon type={isDarkMode ? 'sun' : 'moon'} />
-            {isDarkMode ? 'Light Mode' : 'Dark Mode'}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className="app-btn-danger w-full disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isLoggingOut ? 'Keluar...' : 'Keluar'}
-          </button>
-        </div>
       </aside>
 
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90 lg:hidden">
-        <div className="flex h-20 items-center justify-between px-5">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-sm font-black text-[#1e3a8a] dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
-              SI
-            </div>
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90 lg:ml-72">
+        <div className="flex h-20 items-center justify-between px-5 lg:px-8">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsOpen(!isOpen)}
+              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-xl font-black text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:hidden"
+              aria-label="Buka menu"
+            >
+              {isOpen ? '×' : '≡'}
+            </button>
 
             <div>
-              <p className="text-base font-black leading-none text-slate-950 dark:text-white">
-                SI Magang
-              </p>
-              <p className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 {getRoleLabel(role)}
               </p>
+              <p className="text-lg font-black text-slate-950 dark:text-white">
+                SI Magang
+              </p>
             </div>
-          </Link>
+          </div>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              className="flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
               aria-label="Ganti mode tema"
             >
               <ThemeIcon type={isDarkMode ? 'sun' : 'moon'} />
+              <span className="hidden sm:inline">
+                {isDarkMode ? 'Light' : 'Dark'}
+              </span>
             </button>
 
             <button
               type="button"
-              onClick={() => setIsOpen(!isOpen)}
-              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-xl font-black text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="rounded-2xl bg-red-600 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isOpen ? '×' : '≡'}
+              {isLoggingOut ? 'Keluar...' : 'Keluar'}
             </button>
           </div>
         </div>
 
         {isOpen && (
-          <div className="border-t border-slate-100 px-5 py-4 dark:border-slate-800">
+          <div className="border-t border-slate-100 px-5 py-4 dark:border-slate-800 lg:hidden">
             <nav className="space-y-2">
               {navItems[role].map((item) => (
                 <Link
@@ -223,15 +214,6 @@ export default function DashboardShell({ role, children }: DashboardShellProps) 
                   {item.label}
                 </Link>
               ))}
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="app-btn-danger mt-3 w-full disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isLoggingOut ? 'Keluar...' : 'Keluar'}
-              </button>
             </nav>
           </div>
         )}

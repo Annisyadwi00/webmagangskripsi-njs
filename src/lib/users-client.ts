@@ -77,3 +77,17 @@ export async function updateCurrentUserProfile(payload: { phone: string }) {
     },
   });
 }
+
+export async function updateCurrentUserPassword(payload: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}) {
+  return apiClient<null>('/api/auth/me', {
+    method: 'PUT',
+    body: {
+      action: 'update_password',
+      ...payload,
+    },
+  });
+}
