@@ -26,7 +26,6 @@ export type PengajuanAttributes = {
 
   perusahaan: string;
   posisi: string;
-  link_loa: string | null;
 
   alamat_tempat_magang: string | null;
   nama_penanggung_jawab: string | null;
@@ -122,7 +121,6 @@ class Pengajuan extends Model<
 
   declare perusahaan: string;
   declare posisi: string;
-  declare link_loa: string | null;
 
   declare alamat_tempat_magang: string | null;
   declare nama_penanggung_jawab: string | null;

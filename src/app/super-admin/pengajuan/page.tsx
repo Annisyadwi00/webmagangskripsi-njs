@@ -447,9 +447,9 @@ title="Pengajuan Mahasiswa Magang"
                         Detail
                       </Link>
 
-                      {item.link_loa && (
+                      {item.bukti_penerimaan || item.link_loa && (
                         <a
-                          href={item.link_loa}
+                          href={item.bukti_penerimaan || item.link_loa}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="app-btn-secondary px-4 py-2 text-sm"

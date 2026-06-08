@@ -444,16 +444,16 @@ export default function AdminPengajuanPage() {
                         Detail
                       </Link>
 
-                      {item.link_loa && (
-                        <a
-                          href={item.link_loa}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="app-btn-secondary px-4 py-2 text-sm"
-                        >
-                          Lihat Bukti Penerimaan
-                        </a>
-                      )}
+                     {(item.bukti_penerimaan || item.bukti_penerimaan || item.link_loa) && (
+  <a
+    href={item.bukti_penerimaan || item.bukti_penerimaan || item.link_loa || '#'}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="app-btn-secondary px-4 py-2 text-sm"
+  >
+    Lihat Bukti
+  </a>
+)}
 
                       {item.foto_diri && (
                         <a

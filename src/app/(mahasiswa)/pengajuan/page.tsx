@@ -340,7 +340,7 @@ useEffect(() => {
 
         perusahaan: form.perusahaan.trim(),
         posisi: form.posisi.trim() || form.jenis_magang,
-        link_loa: form.bukti_penerimaan.trim(),
+        link_loa: form.bukti_penerimaan.trim(), // legacy alias
 
         alamat_tempat_magang: form.alamat_tempat_magang.trim(),
         nama_penanggung_jawab: form.nama_penanggung_jawab.trim(),
@@ -1005,9 +1005,9 @@ setForm(initialForm);
                   </div>
 
                   <div className="flex flex-col gap-3 sm:flex-row">
-                    {currentPengajuan.link_loa && (
-                      <a
-                        href={currentPengajuan.link_loa}
+                    {(currentPengajuan.bukti_penerimaan || currentPengajuan.link_loa) && (
+  <a
+    href={currentPengajuan.bukti_penerimaan || currentPengajuan.link_loa || '#'}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="app-btn-secondary flex-1"
