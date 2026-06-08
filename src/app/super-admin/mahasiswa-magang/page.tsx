@@ -39,6 +39,35 @@ function escapeCsv(value: string | number | null | undefined) {
   return `"${text.replace(/"/g, '""')}"`;
 }
 
+function getLaporanStatus(item: Pengajuan) {
+  if (item.jenis_magang === 'Tidak Konversi') return 'Tidak Wajib';
+  return item.link_laporan_akhir ? 'Sudah Upload' : 'Belum Upload';
+}
+
+function getOutputStatus(item: Pengajuan) {
+  if (item.jenis_magang !== 'Maksimal 20 SKS') return '-';
+  return item.link_output_magang ? 'Sudah Upload' : 'Belum Upload';
+}
+
+function getExportRows(data: Pengajuan[]) {
+  return data.map((item) => ({
+    nama: item.nama_mahasiswa || '',
+    npm: item.npm || '',
+    prodi: item.program_studi || '',
+    kelas: item.kelas || '',
+    jenisMagang: item.jenis_magang || '',
+    perusahaan: item.perusahaan || '',
+    posisi: item.posisi || '',
+    tanggalMulai: item.tgl_mulai || '',
+    tanggalBerakhir: item.tgl_berakhir || '',
+    dosenPembimbing: item.nama_dosen || '',
+    status: getStatusLabel(item.status),
+    laporan: getLaporanStatus(item),
+    output: getOutputStatus(item),
+    nilaiAkhir: item.nilai_dari_dosen || '',
+  }));
+}
+
 export default function SuperAdminMahasiswaMagangPage() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [pengajuans, setPengajuans] = useState<Pengajuan[]>([]);
@@ -109,61 +138,254 @@ export default function SuperAdminMahasiswaMagangPage() {
   ).length;
 
   const handleExportCsv = () => {
-    const headers = [
-      'Nama Mahasiswa',
-      'NPM',
-      'Program Studi',
-      'Kelas',
-      'Jenis Magang',
-      'Tempat Magang',
-      'Posisi',
-      'Tanggal Mulai',
-      'Tanggal Selesai',
-      'Dosen Pembimbing',
-      'Status',
-      'Laporan Akhir',
-      'Nilai Akhir',
-    ];
+  const headers = [
+    'Nama Mahasiswa',
+    'NPM',
+    'Program Studi',
+    'Kelas',
+    'Jenis Magang',
+    'Perusahaan',
+    'Posisi',
+    'Tanggal Mulai',
+    'Tanggal Berakhir',
+    'Dosen Pembimbing',
+    'Status',
+    'Laporan',
+    'Output Magang',
+    'Nilai Akhir',
+  ];
 
-    const rows = filteredPengajuans.map((item) => [
-      item.nama_mahasiswa,
-      item.npm || '',
-      item.program_studi || '',
-      item.kelas || '',
-      item.jenis_magang || '',
-      item.perusahaan,
-      item.posisi,
-      item.tgl_mulai || '',
-      item.tgl_berakhir || '',
-      item.nama_dosen || '',
-      getStatusLabel(item.status),
-      item.link_laporan_akhir ? 'Sudah Upload' : 'Belum Upload',
-      item.nilai_dari_dosen || '',
-    ]);
+  const rows = getExportRows(filteredPengajuans).map((item) => [
+    item.nama,
+    item.npm,
+    item.prodi,
+    item.kelas,
+    item.jenisMagang,
+    item.perusahaan,
+    item.posisi,
+    item.tanggalMulai,
+    item.tanggalBerakhir,
+    item.dosenPembimbing,
+    item.status,
+    item.laporan,
+    item.output,
+    item.nilaiAkhir,
+  ]);
 
-    const csvContent = [
-      headers.map(escapeCsv).join(','),
-      ...rows.map((row) => row.map(escapeCsv).join(',')),
-    ].join('\n');
+  const csvContent = [
+    headers.map(escapeCsv).join(','),
+    ...rows.map((row) => row.map(escapeCsv).join(',')),
+  ].join('\n');
 
-    const blob = new Blob([`\uFEFF${csvContent}`], {
-      type: 'text/csv;charset=utf-8;',
-    });
+  const blob = new Blob([`\uFEFF${csvContent}`], {
+    type: 'text/csv;charset=utf-8;',
+  });
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
 
-    link.href = url;
-    link.download = `data-mahasiswa-magang-${new Date()
-      .toISOString()
-      .slice(0, 10)}.csv`;
+  link.href = url;
+  link.download = `data-mahasiswa-magang-${new Date()
+    .toISOString()
+    .slice(0, 10)}.csv`;
 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 
-    URL.revokeObjectURL(url);
-  };
+  URL.revokeObjectURL(url);
+};
+
+const handleExportExcel = () => {
+  const rows = getExportRows(filteredPengajuans);
+
+  const tableRows = rows
+    .map(
+      (item) => `
+        <tr>
+          <td>${item.nama}</td>
+          <td>${item.npm}</td>
+          <td>${item.prodi}</td>
+          <td>${item.kelas}</td>
+          <td>${item.jenisMagang}</td>
+          <td>${item.perusahaan}</td>
+          <td>${item.posisi}</td>
+          <td>${item.tanggalMulai}</td>
+          <td>${item.tanggalBerakhir}</td>
+          <td>${item.dosenPembimbing}</td>
+          <td>${item.status}</td>
+          <td>${item.laporan}</td>
+          <td>${item.output}</td>
+          <td>${item.nilaiAkhir}</td>
+        </tr>
+      `
+    )
+    .join('');
+
+  const html = `
+    <html>
+      <head>
+        <meta charset="UTF-8" />
+      </head>
+      <body>
+        <table border="1">
+          <thead>
+            <tr>
+              <th>Nama Mahasiswa</th>
+              <th>NPM</th>
+              <th>Program Studi</th>
+              <th>Kelas</th>
+              <th>Jenis Magang</th>
+              <th>Perusahaan</th>
+              <th>Posisi</th>
+              <th>Tanggal Mulai</th>
+              <th>Tanggal Berakhir</th>
+              <th>Dosen Pembimbing</th>
+              <th>Status</th>
+              <th>Laporan</th>
+              <th>Output Magang</th>
+              <th>Nilai Akhir</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </body>
+    </html>
+  `;
+
+  const blob = new Blob([html], {
+    type: 'application/vnd.ms-excel;charset=utf-8;',
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = `data-mahasiswa-magang-${new Date()
+    .toISOString()
+    .slice(0, 10)}.xls`;
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+};
+
+const handleExportPdf = () => {
+  const rows = getExportRows(filteredPengajuans);
+
+  const tableRows = rows
+    .map(
+      (item, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${item.nama}</td>
+          <td>${item.npm}</td>
+          <td>${item.prodi}</td>
+          <td>${item.kelas}</td>
+          <td>${item.jenisMagang}</td>
+          <td>${item.perusahaan}</td>
+          <td>${item.dosenPembimbing}</td>
+          <td>${item.status}</td>
+          <td>${item.nilaiAkhir || '-'}</td>
+        </tr>
+      `
+    )
+    .join('');
+
+  const printWindow = window.open('', '_blank');
+
+  if (!printWindow) {
+    alert('Popup diblokir. Izinkan popup untuk export PDF.');
+    return;
+  }
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Data Mahasiswa Magang</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 24px;
+            color: #111827;
+          }
+
+          h1 {
+            margin-bottom: 4px;
+            font-size: 22px;
+          }
+
+          p {
+            margin-top: 0;
+            color: #64748b;
+            font-size: 12px;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 10px;
+          }
+
+          th, td {
+            border: 1px solid #cbd5e1;
+            padding: 6px;
+            text-align: left;
+            vertical-align: top;
+          }
+
+          th {
+            background: #f1f5f9;
+          }
+
+          @media print {
+            body {
+              padding: 12px;
+            }
+          }
+        </style>
+      </head>
+
+      <body>
+        <h1>Data Mahasiswa Magang</h1>
+        <p>Dicetak pada ${new Date().toLocaleDateString('id-ID')}</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Nama</th>
+              <th>NPM</th>
+              <th>Program Studi</th>
+              <th>Kelas</th>
+              <th>Jenis Magang</th>
+              <th>Perusahaan</th>
+              <th>Dosen Pembimbing</th>
+              <th>Status</th>
+              <th>Nilai</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+
+        <script>
+          window.onload = function () {
+            window.print();
+          };
+        </script>
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+};
 
   if (isLoading) {
     return (
@@ -188,26 +410,43 @@ export default function SuperAdminMahasiswaMagangPage() {
           <PageHeader
             eyebrow="staff"
             title="Data Mahasiswa Magang"
-            description={`Kelola rekap mahasiswa magang dan export data ke CSV. Halo, ${
+            description={`Kelola rekap mahasiswa magang dan export data ke CSV, Excel, atau PDF. Halo, ${
               currentUser?.name || 'Super Admin'
             }.`}
             action={
-              <button
-                type="button"
-                onClick={handleExportCsv}
-                className="app-btn-primary"
-              >
-                Export CSV
-              </button>
-            }
+  <div className="flex flex-col gap-2 sm:flex-row">
+    <button
+      type="button"
+      onClick={handleExportCsv}
+      className="app-btn-secondary"
+    >
+      Export CSV
+    </button>
+
+    <button
+      type="button"
+      onClick={handleExportExcel}
+      className="app-btn-secondary"
+    >
+      Export Excel
+    </button>
+
+    <button
+      type="button"
+      onClick={handleExportPdf}
+      className="app-btn-primary"
+    >
+      Export PDF
+    </button>
+  </div>
+}
           />
 
           {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
 
           {totalBelumUploadLaporan > 0 && (
             <Alert variant="warning">
-              Ada {totalBelumUploadLaporan} mahasiswa yang belum mengunggah
-              laporan akhir.
+              Ada {totalBelumUploadLaporan} mahasiswa yang belum melengkapi dokumen magang.
             </Alert>
           )}
 
