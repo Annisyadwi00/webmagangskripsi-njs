@@ -13,6 +13,7 @@ import {
   getPengajuanMitraList,
   updateStatusPengajuanMitra,
 } from '@/lib/pengajuan-mitra-client';
+import DashboardShell from '@/components/dashboard/DashboardShell';
 
 function getStatusBadgeClass(status?: string | null) {
   if (status === 'Disetujui') return 'app-badge app-badge-green';
@@ -38,7 +39,36 @@ function DetailItem({
     </div>
   );
 }
+function DocumentButton({
+  label,
+  href,
+}: {
+  label: string;
+  href?: string | null;
+}) {
+  if (!href) {
+    return (
+      <button
+        type="button"
+        disabled
+        className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-black text-slate-400 dark:border-slate-700 dark:bg-slate-800"
+      >
+        {label} Belum Ada
+      </button>
+    );
+  }
 
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-[#1e3a8a] transition hover:border-blue-200 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-blue-300 dark:hover:border-blue-400/40"
+    >
+      Buka {label}
+    </a>
+  );
+}
 export default function AdminPengajuanMitraPage() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [pengajuanMitra, setPengajuanMitra] = useState<PengajuanMitra[]>([]);
@@ -96,13 +126,20 @@ export default function AdminPengajuanMitraPage() {
     const keyword = search.toLowerCase();
 
     return pengajuanMitra.filter((item) => {
-      const matchesKeyword =
-        item.nama_mitra.toLowerCase().includes(keyword) ||
-        item.nama_narahubung_mitra.toLowerCase().includes(keyword) ||
-        item.nama_mahasiswa_pengusul.toLowerCase().includes(keyword) ||
-        item.npm_mahasiswa_pengusul.toLowerCase().includes(keyword) ||
-        item.program_studi_mahasiswa.toLowerCase().includes(keyword);
+      const namaMitra = item.nama_mitra || '';
+const narahubung = item.nama_narahubung_mitra || '';
+const mahasiswa = item.nama_mahasiswa_pengusul || '';
+const npm = item.npm_mahasiswa_pengusul || '';
+const prodi = item.program_studi_mahasiswa || '';
+const lokasi = item.lokasi || '';
 
+const matchesKeyword =
+  namaMitra.toLowerCase().includes(keyword) ||
+  narahubung.toLowerCase().includes(keyword) ||
+  mahasiswa.toLowerCase().includes(keyword) ||
+  npm.toLowerCase().includes(keyword) ||
+  prodi.toLowerCase().includes(keyword) ||
+  lokasi.toLowerCase().includes(keyword);
       const matchesStatus =
         statusFilter === 'Semua' || item.status === statusFilter;
 
@@ -180,6 +217,7 @@ export default function AdminPengajuanMitraPage() {
 
   if (isLoading) {
     return (
+      <DashboardShell role="Admin">
       <main className="min-h-screen py-8">
         <div className="app-container">
           <div className="app-card p-8">
@@ -197,20 +235,25 @@ export default function AdminPengajuanMitraPage() {
           </div>
         </div>
       </main>
+      </DashboardShell>
     );
   }
 
   if (errorMsg && !message && !selectedMitra) {
     return (
+      <DashboardShell role="Admin">
       <main className="min-h-screen py-8">
         <div className="app-container">
           <Alert variant="error">{errorMsg}</Alert>
         </div>
       </main>
+      </DashboardShell>
     );
   }
 
   return (
+      <DashboardShell role="Admin">
+
     <main className="min-h-screen py-8">
       <div className="app-container">
         <PageHeader
@@ -222,7 +265,7 @@ export default function AdminPengajuanMitraPage() {
               Kembali ke Dashboard
             </Link>
           }
-        />
+          />
 
         {message && <Alert variant="success">{message}</Alert>}
         {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
@@ -253,7 +296,7 @@ export default function AdminPengajuanMitraPage() {
             value={totalDitolak}
             description="Pengajuan mitra yang tidak disetujui."
             icon="warning"
-          />
+            />
         </section>
 
         <section className="app-card mb-6 p-6">
@@ -275,7 +318,7 @@ export default function AdminPengajuanMitraPage() {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="app-input"
-              >
+                >
                 <option value="Semua">Semua</option>
                 <option value="Menunggu">Menunggu</option>
                 <option value="Disetujui">Disetujui</option>
@@ -384,6 +427,10 @@ export default function AdminPengajuanMitraPage() {
                     value={item.kontak_narahubung_mitra}
                   />
                   <DetailItem label="Status" value={item.status} />
+                  <DetailItem label="Lokasi" value={item.lokasi} />
+<DetailItem label="Sistem Kerja" value={item.sistem_kerja} />
+<DetailItem label="Kuota" value={item.kuota} />
+<DetailItem label="Email PIC" value={item.email_pic} />
                 </div>
 
                 <div className="app-panel mt-4 p-4">
@@ -394,7 +441,51 @@ export default function AdminPengajuanMitraPage() {
                     {item.alamat_kantor_mitra || '-'}
                   </p>
                 </div>
+                
+<div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+  <div className="app-panel p-4">
+    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+      Deskripsi Lowongan
+    </p>
+    <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700 dark:text-slate-300">
+      {item.deskripsi_lowongan || '-'}
+    </p>
+  </div>
 
+  <div className="app-panel p-4">
+    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+      Persyaratan
+    </p>
+    <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700 dark:text-slate-300">
+      {item.persyaratan || '-'}
+    </p>
+  </div>
+</div>
+<div className="app-panel mt-4 p-4">
+  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+    Dokumen Pendukung
+  </p>
+
+  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+    <DocumentButton
+      label="Akta Pendirian"
+      href={item.link_akta_pendirian}
+    />
+    <DocumentButton
+      label="Akta Direksi"
+      href={item.link_akta_direksi}
+    />
+    <DocumentButton
+      label="KTP Penandatangan"
+      href={item.link_ktp_penandatangan}
+    />
+    <DocumentButton label="NPWP" href={item.link_npwp} />
+    <DocumentButton
+      label="Izin Usaha"
+      href={item.link_izin_usaha}
+    />
+  </div>
+</div>
                 {item.catatan_admin && (
                   <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-400/20 dark:bg-blue-400/10">
                     <p className="text-xs font-black uppercase tracking-wide text-[#1e3a8a] dark:text-blue-300">
@@ -496,5 +587,6 @@ export default function AdminPengajuanMitraPage() {
         </div>
       )}
     </main>
+                  </DashboardShell>
   );
 }

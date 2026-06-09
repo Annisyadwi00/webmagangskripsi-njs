@@ -11,7 +11,20 @@ export type PengajuanMitra = {
   url_mitra: string | null;
   nama_narahubung_mitra: string;
   kontak_narahubung_mitra: string;
+email_pic: string | null;
 
+lokasi: string | null;
+sistem_kerja: string | null;
+kuota: number | null;
+link_pendaftaran: string | null;
+deskripsi_lowongan: string | null;
+persyaratan: string | null;
+
+link_akta_pendirian: string | null;
+link_akta_direksi: string | null;
+link_ktp_penandatangan: string | null;
+link_npwp: string | null;
+link_izin_usaha: string | null;
   nama_mahasiswa_pengusul: string;
   npm_mahasiswa_pengusul: string;
   program_studi_mahasiswa: string;
