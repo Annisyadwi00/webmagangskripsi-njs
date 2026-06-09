@@ -6,7 +6,7 @@ export type JobType = 'Onsite' | 'Hybrid' | 'Remote';
 export type JobTipeKonversi =
   | 'Konversi 20 SKS'
   | 'Tidak Konversi'
-  | 'Konversi 2 SKS';
+  | 'Magang 2 SKS Khusus SI';
 
 export type JobStatus = 'Aktif' | 'Nonaktif';
 
@@ -58,15 +58,14 @@ Job.init(
       allowNull: false,
       defaultValue: 'Onsite',
     },
-    tipeKonversi: {
-      type: DataTypes.ENUM(
-        'Konversi 20 SKS',
-        'Tidak Konversi',
-        'Konversi 2 SKS'
-      ),
-      allowNull: false,
-      defaultValue: 'Konversi 20 SKS',
-    },
+   tipeKonversi: {
+  type: DataTypes.ENUM(
+    'Konversi 20 SKS',
+    'Tidak Konversi',
+    'Magang 2 SKS Khusus SI'
+  ),
+  allowNull: false,
+},
     kategori: {
       type: DataTypes.STRING,
       allowNull: false,

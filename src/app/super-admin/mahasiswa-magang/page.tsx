@@ -45,7 +45,7 @@ function getLaporanStatus(item: Pengajuan) {
 }
 
 function getOutputStatus(item: Pengajuan) {
-  if (item.jenis_magang !== 'Maksimal 20 SKS') return '-';
+  if (item.jenis_magang !== 'Konversi 20 SKS') return '-';
   return item.link_output_magang ? 'Sudah Upload' : 'Belum Upload';
 }
 

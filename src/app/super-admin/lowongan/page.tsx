@@ -658,7 +658,7 @@ description="Tambah, ubah, nonaktifkan, hapus, dan validasi lowongan magang yang
                     }
                     className="app-input"
                   >
-                    <option value="Konversi 20 SKS">Konversi 20 SKS</option>
+                    <option value="Konversi 20 SKS">Konversi Maksimal 20 SKS</option>
 <option value="Tidak Konversi">Tidak Konversi</option>
 <option value="Konversi 2 SKS">Konversi 2 SKS khusus Sistem Informasi</option>
                   </select>

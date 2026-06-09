@@ -54,7 +54,7 @@ const initialForm: PengajuanForm = {
   semester: '',
   kelas: '',
 
-  jenis_magang: 'Maksimal 20 SKS',
+  jenis_magang: 'Konversi 20 SKS',
   status_mitra: 'Terdaftar',
   mitra_id: '',
   no_hp_mahasiswa: '',
@@ -687,7 +687,7 @@ setForm(initialForm);
                         onChange={handleChange}
                         className="app-input"
                       >
-                        <option value="Maksimal 20 SKS">Maksimal 20 SKS</option>
+                        <option value="Konversi 20 SKS">Konversi Maksimal 20 SKS</option>
 <option value="Tidak Konversi">Tidak Konversi</option>
 {isSistemInformasi && (
   <option value="Magang 2 SKS Khusus SI">

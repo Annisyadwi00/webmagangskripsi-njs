@@ -166,7 +166,7 @@ export async function POST(request: Request) {
     }
 
     const allowedJenisMagang = [
-      'Maksimal 20 SKS',
+      'Konversi 20 SKS',
       'Tidak Konversi',
       'Magang 2 SKS Khusus SI',
     ];
@@ -387,11 +387,11 @@ export async function PUT(request: Request) {
           );
         }
 
-        if (jenisMagang === 'Maksimal 20 SKS' && !link_output_magang) {
+        if (jenisMagang === 'Konversi 20 SKS' && !link_output_magang) {
           return NextResponse.json(
             {
               message:
-                'Output magang wajib diisi untuk jenis magang Maksimal 20 SKS.',
+                'Output magang wajib diisi untuk jenis magang konversi 20 SKS.',
             },
             { status: 400 }
           );

@@ -222,7 +222,7 @@ export default function MahasiswaDashboardPage() {
 
   const laporanLabel = getLaporanLabel(pengajuan?.jenis_magang);
   const tidakPerluLaporan = pengajuan?.jenis_magang === 'Tidak Konversi';
-  const wajibOutput = pengajuan?.jenis_magang === 'Maksimal 20 SKS';
+  const wajibOutput = pengajuan?.jenis_magang === 'Konversi 20 SKS';
 
   return (
     <DashboardShell role="Mahasiswa">
@@ -357,7 +357,7 @@ export default function MahasiswaDashboardPage() {
               {pengajuanAktif && wajibOutput && !sudahUploadOutput && (
                 <Alert variant="warning">
                   Kamu belum mengunggah output magang. Output magang wajib untuk
-                  jenis magang Maksimal 20 SKS.
+                  jenis magang konversi 20 SKS.
                 </Alert>
               )}
 

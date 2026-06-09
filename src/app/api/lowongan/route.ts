@@ -17,7 +17,11 @@ import {
 } from '@/lib/api-response';
 
 const allowedJobTypes: JobType[] = ['Onsite', 'Hybrid', 'Remote'];
-const allowedTipeKonversi: JobTipeKonversi[] = [ 'Konversi 20 SKS', 'Tidak Konversi', 'Konversi 2 SKS',];
+const allowedTipeKonversi: JobTipeKonversi[] = [
+  'Konversi 20 SKS',
+  'Tidak Konversi',
+  'Magang 2 SKS Khusus SI',
+];
 const allowedStatus: JobStatus[] = ['Aktif', 'Nonaktif'];
 
 function parseKuota(value: unknown) {

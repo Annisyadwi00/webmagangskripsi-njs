@@ -197,7 +197,7 @@ export default function LowonganPage() {
         onChange={(e) => setKonversiFilter(e.target.value)}
         className="app-input"
       >
-        <option value="Maksimal 20 SKS">Maksimal 20 SKS</option>
+        <option value="Konversi 20 SKS">Konversi Maksimal 20 SKS</option>
 <option value="Tidak Konversi">Tidak Konversi</option>
 <option value="Magang 2 SKS Khusus SI">
   Magang 2 SKS Khusus SI

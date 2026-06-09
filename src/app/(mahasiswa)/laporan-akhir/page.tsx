@@ -14,7 +14,7 @@ import {
 } from '@/lib/pengajuan-client';
 
 function getLaporanRequirement(jenisMagang?: string | null) {
-  if (jenisMagang === 'Maksimal 20 SKS') {
+  if (jenisMagang === 'Konversi 20 SKS') {
     return {
       showForm: true,
       needLaporan: true,
