@@ -1,5 +1,7 @@
 import { apiClient } from '@/lib/api-client';
 
+export type MitraStatus = 'Aktif' | 'Nonaktif';
+
 export type Mitra = {
   id: number;
   nama_mitra: string;
@@ -9,38 +11,37 @@ export type Mitra = {
   email: string | null;
   website: string | null;
   deskripsi: string | null;
-  status: 'Aktif' | 'Nonaktif';
+  status: MitraStatus;
   createdAt: string;
   updatedAt: string;
 };
 
+function normalizeMitraData(data?: Mitra[] | { data?: Mitra[] } | null) {
+  if (!data) return [];
+
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  return data.data || [];
+}
+
 export async function getMitraList(limit?: number) {
   const query = limit ? `?limit=${limit}` : '';
 
-  const result = await apiClient<Mitra[] | { data: Mitra[] }>(
+  const result = await apiClient<Mitra[] | { data?: Mitra[] }>(
     `/api/mitra${query}`
   );
 
-  if (!result.data) return [];
-
-  if (Array.isArray(result.data)) {
-    return result.data;
-  }
-
-  return result.data.data || [];
+  return normalizeMitraData(result.data);
 }
+
 export async function getAllMitraList() {
-  const result = await apiClient<Mitra[] | { data: Mitra[] }>(
+  const result = await apiClient<Mitra[] | { data?: Mitra[] }>(
     '/api/mitra?all=true'
   );
 
-  if (!result.data) return [];
-
-  if (Array.isArray(result.data)) {
-    return result.data;
-  }
-
-  return result.data.data || [];
+  return normalizeMitraData(result.data);
 }
 
 export async function createMitra(payload: {
@@ -67,7 +68,7 @@ export async function updateMitra(payload: {
   email?: string | null;
   website?: string | null;
   deskripsi?: string | null;
-  status?: 'Aktif' | 'Nonaktif';
+  status?: MitraStatus;
 }) {
   return apiClient<null>('/api/mitra', {
     method: 'PUT',

@@ -6,6 +6,8 @@ import Alert from '@/components/ui/Alert';
 import { apiClient } from '@/lib/api-client';
 import { getCurrentUserClient } from '@/lib/client-auth';
 
+type SistemKerja = 'Onsite' | 'Hybrid' | 'Remote';
+
 type FormState = {
   nama_mitra: string;
   website: string;
@@ -16,7 +18,7 @@ type FormState = {
   email_pic: string;
 
   lokasi: string;
-  sistem_kerja: 'Onsite' | 'Hybrid' | 'Remote';
+  sistem_kerja: SistemKerja;
   kuota: string;
   link_pendaftaran: string;
 
@@ -44,6 +46,33 @@ const initialForm: FormState = {
   persyaratan: '',
 };
 
+function isValidUrl(value: string) {
+  if (!value) return true;
+
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isValidEmail(value: string) {
+  if (!value) return true;
+
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function validatePdf(file: File | null, label: string) {
+  if (!file) return `${label} wajib diunggah.`;
+
+  if (file.type !== 'application/pdf') {
+    return `${label} harus berupa file PDF.`;
+  }
+
+  return '';
+}
+
 export default function AjukanMitraPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(initialForm);
@@ -56,7 +85,7 @@ export default function AjukanMitraPage() {
 
   const [errorMsg, setErrorMsg] = useState('');
   const [message, setMessage] = useState('');
-const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const savedDraft = localStorage.getItem(DRAFT_KEY);
@@ -76,138 +105,175 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   }, [form]);
 
   const handleChange = (field: keyof FormState, value: string) => {
-    setForm({
-      ...form,
+    setForm((prev) => ({
+      ...prev,
       [field]: value,
-    });
+    }));
   };
 
-  const validatePdf = (file: File | null, label: string) => {
-    if (!file) return `${label} wajib diunggah.`;
-
-    if (file.type !== 'application/pdf') {
-      return `${label} harus berupa file PDF.`;
-    }
-
-    return '';
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-
-  setErrorMsg('');
-  setMessage('');
-
-  if (
-    !form.nama_mitra.trim() ||
-    !form.alamat.trim() ||
-    !form.nama_pic.trim() ||
-    !form.kontak_wa.trim() ||
-    !form.email_pic.trim() ||
-    !form.lokasi.trim() ||
-    !form.kuota.trim() ||
-    !form.deskripsi_lowongan.trim() ||
-    !form.persyaratan.trim()
-  ) {
-    setErrorMsg('Data mitra, narahubung, dan detail lowongan wajib diisi.');
-    return;
-  }
-
-  if (!/^62\d{8,15}$/.test(form.kontak_wa)) {
-    setErrorMsg(
-      'Nomor WhatsApp narahubung harus diawali 62. Contoh: 6285456123.'
-    );
-    return;
-  }
-
-  const fileErrors = [
-    validatePdf(aktaPendirian, 'Akta pendirian'),
-    validatePdf(aktaDireksi, 'Akta susunan direksi'),
-    validatePdf(ktpPenandatangan, 'KTP penandatangan'),
-    validatePdf(npwpPerusahaan, 'NPWP perusahaan'),
-    validatePdf(izinUsaha, 'Dokumen izin usaha terkait'),
-  ].filter(Boolean);
-
-  if (fileErrors.length > 0) {
-    setErrorMsg(fileErrors[0]);
-    return;
-  }
-
-  setIsSubmitting(true);
-
-  try {
-    const currentUser = await getCurrentUserClient();
-
-    const result = await apiClient('/api/pengajuan-mitra', {
-      method: 'POST',
-      body: {
-        nama_mitra: form.nama_mitra,
-        alamat_kantor_mitra: form.alamat,
-        url_mitra: form.website || null,
-        nama_narahubung_mitra: form.nama_pic,
-        kontak_narahubung_mitra: form.kontak_wa,
-
-        nama_mahasiswa_pengusul: currentUser.name,
-        npm_mahasiswa_pengusul: currentUser.nim_nidn || '-',
-        program_studi_mahasiswa: currentUser.prodi || '-',
-        angkatan_mahasiswa: currentUser.angkatan || '-',
-        kontak_mahasiswa: currentUser.phone || form.kontak_wa,
-        kelas: currentUser.kelas || '-',
-
-        lokasi: form.lokasi,
-        sistem_kerja: form.sistem_kerja,
-        kuota: form.kuota,
-        link_pendaftaran: form.link_pendaftaran,
-        email_pic: form.email_pic,
-        deskripsi_lowongan: form.deskripsi_lowongan,
-        
-        link_akta_pendirian: null,
-link_akta_direksi: null,
-link_ktp_penandatangan: null,
-link_npwp: null,
-link_izin_usaha: null,
-      },
-    });
-
-    setMessage(result.message || 'Pengajuan mitra berhasil dikirim.');
-
+  const handleReset = () => {
     setForm(initialForm);
     setAktaPendirian(null);
     setAktaDireksi(null);
     setKtpPenandatangan(null);
     setNpwpPerusahaan(null);
     setIzinUsaha(null);
+    setMessage('');
+    setErrorMsg('');
     localStorage.removeItem(DRAFT_KEY);
-  } catch (error) {
-    const msg =
-      error instanceof Error
-        ? error.message
-        : 'Gagal mengirim pengajuan mitra.';
+  };
 
-    setErrorMsg(msg);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  const validateForm = () => {
+    if (
+      !form.nama_mitra.trim() ||
+      !form.alamat.trim() ||
+      !form.nama_pic.trim() ||
+      !form.kontak_wa.trim() ||
+      !form.email_pic.trim() ||
+      !form.lokasi.trim() ||
+      !form.kuota.trim() ||
+      !form.deskripsi_lowongan.trim() ||
+      !form.persyaratan.trim()
+    ) {
+      return 'Data mitra, narahubung, dan detail lowongan wajib diisi.';
+    }
+
+    if (form.website && !isValidUrl(form.website)) {
+      return 'Format website perusahaan tidak valid.';
+    }
+
+    if (form.link_pendaftaran && !isValidUrl(form.link_pendaftaran)) {
+      return 'Format link pendaftaran tidak valid.';
+    }
+
+    if (!isValidEmail(form.email_pic)) {
+      return 'Format email narahubung tidak valid.';
+    }
+
+    if (!/^62\d{8,15}$/.test(form.kontak_wa)) {
+      return 'Nomor WhatsApp narahubung harus diawali 62. Contoh: 6285456123.';
+    }
+
+    const kuotaNumber = Number(form.kuota);
+
+    if (!Number.isInteger(kuotaNumber) || kuotaNumber < 1) {
+      return 'Kuota harus berupa angka minimal 1.';
+    }
+
+    const fileErrors = [
+      validatePdf(aktaPendirian, 'Akta pendirian'),
+      validatePdf(aktaDireksi, 'Akta susunan direksi'),
+      validatePdf(ktpPenandatangan, 'KTP penandatangan'),
+      validatePdf(npwpPerusahaan, 'NPWP perusahaan'),
+      validatePdf(izinUsaha, 'Dokumen izin usaha terkait'),
+    ].filter(Boolean);
+
+    if (fileErrors.length > 0) {
+      return fileErrors[0];
+    }
+
+    return '';
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setErrorMsg('');
+    setMessage('');
+
+    const validation = validateForm();
+
+    if (validation) {
+      setErrorMsg(validation);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const currentUser = await getCurrentUserClient();
+
+      const result = await apiClient('/api/pengajuan-mitra', {
+        method: 'POST',
+        body: {
+          nama_mitra: form.nama_mitra.trim(),
+          alamat_kantor_mitra: form.alamat.trim(),
+          url_mitra: form.website.trim() || null,
+
+          nama_narahubung_mitra: form.nama_pic.trim(),
+          kontak_narahubung_mitra: form.kontak_wa.trim(),
+          email_pic: form.email_pic.trim(),
+
+          nama_mahasiswa_pengusul: currentUser.name,
+          npm_mahasiswa_pengusul: currentUser.nim_nidn || '-',
+          program_studi_mahasiswa: currentUser.prodi || '-',
+          angkatan_mahasiswa: currentUser.angkatan || '-',
+          kontak_mahasiswa: currentUser.phone || form.kontak_wa.trim(),
+          kelas: currentUser.kelas || '-',
+
+          lokasi: form.lokasi.trim(),
+          sistem_kerja: form.sistem_kerja,
+          kuota: Number(form.kuota),
+          link_pendaftaran: form.link_pendaftaran.trim() || null,
+          deskripsi_lowongan: form.deskripsi_lowongan.trim(),
+          persyaratan: form.persyaratan.trim(),
+
+          link_akta_pendirian: null,
+          link_akta_direksi: null,
+          link_ktp_penandatangan: null,
+          link_npwp: null,
+          link_izin_usaha: null,
+        },
+      });
+
+      setMessage(
+        result.message ||
+          'Pengajuan mitra berhasil dikirim dan akan diperiksa oleh staff.'
+      );
+
+      handleReset();
+      setShowForm(false);
+    } catch (error) {
+      const msg =
+        error instanceof Error
+          ? error.message
+          : 'Gagal mengirim pengajuan mitra.';
+
+      setErrorMsg(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-slate-50 py-12 dark:bg-slate-950">
       <div className="app-container">
         <section className="mb-8 rounded-[2rem] border border-blue-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:p-8">
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a] dark:text-blue-300">
-            Ajukan Mitra
-          </p>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a] dark:text-blue-300">
+                Ajukan Mitra
+              </p>
 
-          <h1 className="mt-3 max-w-4xl text-4xl font-black leading-tight text-slate-950 dark:text-white md:text-5xl">
-            Ajukan perusahaan atau instansi untuk menjadi mitra magang.
-          </h1>
+              <h1 className="mt-3 max-w-4xl text-4xl font-black leading-tight text-slate-950 dark:text-white md:text-5xl">
+                Ajukan perusahaan atau instansi untuk menjadi mitra magang.
+              </h1>
 
-          <p className="mt-4 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300">
-            Sebelum mengajukan mitra baru, cek terlebih dahulu apakah perusahaan
-            sudah terdaftar sebagai mitra. Jika belum, isi form pengajuan mitra
-            berikut.
-          </p>
+              <p className="mt-4 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300">
+                Sebelum mengajukan mitra baru, cek terlebih dahulu apakah
+                perusahaan sudah terdaftar sebagai mitra. Jika belum, isi form
+                pengajuan mitra berikut.
+              </p>
+            </div>
+
+            <Link href="/" className="app-btn-secondary lg:shrink-0">
+              Beranda
+            </Link>
+          </div>
         </section>
+
+        {message && <Alert variant="success">{message}</Alert>}
+        {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
 
         {!showForm && (
           <section className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -281,9 +347,6 @@ link_izin_usaha: null,
                 Kembali
               </button>
             </div>
-
-            {message && <Alert variant="success">{message}</Alert>}
-            {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
 
             <form onSubmit={handleSubmit} className="space-y-8">
               <section>
@@ -362,15 +425,13 @@ link_izin_usaha: null,
                   </div>
 
                   <div>
-                    <label className="app-label">Email</label>
+                    <label className="app-label">Email Narahubung</label>
                     <input
                       type="email"
                       value={form.email_pic}
-                      onChange={(e) =>
-                        handleChange('email_pic', e.target.value)
-                      }
+                      onChange={(e) => handleChange('email_pic', e.target.value)}
                       className="app-input"
-                      placeholder="email@perusahaan.com"
+                      placeholder="pic@perusahaan.com"
                     />
                   </div>
                 </div>
@@ -378,18 +439,18 @@ link_izin_usaha: null,
 
               <section>
                 <h3 className="text-xl font-black text-slate-950 dark:text-white">
-                  Detail Lowongan
+                  Detail Lowongan Magang
                 </h3>
 
                 <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
                   <div>
-                    <label className="app-label">Lokasi</label>
+                    <label className="app-label">Lokasi Magang</label>
                     <input
                       type="text"
                       value={form.lokasi}
                       onChange={(e) => handleChange('lokasi', e.target.value)}
                       className="app-input"
-                      placeholder="Karawang / Jakarta / Remote"
+                      placeholder="Contoh: Karawang / Remote"
                     />
                   </div>
 
@@ -411,12 +472,17 @@ link_izin_usaha: null,
                   <div>
                     <label className="app-label">Kuota</label>
                     <input
-                      type="number"
-                      min="1"
+                      type="text"
+                      inputMode="numeric"
                       value={form.kuota}
-                      onChange={(e) => handleChange('kuota', e.target.value)}
+                      onChange={(e) =>
+                        handleChange(
+                          'kuota',
+                          e.target.value.replace(/[^0-9]/g, '')
+                        )
+                      }
                       className="app-input"
-                      placeholder="1"
+                      placeholder="Contoh: 5"
                     />
                   </div>
 
@@ -441,7 +507,7 @@ link_izin_usaha: null,
                         handleChange('deskripsi_lowongan', e.target.value)
                       }
                       className="app-input min-h-32"
-                      placeholder="Jelaskan posisi, tugas, dan kebutuhan lowongan"
+                      placeholder="Jelaskan posisi, bidang kerja, atau kebutuhan magang"
                     />
                   </div>
 
@@ -453,7 +519,7 @@ link_izin_usaha: null,
                         handleChange('persyaratan', e.target.value)
                       }
                       className="app-input min-h-32"
-                      placeholder="Tuliskan syarat mahasiswa yang dibutuhkan"
+                      placeholder="Tuliskan persyaratan magang"
                     />
                   </div>
                 </div>
@@ -464,63 +530,92 @@ link_izin_usaha: null,
                   Dokumen Pendukung
                 </h3>
 
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Semua dokumen wajib diunggah dalam format PDF.
+                <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  Unggah dokumen pendukung dalam format PDF untuk membantu staff
+                  memeriksa kelayakan pengajuan mitra.
                 </p>
 
                 <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <FileInput
-                    label="Akta Pendirian"
-                    file={aktaPendirian}
-                    onChange={setAktaPendirian}
-                  />
+                  <div>
+                    <label className="app-label">Akta Pendirian PDF</label>
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={(e) =>
+                        setAktaPendirian(e.target.files?.[0] || null)
+                      }
+                      className="app-input"
+                    />
+                  </div>
 
-                  <FileInput
-                    label="Akta Susunan Direksi"
-                    file={aktaDireksi}
-                    onChange={setAktaDireksi}
-                  />
+                  <div>
+                    <label className="app-label">
+                      Akta Susunan Direksi PDF
+                    </label>
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={(e) =>
+                        setAktaDireksi(e.target.files?.[0] || null)
+                      }
+                      className="app-input"
+                    />
+                  </div>
 
-                  <FileInput
-                    label="KTP Penandatangan"
-                    file={ktpPenandatangan}
-                    onChange={setKtpPenandatangan}
-                  />
+                  <div>
+                    <label className="app-label">
+                      KTP Penandatangan PDF
+                    </label>
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={(e) =>
+                        setKtpPenandatangan(e.target.files?.[0] || null)
+                      }
+                      className="app-input"
+                    />
+                  </div>
 
-                  <FileInput
-                    label="NPWP Perusahaan"
-                    file={npwpPerusahaan}
-                    onChange={setNpwpPerusahaan}
-                  />
+                  <div>
+                    <label className="app-label">NPWP Perusahaan PDF</label>
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={(e) =>
+                        setNpwpPerusahaan(e.target.files?.[0] || null)
+                      }
+                      className="app-input"
+                    />
+                  </div>
 
-                  <FileInput
-                    label="Dokumen Izin Usaha Terkait"
-                    file={izinUsaha}
-                    onChange={setIzinUsaha}
-                  />
+                  <div className="md:col-span-2">
+                    <label className="app-label">
+                      Izin Usaha Terkait PDF
+                    </label>
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={(e) => setIzinUsaha(e.target.files?.[0] || null)}
+                      className="app-input"
+                    />
+                  </div>
                 </div>
               </section>
 
-              <button
-  type="submit"
-  disabled={isSubmitting}
-  className="app-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
->
-  {isSubmitting ? 'Mengirim...' : 'Kirim Pengajuan Mitra'}
-</button>
+              <div className="flex flex-col gap-3 border-t border-slate-100 pt-6 dark:border-slate-800 sm:flex-row">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="app-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSubmitting ? 'Mengirim...' : 'Kirim Pengajuan Mitra'}
+                </button>
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setForm(initialForm);
-                    setAktaPendirian(null);
-                    setAktaDireksi(null);
-                    setKtpPenandatangan(null);
-                    setNpwpPerusahaan(null);
-                    setIzinUsaha(null);
-                    localStorage.removeItem(DRAFT_KEY);
-                  }}
-                  className="app-btn-secondary flex-1"
+                  onClick={handleReset}
+                  disabled={isSubmitting}
+                  className="app-btn-secondary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Reset Form
                 </button>
@@ -530,38 +625,5 @@ link_izin_usaha: null,
         )}
       </div>
     </main>
-  );
-}
-
-function FileInput({
-  label,
-  file,
-  onChange,
-}: {
-  label: string;
-  file: File | null;
-  onChange: (file: File | null) => void;
-}) {
-  return (
-    <div>
-      <label className="app-label">{label}</label>
-
-      <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center transition hover:border-[#1e3a8a] hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-blue-300 dark:hover:bg-blue-400/10">
-        <input
-          type="file"
-          accept="application/pdf"
-          className="hidden"
-          onChange={(e) => onChange(e.target.files?.[0] || null)}
-        />
-
-        <span className="font-black text-slate-700 dark:text-slate-200">
-          {file ? file.name : 'Upload PDF'}
-        </span>
-
-        <span className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          {file ? 'Klik untuk mengganti file' : 'Format file: PDF'}
-        </span>
-      </label>
-    </div>
   );
 }

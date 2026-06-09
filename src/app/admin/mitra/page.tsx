@@ -8,6 +8,7 @@ import Alert from '@/components/ui/Alert';
 import StatCard from '@/components/ui/StatCard';
 import {
   Mitra,
+  MitraStatus,
   activateMitra,
   createMitra,
   deactivateMitra,
@@ -26,7 +27,7 @@ type MitraForm = {
   email: string;
   website: string;
   deskripsi: string;
-  status: 'Aktif' | 'Nonaktif';
+  status: MitraStatus;
 };
 
 const initialForm: MitraForm = {
@@ -42,7 +43,25 @@ const initialForm: MitraForm = {
 
 function getStatusBadgeClass(status?: string | null) {
   if (status === 'Aktif') return 'app-badge app-badge-green';
+
   return 'app-badge app-badge-red';
+}
+
+function isValidUrl(value: string) {
+  if (!value) return true;
+
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isValidEmail(value: string) {
+  if (!value) return true;
+
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 export default function AdminMitraPage() {
@@ -99,12 +118,14 @@ export default function AdminMitraPage() {
       const alamat = item.alamat || '';
       const email = item.email || '';
       const kontak = item.kontak_wa || '';
+      const website = item.website || '';
 
       const matchesKeyword =
         nama.toLowerCase().includes(keyword) ||
         alamat.toLowerCase().includes(keyword) ||
         email.toLowerCase().includes(keyword) ||
-        kontak.toLowerCase().includes(keyword);
+        kontak.toLowerCase().includes(keyword) ||
+        website.toLowerCase().includes(keyword);
 
       const matchesStatus =
         statusFilter === 'Semua' || item.status === statusFilter;
@@ -160,6 +181,18 @@ export default function AdminMitraPage() {
       return 'Nama mitra wajib diisi.';
     }
 
+    if (form.logo && !isValidUrl(form.logo)) {
+      return 'Format URL logo tidak valid.';
+    }
+
+    if (form.website && !isValidUrl(form.website)) {
+      return 'Format website tidak valid.';
+    }
+
+    if (form.email && !isValidEmail(form.email)) {
+      return 'Format email tidak valid.';
+    }
+
     if (form.kontak_wa && !/^62\d{8,15}$/.test(form.kontak_wa)) {
       return 'Nomor WhatsApp harus diawali 62 dan hanya berisi angka. Contoh: 6285456123.';
     }
@@ -186,26 +219,26 @@ export default function AdminMitraPage() {
       if (form.id) {
         const result = await updateMitra({
           id: form.id,
-          nama_mitra: form.nama_mitra,
-          logo: form.logo || null,
-          alamat: form.alamat || null,
-          kontak_wa: form.kontak_wa || null,
-          email: form.email || null,
-          website: form.website || null,
-          deskripsi: form.deskripsi || null,
+          nama_mitra: form.nama_mitra.trim(),
+          logo: form.logo.trim() || null,
+          alamat: form.alamat.trim() || null,
+          kontak_wa: form.kontak_wa.trim() || null,
+          email: form.email.trim() || null,
+          website: form.website.trim() || null,
+          deskripsi: form.deskripsi.trim() || null,
           status: form.status,
         });
 
         setMessage(result.message || 'Mitra berhasil diperbarui.');
       } else {
         const result = await createMitra({
-          nama_mitra: form.nama_mitra,
-          logo: form.logo || null,
-          alamat: form.alamat || null,
-          kontak_wa: form.kontak_wa || null,
-          email: form.email || null,
-          website: form.website || null,
-          deskripsi: form.deskripsi || null,
+          nama_mitra: form.nama_mitra.trim(),
+          logo: form.logo.trim() || null,
+          alamat: form.alamat.trim() || null,
+          kontak_wa: form.kontak_wa.trim() || null,
+          email: form.email.trim() || null,
+          website: form.website.trim() || null,
+          deskripsi: form.deskripsi.trim() || null,
         });
 
         setMessage(result.message || 'Mitra berhasil ditambahkan.');
@@ -324,7 +357,7 @@ export default function AdminMitraPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="app-input"
-                  placeholder="Cari nama, alamat, email, atau kontak..."
+                  placeholder="Cari nama, alamat, email, website, atau kontak..."
                 />
               </div>
 
@@ -394,35 +427,39 @@ export default function AdminMitraPage() {
                     <p className="break-all font-bold text-slate-600 dark:text-slate-300">
                       Email: {item.email || '-'}
                     </p>
+                    <p className="break-all font-bold text-slate-600 dark:text-slate-300">
+                      Website: {item.website || '-'}
+                    </p>
+                  </div>
+
+                  <div className="mt-5 flex flex-col gap-2 sm:flex-row">
                     {item.website && (
                       <a
                         href={item.website}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex font-black text-[#1e3a8a] dark:text-blue-300"
+                        className="app-btn-secondary flex-1 text-center"
                       >
-                        Buka Website →
+                        Website
                       </a>
                     )}
-                  </div>
 
-                  <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <button
                       type="button"
                       onClick={() => openEditForm(item)}
-                      className="app-btn-secondary px-4 py-2 text-sm"
+                      className="app-btn-primary flex-1"
                     >
                       Edit
                     </button>
 
                     <button
                       type="button"
-                      disabled={isSubmitting}
                       onClick={() => handleToggleStatus(item)}
+                      disabled={isSubmitting}
                       className={
                         item.status === 'Aktif'
-                          ? 'app-btn-danger px-4 py-2 text-sm disabled:opacity-60'
-                          : 'app-btn-primary px-4 py-2 text-sm disabled:opacity-60'
+                          ? 'app-btn-danger flex-1 disabled:cursor-not-allowed disabled:opacity-60'
+                          : 'app-btn-secondary flex-1 disabled:cursor-not-allowed disabled:opacity-60'
                       }
                     >
                       {item.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan'}
@@ -442,44 +479,61 @@ export default function AdminMitraPage() {
             />
 
             <div className="relative z-10 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
-              <div className="mb-6">
-                <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
-                  {form.id ? 'Edit Mitra' : 'Tambah Mitra'}
-                </p>
+              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
+                    {form.id ? 'Edit Mitra' : 'Tambah Mitra'}
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+                    {form.id ? form.nama_mitra : 'Data Mitra Baru'}
+                  </h2>
+                </div>
 
-                <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
-                  Data Mitra
-                </h2>
+                <button
+                  type="button"
+                  onClick={closeForm}
+                  className="app-btn-secondary"
+                >
+                  Tutup
+                </button>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label className="app-label">Nama Mitra</label>
+                  <input
+                    type="text"
+                    value={form.nama_mitra}
+                    onChange={(e) => handleChange('nama_mitra', e.target.value)}
+                    className="app-input"
+                    placeholder="Contoh: PT Teknologi Indonesia"
+                  />
+                </div>
+
+                <div>
+                  <label className="app-label">URL Logo</label>
+                  <input
+                    type="url"
+                    value={form.logo}
+                    onChange={(e) => handleChange('logo', e.target.value)}
+                    className="app-input"
+                    placeholder="https://..."
+                  />
+                </div>
+
+                <div>
+                  <label className="app-label">Alamat</label>
+                  <textarea
+                    value={form.alamat}
+                    onChange={(e) => handleChange('alamat', e.target.value)}
+                    className="app-input min-h-24"
+                    placeholder="Alamat mitra/perusahaan"
+                  />
+                </div>
+
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                   <div>
-                    <label className="app-label">Nama Mitra</label>
-                    <input
-                      type="text"
-                      value={form.nama_mitra}
-                      onChange={(e) =>
-                        handleChange('nama_mitra', e.target.value)
-                      }
-                      className="app-input"
-                      placeholder="Nama perusahaan/instansi"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="app-label">URL Logo</label>
-                    <input
-                      type="url"
-                      value={form.logo}
-                      onChange={(e) => handleChange('logo', e.target.value)}
-                      className="app-input"
-                      placeholder="https://..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="app-label">WhatsApp</label>
+                    <label className="app-label">Nomor WhatsApp</label>
                     <input
                       type="text"
                       value={form.kontak_wa}
@@ -501,30 +555,39 @@ export default function AdminMitraPage() {
                       value={form.email}
                       onChange={(e) => handleChange('email', e.target.value)}
                       className="app-input"
-                      placeholder="email@mitra.com"
+                      placeholder="mitra@email.com"
                     />
                   </div>
+                </div>
 
-                  <div>
-                    <label className="app-label">Website</label>
-                    <input
-                      type="url"
-                      value={form.website}
-                      onChange={(e) => handleChange('website', e.target.value)}
-                      className="app-input"
-                      placeholder="https://..."
-                    />
-                  </div>
+                <div>
+                  <label className="app-label">Website</label>
+                  <input
+                    type="url"
+                    value={form.website}
+                    onChange={(e) => handleChange('website', e.target.value)}
+                    className="app-input"
+                    placeholder="https://..."
+                  />
+                </div>
 
+                <div>
+                  <label className="app-label">Deskripsi</label>
+                  <textarea
+                    value={form.deskripsi}
+                    onChange={(e) => handleChange('deskripsi', e.target.value)}
+                    className="app-input min-h-32"
+                    placeholder="Deskripsi singkat mitra"
+                  />
+                </div>
+
+                {form.id && (
                   <div>
                     <label className="app-label">Status</label>
                     <select
                       value={form.status}
                       onChange={(e) =>
-                        handleChange(
-                          'status',
-                          e.target.value as 'Aktif' | 'Nonaktif'
-                        )
+                        handleChange('status', e.target.value as MitraStatus)
                       }
                       className="app-input"
                     >
@@ -532,29 +595,7 @@ export default function AdminMitraPage() {
                       <option value="Nonaktif">Nonaktif</option>
                     </select>
                   </div>
-
-                  <div className="md:col-span-2">
-                    <label className="app-label">Alamat</label>
-                    <textarea
-                      value={form.alamat}
-                      onChange={(e) => handleChange('alamat', e.target.value)}
-                      className="app-input min-h-24"
-                      placeholder="Alamat mitra"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="app-label">Deskripsi</label>
-                    <textarea
-                      value={form.deskripsi}
-                      onChange={(e) =>
-                        handleChange('deskripsi', e.target.value)
-                      }
-                      className="app-input min-h-32"
-                      placeholder="Deskripsi singkat mitra"
-                    />
-                  </div>
-                </div>
+                )}
 
                 <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 dark:border-slate-800 sm:flex-row">
                   <button
@@ -562,7 +603,11 @@ export default function AdminMitraPage() {
                     disabled={isSubmitting}
                     className="app-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {isSubmitting ? 'Menyimpan...' : 'Simpan Mitra'}
+                    {isSubmitting
+                      ? 'Menyimpan...'
+                      : form.id
+                        ? 'Simpan Perubahan'
+                        : 'Tambah Mitra'}
                   </button>
 
                   <button
