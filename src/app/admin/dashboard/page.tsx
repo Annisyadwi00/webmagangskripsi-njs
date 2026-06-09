@@ -137,7 +137,7 @@ setLowongan(lowonganData || []);
         <PageHeader
           eyebrow="Dashboard Admin"
           title={`Halo, ${currentUser?.name || 'Admin'}`}
-          description="Kelola pengajuan mitra, lowongan magang, dan pantau activity log sistem."
+          description="Kelola pengajuan mitra dan lowongan magang dalam satu dashboard admin."
           
           action={
   <div className="flex flex-col gap-3 sm:flex-row">
@@ -147,10 +147,6 @@ setLowongan(lowonganData || []);
 
     <Link href="/admin/lowongan" className="app-btn-secondary">
       Kelola Lowongan
-    </Link>
-
-    <Link href="/admin/activity" className="app-btn-secondary">
-      Activity Log
     </Link>
   </div>
 }
@@ -193,7 +189,7 @@ setLowongan(lowonganData || []);
     </p>
   </div>
 
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
     <Link
       href="/admin/pengajuan-mitra"
       className="app-panel app-card-hover p-5"
@@ -212,15 +208,6 @@ setLowongan(lowonganData || []);
       </p>
       <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
         Lihat data lowongan magang.
-      </p>
-    </Link>
-
-    <Link href="/admin/activity" className="app-panel app-card-hover p-5">
-      <p className="font-black text-slate-950 dark:text-white">
-        Activity Log
-      </p>
-      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-        Pantau aktivitas penting di sistem.
       </p>
     </Link>
   </div>
