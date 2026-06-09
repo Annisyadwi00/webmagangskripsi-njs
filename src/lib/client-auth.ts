@@ -6,12 +6,20 @@ export type CurrentUser = {
   email: string;
   role: 'Admin' | 'Super Admin' | 'Mahasiswa' | 'Dosen';
   nim_nidn: string;
+
   prodi?: string | null;
   semester?: string | null;
+  angkatan?: string | null;
+  kelas?: string | null;
+
   kategori_dosen?: string | null;
-  kuota_bimbingan?: number;
+  kuota_bimbingan?: number | null;
+
   phone?: string | null;
   photo?: string | null;
+
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export async function getCurrentUserClient() {

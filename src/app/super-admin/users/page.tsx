@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 import PageHeader from '@/components/ui/PageHeader';
 import Alert from '@/components/ui/Alert';
+import StatCard from '@/components/ui/StatCard';
 import { getDashboardPathByRole } from '@/lib/role-redirect';
 import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
 import {
@@ -18,7 +19,11 @@ import {
 type UserForm = {
   name: string;
   email: string;
-  role: Extract<UserRole, 'Admin' | 'Super Admin'>;
+  role: Extract<UserRole, 'Admin' | 'Super Admin' | 'Dosen'>;
+  nim_nidn: string;
+  kategori_dosen: string;
+  kuota_bimbingan: string;
+  phone: string;
   password: string;
 };
 
@@ -26,8 +31,20 @@ const initialForm: UserForm = {
   name: '',
   email: '',
   role: 'Admin',
+  nim_nidn: '',
+  kategori_dosen: '',
+  kuota_bimbingan: '5',
+  phone: '',
   password: '',
 };
+
+function getRoleBadgeClass(role: UserRole) {
+  if (role === 'Super Admin') return 'app-badge app-badge-blue';
+  if (role === 'Admin') return 'app-badge app-badge-green';
+  if (role === 'Dosen') return 'app-badge app-badge-yellow';
+
+  return 'app-badge app-badge-blue';
+}
 
 export default function SuperAdminUsersPage() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -79,21 +96,59 @@ export default function SuperAdminUsersPage() {
     const keyword = search.toLowerCase();
 
     return users.filter((item) => {
+      const name = item.name || '';
+      const email = item.email || '';
+      const role = item.role || '';
+      const nim = item.nim_nidn || '';
+      const kategori = item.kategori_dosen || '';
+
       return (
-        item.name.toLowerCase().includes(keyword) ||
-        item.email.toLowerCase().includes(keyword) ||
-        item.role.toLowerCase().includes(keyword)
+        name.toLowerCase().includes(keyword) ||
+        email.toLowerCase().includes(keyword) ||
+        role.toLowerCase().includes(keyword) ||
+        nim.toLowerCase().includes(keyword) ||
+        kategori.toLowerCase().includes(keyword)
       );
     });
   }, [users, search]);
 
+  const totalAdmin = users.filter((item) => item.role === 'Admin').length;
+  const totalSuperAdmin = users.filter(
+    (item) => item.role === 'Super Admin'
+  ).length;
+  const totalDosen = users.filter((item) => item.role === 'Dosen').length;
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    setForm({
-      ...form,
+    setForm((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value,
-    });
+    }));
+  };
+
+  const validateForm = () => {
+    if (!form.name.trim() || !form.email.trim() || !form.role) {
+      return 'Nama, email, dan role wajib diisi.';
+    }
+
+    if (form.password && form.password.length < 8) {
+      return 'Password minimal 8 karakter.';
+    }
+
+    if (form.phone && !/^62\d{8,15}$/.test(form.phone)) {
+      return 'Nomor WhatsApp harus diawali 62. Contoh: 6285456123.';
+    }
+
+    if (form.role === 'Dosen' && !form.nim_nidn.trim()) {
+      return 'NIDN wajib diisi untuk akun dosen.';
+    }
+
+    if (Number(form.kuota_bimbingan) < 0) {
+      return 'Kuota bimbingan tidak boleh kurang dari 0.';
+    }
+
+    return '';
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -103,8 +158,10 @@ export default function SuperAdminUsersPage() {
     setErrorMsg('');
     setDefaultPassword('');
 
-    if (!form.name.trim() || !form.email.trim() || !form.role) {
-      setErrorMsg('Nama, email, dan role wajib diisi.');
+    const validation = validateForm();
+
+    if (validation) {
+      setErrorMsg(validation);
       return;
     }
 
@@ -116,10 +173,16 @@ export default function SuperAdminUsersPage() {
         email: form.email.trim(),
         password: form.password.trim() || null,
         role: form.role,
-        nim_nidn: '-',
+        nim_nidn: form.nim_nidn.trim() || '-',
         prodi: null,
         semester: null,
-        kategori_dosen: null,
+        angkatan: null,
+        kelas: null,
+        kategori_dosen:
+          form.role === 'Dosen' ? form.kategori_dosen.trim() || null : null,
+        kuota_bimbingan:
+          form.role === 'Dosen' ? Number(form.kuota_bimbingan || 5) : null,
+        phone: form.phone.trim() || null,
       });
 
       setMessage(result.message || 'User berhasil ditambahkan.');
@@ -218,7 +281,7 @@ export default function SuperAdminUsersPage() {
           <PageHeader
             eyebrow="Super Admin"
             title="User Management"
-            description="Kelola akun Admin dan staff. Akun mahasiswa dan dosen tidak ditampilkan pada halaman ini."
+            description="Kelola akun Admin, Super Admin, dan Dosen. Akun mahasiswa tidak dibuat manual di halaman ini."
           />
 
           {message && <Alert variant="success">{message}</Alert>}
@@ -231,13 +294,36 @@ export default function SuperAdminUsersPage() {
             </Alert>
           )}
 
+          <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+            <StatCard
+              title="Admin"
+              value={totalAdmin}
+              description="Akun staff pengelola sistem."
+              icon="users"
+            />
+
+            <StatCard
+              title="Super Admin"
+              value={totalSuperAdmin}
+              description="Akun pengelola utama sistem."
+              icon="check"
+            />
+
+            <StatCard
+              title="Dosen"
+              value={totalDosen}
+              description="Akun dosen untuk pembimbing/penguji."
+              icon="briefcase"
+            />
+          </section>
+
           <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="app-card p-6">
               <h2 className="text-xl font-black text-slate-950 dark:text-white">
                 Tambah User
               </h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Tambahkan akun Admin atau staff.
+                Tambahkan akun Admin, Super Admin, atau Dosen.
               </p>
 
               <form onSubmit={handleCreateUser} className="mt-6 space-y-5">
@@ -274,8 +360,68 @@ export default function SuperAdminUsersPage() {
                     className="app-input"
                   >
                     <option value="Admin">Admin / Staff TU</option>
-                    <option value="Super Admin">staff</option>
+                    <option value="Super Admin">Super Admin</option>
+                    <option value="Dosen">Dosen</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="app-label">
+                    {form.role === 'Dosen' ? 'NIDN' : 'NIP/NIDN'}
+                  </label>
+                  <input
+                    type="text"
+                    name="nim_nidn"
+                    value={form.nim_nidn}
+                    onChange={handleChange}
+                    className="app-input"
+                    placeholder={form.role === 'Dosen' ? 'NIDN dosen' : '-'}
+                  />
+                </div>
+
+                {form.role === 'Dosen' && (
+                  <>
+                    <div>
+                      <label className="app-label">Kategori Dosen</label>
+                      <input
+                        type="text"
+                        name="kategori_dosen"
+                        value={form.kategori_dosen}
+                        onChange={handleChange}
+                        className="app-input"
+                        placeholder="Contoh: Pembimbing Magang"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="app-label">Kuota Bimbingan</label>
+                      <input
+                        type="number"
+                        min={0}
+                        name="kuota_bimbingan"
+                        value={form.kuota_bimbingan}
+                        onChange={handleChange}
+                        className="app-input"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div>
+                  <label className="app-label">Nomor WhatsApp</label>
+                  <input
+                    type="text"
+                    name="phone"
+                    value={form.phone}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        phone: e.target.value.replace(/[^0-9]/g, ''),
+                      }))
+                    }
+                    className="app-input"
+                    placeholder="628xxxxxxxxxx"
+                  />
                 </div>
 
                 <div>
@@ -307,10 +453,10 @@ export default function SuperAdminUsersPage() {
               <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
                   <h2 className="text-xl font-black text-slate-950 dark:text-white">
-                    Daftar Admin
+                    Daftar Pengguna
                   </h2>
                   <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Menampilkan akun Admin dan Super Admin.
+                    Menampilkan akun Admin, Super Admin, dan Dosen.
                   </p>
                 </div>
 
@@ -319,7 +465,7 @@ export default function SuperAdminUsersPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="app-input md:max-w-xs"
-                  placeholder="Cari nama/email/role..."
+                  placeholder="Cari nama/email/role/NIDN..."
                 />
               </div>
 
@@ -331,12 +477,14 @@ export default function SuperAdminUsersPage() {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="min-w-[900px] w-full text-sm">
                     <thead className="border-b border-slate-200 bg-slate-50 text-left text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
                       <tr>
                         <th className="px-5 py-4 font-black">Nama</th>
                         <th className="px-5 py-4 font-black">Email</th>
                         <th className="px-5 py-4 font-black">Role</th>
+                        <th className="px-5 py-4 font-black">NIP/NIDN</th>
+                        <th className="px-5 py-4 font-black">Kuota</th>
                         <th className="px-5 py-4 font-black">Aksi</th>
                       </tr>
                     </thead>
@@ -344,8 +492,13 @@ export default function SuperAdminUsersPage() {
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       {filteredUsers.map((item) => (
                         <tr key={item.id} className="align-top">
-                          <td className="px-5 py-4 font-black text-slate-950 dark:text-white">
-                            {item.name}
+                          <td className="px-5 py-4">
+                            <p className="font-black text-slate-950 dark:text-white">
+                              {item.name}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                              {item.phone || '-'}
+                            </p>
                           </td>
 
                           <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
@@ -353,9 +506,19 @@ export default function SuperAdminUsersPage() {
                           </td>
 
                           <td className="px-5 py-4">
-                            <span className="app-badge app-badge-blue">
+                            <span className={getRoleBadgeClass(item.role)}>
                               {item.role}
                             </span>
+                          </td>
+
+                          <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
+                            {item.nim_nidn || '-'}
+                          </td>
+
+                          <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
+                            {item.role === 'Dosen'
+                              ? item.kuota_bimbingan ?? 5
+                              : '-'}
                           </td>
 
                           <td className="px-5 py-4">

@@ -12,10 +12,20 @@ import {
   notFoundResponse,
 } from '@/lib/api-response';
 
-const allowedRoles: UserRole[] = ['Admin', 'Super Admin'];
+const allowedRoles: UserRole[] = ['Admin', 'Super Admin', 'Dosen'];
 
 function generateDefaultPassword() {
   return `SImagang${new Date().getFullYear()}`;
+}
+
+function parseKuota(value: unknown) {
+  const kuota = Number(value);
+
+  if (!Number.isInteger(kuota) || kuota < 0) {
+    return 5;
+  }
+
+  return kuota;
 }
 
 export async function GET() {
@@ -24,24 +34,21 @@ export async function GET() {
 
     const superAdmin = await requireSuperAdmin();
 
-if (!superAdmin) {
-  return forbiddenResponse(
-    'Akses ditolak. Hanya staff yang dapat melihat data pengguna.'
-  );
-}
+    if (!superAdmin) {
+      return forbiddenResponse(
+        'Akses ditolak. Hanya Super Admin yang dapat melihat data pengguna.'
+      );
+    }
 
     const users = await User.findAll({
-  where: {
-    role: ['Admin', 'Super Admin'],
-  },
-  attributes: { exclude: ['password'] },
-  order: [['createdAt', 'DESC']],
-});
+      where: {
+        role: ['Admin', 'Super Admin', 'Dosen'],
+      },
+      attributes: { exclude: ['password'] },
+      order: [['createdAt', 'DESC']],
+    });
 
-    return successResponse(
-      users,
-      'Data pengguna berhasil diambil.'
-    );
+    return successResponse(users, 'Data pengguna berhasil diambil.');
   } catch (error) {
     console.error('GET_USERS_ERROR:', error);
 
@@ -55,11 +62,11 @@ export async function POST(request: Request) {
 
     const superAdmin = await requireSuperAdmin();
 
-if (!superAdmin) {
-  return forbiddenResponse(
-    'Akses ditolak. Hanya staff yang dapat mengubah pengguna.'
-  );
-}
+    if (!superAdmin) {
+      return forbiddenResponse(
+        'Akses ditolak. Hanya Super Admin yang dapat menambahkan pengguna.'
+      );
+    }
 
     const body = await request.json();
 
@@ -67,10 +74,15 @@ if (!superAdmin) {
     const email = trimString(body.email);
     const password = optionalTrimString(body.password);
     const role = body.role as UserRole;
+
     const nim_nidn = trimString(body.nim_nidn) || '-';
     const prodi = optionalTrimString(body.prodi);
     const semester = optionalTrimString(body.semester);
+    const angkatan = optionalTrimString(body.angkatan);
+    const kelas = optionalTrimString(body.kelas);
     const kategori_dosen = optionalTrimString(body.kategori_dosen);
+    const kuota_bimbingan = parseKuota(body.kuota_bimbingan);
+    const phone = optionalTrimString(body.phone);
 
     if (!name || !email || !role) {
       return badRequestResponse('Nama, email, dan role wajib diisi.');
@@ -81,11 +93,19 @@ if (!superAdmin) {
     }
 
     if (!allowedRoles.includes(role)) {
-      return badRequestResponse('Role tidak valid.');
+      return badRequestResponse(
+        'Role tidak valid. User management hanya mengelola Admin, Super Admin, dan Dosen.'
+      );
     }
 
     if (password && password.length < 8) {
       return badRequestResponse('Password minimal 8 karakter.');
+    }
+
+    if (phone && !/^62\d{8,15}$/.test(phone)) {
+      return badRequestResponse(
+        'Nomor WhatsApp harus diawali 62 dan hanya berisi angka. Contoh: 6285456123.'
+      );
     }
 
     const existingUser = await User.findOne({
@@ -99,16 +119,21 @@ if (!superAdmin) {
     const finalPassword = password || generateDefaultPassword();
     const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
-   await User.create({
-  name,
-  email,
-  password: hashedPassword,
-  role,
-  nim_nidn,
-  prodi: null,
-  semester: null,
-  kategori_dosen: null,
-});
+    await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role,
+      nim_nidn,
+      prodi,
+      semester,
+      angkatan,
+      kelas,
+      kategori_dosen,
+      kuota_bimbingan,
+      phone,
+      photo: null,
+    });
 
     return successResponse(
       {
@@ -130,34 +155,35 @@ export async function PUT(request: Request) {
 
     const superAdmin = await requireSuperAdmin();
 
-if (!superAdmin) {
-  return forbiddenResponse(
-    'Akses ditolak. Hanya staff yang dapat menambahkan pengguna.'
-  );
-}
+    if (!superAdmin) {
+      return forbiddenResponse(
+        'Akses ditolak. Hanya Super Admin yang dapat mengubah pengguna.'
+      );
+    }
 
     const body = await request.json();
-    const { id, action } = body;
+    const id = Number(body.id);
+    const action = trimString(body.action);
 
-    if (!id || !action) {
+    if (!id || Number.isNaN(id) || !action) {
       return badRequestResponse('ID pengguna dan aksi wajib dikirim.');
     }
 
     const user = await User.findByPk(id);
 
-    
     if (!user) {
       return notFoundResponse('Pengguna tidak ditemukan.');
     }
 
     if (
-  user.getDataValue('role') !== 'Admin' &&
-  user.getDataValue('role') !== 'Super Admin'
-) {
-  return forbiddenResponse(
-    'User management hanya dapat mengelola akun Admin dan staff.'
-  );
-}
+      user.getDataValue('role') !== 'Admin' &&
+      user.getDataValue('role') !== 'Super Admin' &&
+      user.getDataValue('role') !== 'Dosen'
+    ) {
+      return forbiddenResponse(
+        'User management hanya dapat mengelola akun Admin, Super Admin, dan Dosen.'
+      );
+    }
 
     if (action === 'delete') {
       await user.destroy();
@@ -180,6 +206,7 @@ if (!superAdmin) {
         'Password berhasil direset.'
       );
     }
+
     return badRequestResponse('Aksi tidak valid.');
   } catch (error) {
     console.error('UPDATE_USER_ERROR:', error);

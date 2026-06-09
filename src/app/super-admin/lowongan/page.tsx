@@ -1,10 +1,13 @@
 "use client";
 
-import DashboardShell from '@/components/dashboard/DashboardShell';
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import DashboardShell from '@/components/dashboard/DashboardShell';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import Alert from '@/components/ui/Alert';
+import { getDashboardPathByRole } from '@/lib/role-redirect';
+import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
 import { Mitra, getMitraList } from '@/lib/mitra-client';
 import {
   JobStatus,
@@ -18,11 +21,7 @@ import {
   getAllLowonganList,
   updateLowongan,
 } from '@/lib/lowongan-client';
-import {
-  PengajuanLowongan,
-  getPengajuanLowonganList,
-  updateStatusPengajuanLowongan,
-} from '@/lib/pengajuan-lowongan-client';
+
 type LowonganForm = {
   id?: number;
   posisi: string;
@@ -56,14 +55,14 @@ const initialForm: LowonganForm = {
   status: 'Aktif',
 };
 
-function getTypeBadgeClass(type: string) {
+function getTypeBadgeClass(type?: string | null) {
   if (type === 'Remote') return 'app-badge app-badge-green';
   if (type === 'Hybrid') return 'app-badge app-badge-yellow';
 
   return 'app-badge app-badge-blue';
 }
 
-function getStatusBadgeClass(status: string) {
+function getStatusBadgeClass(status?: string | null) {
   if (status === 'Aktif') return 'app-badge app-badge-green';
 
   return 'app-badge app-badge-red';
@@ -93,14 +92,29 @@ function toDateInputValue(date?: string | null) {
   return String(date).slice(0, 10);
 }
 
+function isValidUrl(value: string) {
+  if (!value) return true;
+
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isValidEmail(value: string) {
+  if (!value) return true;
+
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 export default function SuperAdminLowonganPage() {
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [lowongan, setLowongan] = useState<Lowongan[]>([]);
   const [mitraList, setMitraList] = useState<Mitra[]>([]);
-const [selectedMitraId, setSelectedMitraId] = useState('');
-  const [pengajuanLowongan, setPengajuanLowongan] = useState<PengajuanLowongan[]>([]);
-  const [selectedPengajuanLowongan, setSelectedPengajuanLowongan] =
-    useState<PengajuanLowongan | null>(null);
-  const [catatanSuperAdmin, setCatatanSuperAdmin] = useState('');
+  const [selectedMitraId, setSelectedMitraId] = useState('');
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
   const [typeFilter, setTypeFilter] = useState('Semua');
@@ -121,16 +135,20 @@ const [selectedMitraId, setSelectedMitraId] = useState('');
       setIsLoading(true);
       setErrorMsg('');
 
-    const [dataLowongan, dataPengajuanLowongan, dataMitra] = await Promise.all([
-  getAllLowonganList(),
-  getPengajuanLowonganList(),
-  getMitraList(),
-]);
+      const [me, dataLowongan, dataMitra] = await Promise.all([
+        getCurrentUserClient(),
+        getAllLowonganList(),
+        getMitraList(),
+      ]);
 
-setLowongan(dataLowongan || []);
-setPengajuanLowongan(dataPengajuanLowongan || []);
-setMitraList(dataMitra || []);
+      if (me.role !== 'Super Admin') {
+        window.location.href = getDashboardPathByRole(me.role);
+        return;
+      }
 
+      setCurrentUser(me);
+      setLowongan(dataLowongan || []);
+      setMitraList(dataMitra || []);
     } catch (error) {
       const msg =
         error instanceof Error
@@ -151,18 +169,21 @@ setMitraList(dataMitra || []);
     const keyword = search.toLowerCase();
 
     return lowongan.filter((item) => {
-     const title = item.title || '';
-const company = item.company || '';
-const location = item.location || '';
-const kategori = item.kategori || '';
-const description = item.description || '';
+      const title = item.title || '';
+      const company = item.company || '';
+      const location = item.location || '';
+      const kategori = item.kategori || '';
+      const description = item.description || '';
+      const tipeLabel = getTipeKonversiLabel(item.tipeKonversi);
 
-const matchesKeyword =
-  title.toLowerCase().includes(keyword) ||
-  company.toLowerCase().includes(keyword) ||
-  location.toLowerCase().includes(keyword) ||
-  kategori.toLowerCase().includes(keyword) ||
-  description.toLowerCase().includes(keyword);
+      const matchesKeyword =
+        title.toLowerCase().includes(keyword) ||
+        company.toLowerCase().includes(keyword) ||
+        location.toLowerCase().includes(keyword) ||
+        kategori.toLowerCase().includes(keyword) ||
+        description.toLowerCase().includes(keyword) ||
+        tipeLabel.toLowerCase().includes(keyword);
+
       const matchesStatus =
         statusFilter === 'Semua' || item.status === statusFilter;
 
@@ -177,9 +198,7 @@ const matchesKeyword =
     (item) => item.status === 'Nonaktif'
   ).length;
   const totalRemote = lowongan.filter((item) => item.type === 'Remote').length;
-const totalPengajuanMenunggu = pengajuanLowongan.filter(
-  (item) => item.status === 'Menunggu'
-).length;
+
   const resetForm = () => {
     setForm(initialForm);
     setSelectedMitraId('');
@@ -214,11 +233,12 @@ const totalPengajuanMenunggu = pengajuanLowongan.filter(
       valid_until: toDateInputValue(item.valid_until),
       status: item.status,
     });
-const selectedMitra = mitraList.find(
-  (mitra) => mitra.nama_mitra === item.company
-);
 
-setSelectedMitraId(selectedMitra ? String(selectedMitra.id) : '');
+    const selectedMitra = mitraList.find(
+      (mitra) => mitra.nama_mitra === item.company
+    );
+
+    setSelectedMitraId(selectedMitra ? String(selectedMitra.id) : '');
     setIsFormOpen(true);
   };
 
@@ -226,32 +246,61 @@ setSelectedMitraId(selectedMitra ? String(selectedMitra.id) : '');
     field: keyof LowonganForm,
     value: string | number | boolean
   ) => {
-    setForm({
-      ...form,
+    setForm((prev) => ({
+      ...prev,
       [field]: value,
-    });
+    }));
   };
 
-const handleMitraChange = (value: string) => {
-  setSelectedMitraId(value);
+  const handleMitraChange = (value: string) => {
+    setSelectedMitraId(value);
 
-  if (!value) {
-    handleChange('perusahaan', '');
-    return;
-  }
+    if (!value) {
+      setForm((prev) => ({
+        ...prev,
+        perusahaan: '',
+      }));
+      return;
+    }
 
-  const selected = mitraList.find((mitra) => String(mitra.id) === value);
+    const selected = mitraList.find((mitra) => String(mitra.id) === value);
 
-  if (!selected) return;
+    if (!selected) return;
 
-  setForm((prev) => ({
-    ...prev,
-    perusahaan: selected.nama_mitra,
-    location: selected.alamat || prev.location,
-    email_perusahaan: selected.email || prev.email_perusahaan,
-    link_pendaftaran: selected.website || prev.link_pendaftaran,
-  }));
-};
+    setForm((prev) => ({
+      ...prev,
+      perusahaan: selected.nama_mitra,
+      location: selected.alamat || prev.location,
+      email_perusahaan: selected.email || prev.email_perusahaan,
+      link_pendaftaran: selected.website || prev.link_pendaftaran,
+    }));
+  };
+
+  const validateForm = () => {
+    if (
+      !form.posisi.trim() ||
+      !form.perusahaan.trim() ||
+      !form.deskripsi.trim() ||
+      !form.location.trim() ||
+      !form.kategori.trim()
+    ) {
+      return 'Posisi, perusahaan, deskripsi, lokasi, dan kategori wajib diisi.';
+    }
+
+    if (Number(form.kuota) < 1) {
+      return 'Kuota minimal 1 mahasiswa.';
+    }
+
+    if (form.link_pendaftaran && !isValidUrl(form.link_pendaftaran)) {
+      return 'Format link pendaftaran tidak valid.';
+    }
+
+    if (form.email_perusahaan && !isValidEmail(form.email_perusahaan)) {
+      return 'Format email perusahaan tidak valid.';
+    }
+
+    return '';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -259,23 +308,15 @@ const handleMitraChange = (value: string) => {
     setIsSubmitting(true);
     setMessage('');
     setErrorMsg('');
-if (
-  !form.posisi.trim() ||
-  !form.perusahaan.trim() ||
-  !form.deskripsi.trim() ||
-  !form.location.trim() ||
-  !form.kategori.trim()
-) {
-  setErrorMsg('Posisi, perusahaan, deskripsi, lokasi, dan kategori wajib diisi.');
-  setIsSubmitting(false);
-  return;
-}
 
-if (Number(form.kuota) < 1) {
-  setErrorMsg('Kuota minimal 1 mahasiswa.');
-  setIsSubmitting(false);
-  return;
-}
+    const validation = validateForm();
+
+    if (validation) {
+      setErrorMsg(validation);
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const payload = {
         posisi: form.posisi.trim(),
@@ -311,9 +352,7 @@ if (Number(form.kuota) < 1) {
       await fetchLowongan();
     } catch (error) {
       const msg =
-        error instanceof Error
-          ? error.message
-          : 'Gagal menyimpan lowongan.';
+        error instanceof Error ? error.message : 'Gagal menyimpan lowongan.';
 
       setErrorMsg(msg);
     } finally {
@@ -344,9 +383,7 @@ if (Number(form.kuota) < 1) {
       await fetchLowongan();
     } catch (error) {
       const msg =
-        error instanceof Error
-          ? error.message
-          : 'Gagal mengubah status lowongan.';
+        error instanceof Error ? error.message : 'Gagal mengubah status lowongan.';
 
       setErrorMsg(msg);
     } finally {
@@ -380,805 +417,476 @@ if (Number(form.kuota) < 1) {
     }
   };
 
-const handleUpdatePengajuanLowongan = async (
-  item: PengajuanLowongan,
-  status: 'Disetujui' | 'Ditolak'
-) => {
-  if (status === 'Ditolak' && !catatanSuperAdmin.trim()) {
-    setErrorMsg('Catatan wajib diisi jika pengajuan lowongan ditolak.');
-    return;
-  }
-
-  const confirmed = confirm(
-    status === 'Disetujui'
-      ? `Setujui pengajuan lowongan "${item.posisi}" dari ${item.nama_mitra}?`
-      : `Tolak pengajuan lowongan "${item.posisi}" dari ${item.nama_mitra}?`
-  );
-
-  if (!confirmed) return;
-
-  setIsSubmitting(true);
-  setMessage('');
-  setErrorMsg('');
-
-  try {
-    const result = await updateStatusPengajuanLowongan({
-      id: item.id,
-      status,
-      catatan_super_admin: catatanSuperAdmin.trim() || null,
-    });
-
-    setMessage(
-      result.message || 'Status pengajuan lowongan berhasil diperbarui.'
-    );
-
-    setSelectedPengajuanLowongan(null);
-    setCatatanSuperAdmin('');
-    await fetchLowongan();
-  } catch (error) {
-    const msg =
-      error instanceof Error
-        ? error.message
-        : 'Gagal memperbarui pengajuan lowongan.';
-
-    setErrorMsg(msg);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
-const handleUsePengajuanAsLowongan = (item: PengajuanLowongan) => {
-  setForm({
-    posisi: item.posisi,
-    perusahaan: item.nama_mitra,
-    deskripsi: [
-      item.deskripsi,
-      item.persyaratan ? `\n\nPersyaratan:\n${item.persyaratan}` : '',
-    ]
-      .filter(Boolean)
-      .join(''),
-    location: item.lokasi || 'Menyesuaikan',
-    kategori: 'Magang',
-    type: item.sistem_kerja,
-    tipeKonversi: item.tipe_konversi,
-    isPaid: false,
-    kuota: item.kuota,
-    link_pendaftaran: item.link_pendaftaran || '',
-    email_perusahaan: item.email_pic || '',
-    valid_until: '',
-    status: 'Aktif',
-  });
-
-  setSelectedPengajuanLowongan(null);
-  setCatatanSuperAdmin('');
-  setIsFormOpen(true);
-
-  setMessage(
-    'Data pengajuan lowongan berhasil dimasukkan ke form. Silakan cek kembali sebelum dipublikasikan.'
-  );
-
-  window.scrollTo({
-    top: 0,
-    behavior: 'smooth',
-  });
-};
-
   if (isLoading) {
     return (
       <DashboardShell role="Super Admin">
-      <main className="min-h-screen py-8">
-        <div className="app-container">
-          <div className="app-card p-8">
-            <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
-            <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
-            <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
-              {[1, 2, 3].map((item) => (
-                <div
-                  key={item}
-                  className="h-36 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800"
-                />
-              ))}
+        <main className="min-h-screen py-8">
+          <div className="app-container">
+            <div className="app-card p-8">
+              <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+              <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+              <div className="mt-8 h-96 animate-pulse rounded-3xl bg-slate-100 dark:bg-slate-800" />
             </div>
           </div>
-        </div>
-      </main>
+        </main>
       </DashboardShell>
     );
   }
 
   return (
     <DashboardShell role="Super Admin">
-    <main className="min-h-screen py-8">
-      <div className="app-container">
-        <PageHeader
-          eyebrow="staff"
-title="Kelola Lowongan Magang"
-description="Tambah, ubah, nonaktifkan, hapus, dan validasi lowongan magang yang tampil di halaman pengguna."
-          action={
-            <button type="button" onClick={openCreateForm} className="app-btn-primary">
-              Tambah Lowongan
-            </button>
-          }
-        />
-
-        {message && <Alert variant="success">{message}</Alert>}
-        {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
-
-        <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            title="Lowongan Aktif"
-            value={totalAktif}
-            description="Lowongan yang sedang tampil untuk pengguna."
-            icon="briefcase"
-          />
-
-          <StatCard
-            title="Nonaktif"
-            value={totalNonaktif}
-            description="Lowongan yang disembunyikan dari pengguna."
-            icon="warning"
-          />
-
-          <StatCard
-            title="Remote"
-            value={totalRemote}
-            description="Lowongan dengan sistem kerja remote."
-            icon="document"
-          />
-          <StatCard
-  title="Pengajuan Mitra"
-  value={totalPengajuanMenunggu}
-  description="Lowongan dari mitra yang menunggu validasi."
-  icon="clock"
-/>
-        </section>
-
-<section className="app-card mb-8 p-6">
-  <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-    <div>
-      <h2 className="text-xl font-black text-slate-950 dark:text-white">
-        Pengajuan Lowongan Mitra
-      </h2>
-
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Lowongan yang diajukan oleh mitra melalui form publik.
-      </p>
-    </div>
-  </div>
-
-  {pengajuanLowongan.length === 0 ? (
-    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/70">
-      <p className="font-bold text-slate-700 dark:text-slate-300">
-        Belum ada pengajuan lowongan dari mitra.
-      </p>
-    </div>
-  ) : (
-    <div className="space-y-4">
-      {pengajuanLowongan.slice(0, 5).map((item) => (
-        <article key={item.id} className="app-panel p-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-lg font-black text-slate-950 dark:text-white">
-                  {item.posisi}
-                </h3>
-
-                <span
-                  className={
-                    item.status === 'Disetujui'
-                      ? 'app-badge app-badge-green'
-                      : item.status === 'Ditolak'
-                        ? 'app-badge app-badge-red'
-                        : 'app-badge app-badge-yellow'
-                  }
+      <main className="min-h-screen py-8">
+        <div className="app-container">
+          <PageHeader
+            eyebrow="Super Admin"
+            title="Manajemen Lowongan"
+            description={`Kelola lowongan magang yang tampil pada halaman publik. Halo, ${
+              currentUser?.name || 'Super Admin'
+            }.`}
+            action={
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Link
+                  href="/super-admin/dashboard"
+                  className="app-btn-secondary"
                 >
-                  {item.status}
-                </span>
-              </div>
+                  Kembali
+                </Link>
 
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                {item.nama_mitra} • {item.sistem_kerja} • {item.tipe_konversi}
-              </p>
-
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                PIC: {item.nama_pic} • {item.kontak_pic}
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => setSelectedPengajuanLowongan(item)}
-                className="app-btn-secondary px-4 py-2 text-sm"
-              >
-                Detail
-              </button>
-
-              {item.status === 'Menunggu' && (
                 <button
                   type="button"
-                  onClick={() =>
-                    handleUpdatePengajuanLowongan(item, 'Disetujui')
-                  }
-                  disabled={isSubmitting}
-                  className="app-btn-primary px-4 py-2 text-sm"
+                  onClick={openCreateForm}
+                  className="app-btn-primary"
                 >
-                  Setujui
+                  Tambah Lowongan
                 </button>
-              )}
-              {item.status === 'Disetujui' && (
-  <button
-    type="button"
-    onClick={() => handleUsePengajuanAsLowongan(item)}
-    className="app-btn-primary px-4 py-2 text-sm"
-  >
-    Jadikan Lowongan
-  </button>
-)}
-            </div>
-          </div>
-        </article>
-      ))}
-    </div>
-  )}
-</section>
-
-        {isFormOpen && (
-          <section className="app-card animate-fade-up mb-8 p-6">
-            <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-xl font-black text-slate-950 dark:text-white">
-                  {isEditMode ? 'Edit Lowongan' : 'Tambah Lowongan'}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Lengkapi data lowongan magang yang akan ditampilkan.
-                </p>
               </div>
+            }
+          />
 
-              <button
-                type="button"
-                onClick={resetForm}
-                className="app-btn-secondary"
-              >
-                Tutup Form
-              </button>
-            </div>
+          {message && <Alert variant="success">{message}</Alert>}
+          {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                <div>
-                  <label className="app-label">Posisi Magang</label>
-                  <input
-                    type="text"
-                    required
-                    value={form.posisi}
-                    onChange={(e) => handleChange('posisi', e.target.value)}
-                    className="app-input"
-                    placeholder="Contoh: Frontend Developer Intern"
-                  />
-                </div>
+          <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+            <StatCard
+              title="Aktif"
+              value={totalAktif}
+              description="Lowongan yang tampil di halaman publik."
+              icon="check"
+            />
 
-                <div>
-                  <label className="app-label">Nama Perusahaan</label>
-                  <input
-                    type="text"
-                    required
-                    value={form.perusahaan}
-                    onChange={(e) =>
-                      handleChange('perusahaan', e.target.value)
-                    }
-                    className="app-input"
-                    placeholder="Contoh: PT Teknologi Indonesia"
-                  />
-                </div>
+            <StatCard
+              title="Nonaktif"
+              value={totalNonaktif}
+              description="Lowongan yang disembunyikan dari publik."
+              icon="warning"
+            />
 
-                <div>
-                  <label className="app-label">Lokasi</label>
-                  <input
-                    type="text"
-                    value={form.location}
-                    onChange={(e) => handleChange('location', e.target.value)}
-                    className="app-input"
-                    placeholder="Contoh: Karawang / Jakarta / Remote"
-                  />
-                </div>
+            <StatCard
+              title="Remote"
+              value={totalRemote}
+              description="Lowongan dengan sistem kerja remote."
+              icon="briefcase"
+            />
+          </section>
 
-                <div>
-                  <label className="app-label">Kategori</label>
-                  <input
-                    type="text"
-                    value={form.kategori}
-                    onChange={(e) => handleChange('kategori', e.target.value)}
-                    className="app-input"
-                    placeholder="Contoh: Web Development"
-                  />
-                </div>
-
-                <div>
-                  <label className="app-label">Tipe Kerja</label>
-                  <select
-                    value={form.type}
-                    onChange={(e) =>
-                      handleChange('type', e.target.value as JobType)
-                    }
-                    className="app-input"
-                  >
-                    <option value="Onsite">Onsite</option>
-                    <option value="Hybrid">Hybrid</option>
-                    <option value="Remote">Remote</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="app-label">Tipe Konversi</label>
-                  <select
-  value={form.tipeKonversi}
-  onChange={(e) =>
-    handleChange('tipeKonversi', e.target.value as JobTipeKonversi)
-  }
-  className="app-input"
->
-  <option value="Konversi 20 SKS">Konversi Maksimal 20 SKS</option>
-  <option value="Tidak Konversi">Tidak Konversi</option>
-  <option value="Konversi 2 SKS">Magang 2 SKS Khusus SI</option>
-</select>
-                </div>
-
-                <div>
-                  <label className="app-label">Kuota</label>
-                  <input
-                    type="number"
-                    min={1}
-                    required
-                    value={form.kuota}
-                    onChange={(e) =>
-                      handleChange('kuota', Number(e.target.value))
-                    }
-                    className="app-input"
-                  />
-                </div>
-
-                <div>
-                  <label className="app-label">Batas Daftar</label>
-                  <input
-                    type="date"
-                    value={form.valid_until}
-                    onChange={(e) =>
-                      handleChange('valid_until', e.target.value)
-                    }
-                    className="app-input"
-                  />
-                </div>
-
-                <div>
-                  <label className="app-label">Status</label>
-                  <select
-                    value={form.status}
-                    onChange={(e) =>
-                      handleChange('status', e.target.value as JobStatus)
-                    }
-                    className="app-input"
-                  >
-                    <option value="Aktif">Aktif</option>
-                    <option value="Nonaktif">Nonaktif</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="app-label">Berbayar?</label>
-                  <select
-                    value={form.isPaid ? 'Ya' : 'Tidak'}
-                    onChange={(e) =>
-                      handleChange('isPaid', e.target.value === 'Ya')
-                    }
-                    className="app-input"
-                  >
-                    <option value="Tidak">Tidak</option>
-                    <option value="Ya">Ya</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="app-label">Link Pendaftaran</label>
-                  <input
-                    type="url"
-                    value={form.link_pendaftaran}
-                    onChange={(e) =>
-                      handleChange('link_pendaftaran', e.target.value)
-                    }
-                    className="app-input"
-                    placeholder="https://..."
-                  />
-                </div>
-<div>
-  <label className="app-label">Pilih Mitra Terdaftar</label>
-  <select
-    value={selectedMitraId}
-    onChange={(e) => handleMitraChange(e.target.value)}
-    className="app-input"
-  >
-    <option value="">Pilih mitra dari database</option>
-    {mitraList.map((mitra) => (
-      <option key={mitra.id} value={mitra.id}>
-        {mitra.nama_mitra}
-      </option>
-    ))}
-  </select>
-  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-    Pilihan ini akan mengisi nama perusahaan, email, website, dan alamat jika tersedia.
-  </p>
-</div>
-
-<div>
-  <label className="app-label">Nama Perusahaan</label>
-  <input
-    type="text"
-    value={form.perusahaan}
-    onChange={(e) => {
-      setSelectedMitraId('');
-      handleChange('perusahaan', e.target.value);
-    }}
-    className="app-input"
-    placeholder="Nama perusahaan/instansi"
-  />
-</div>
-                <div>
-                  <label className="app-label">Email Perusahaan</label>
-                  <input
-                    type="email"
-                    value={form.email_perusahaan}
-                    onChange={(e) =>
-                      handleChange('email_perusahaan', e.target.value)
-                    }
-                    className="app-input"
-                    placeholder="hr@perusahaan.com"
-                  />
-                </div>
-              </div>
-
+          <section className="app-card mb-6 p-6">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_220px_220px]">
               <div>
-                <label className="app-label">Deskripsi Lowongan</label>
-                <textarea
-                  required
-                  rows={5}
-                  value={form.deskripsi}
-                  onChange={(e) => handleChange('deskripsi', e.target.value)}
+                <label className="app-label">Cari Lowongan</label>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
                   className="app-input"
-                  placeholder="Jelaskan tugas, kualifikasi, dan informasi lowongan..."
+                  placeholder="Cari posisi, perusahaan, lokasi, jenis magang..."
                 />
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="app-btn-primary disabled:cursor-not-allowed disabled:opacity-60"
+              <div>
+                <label className="app-label">Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="app-input"
                 >
-                  {isSubmitting
-                    ? 'Menyimpan...'
-                    : isEditMode
-                      ? 'Simpan Perubahan'
-                      : 'Tambah Lowongan'}
-                </button>
+                  <option value="Semua">Semua Status</option>
+                  <option value="Aktif">Aktif</option>
+                  <option value="Nonaktif">Nonaktif</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="app-label">Sistem Kerja</label>
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="app-input"
+                >
+                  <option value="Semua">Semua Sistem</option>
+                  <option value="Onsite">Onsite</option>
+                  <option value="Hybrid">Hybrid</option>
+                  <option value="Remote">Remote</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          {filteredLowongan.length === 0 ? (
+            <section className="app-card p-8 text-center">
+              <p className="font-bold text-slate-700 dark:text-slate-300">
+                Lowongan tidak ditemukan.
+              </p>
+            </section>
+          ) : (
+            <section className="space-y-4">
+              {filteredLowongan.map((item) => (
+                <article key={item.id} className="app-card app-card-hover p-6">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-xl font-black text-slate-950 dark:text-white">
+                          {item.title}
+                        </h2>
+
+                        <span className={getStatusBadgeClass(item.status)}>
+                          {item.status}
+                        </span>
+
+                        <span className={getTypeBadgeClass(item.type)}>
+                          {item.type}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                        {item.company} • {item.location || 'Menyesuaikan'}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <button
+                        type="button"
+                        onClick={() => openEditForm(item)}
+                        className="app-btn-primary px-4 py-2 text-sm"
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStatus(item)}
+                        disabled={isSubmitting}
+                        className="app-btn-secondary px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {item.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(item)}
+                        disabled={isSubmitting}
+                        className="app-btn-danger px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+                    <p className="line-clamp-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                      {item.description}
+                    </p>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-4">
+                    <div className="app-panel p-4">
+                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                        Jenis Magang
+                      </p>
+                      <p className="mt-1 font-black text-slate-950 dark:text-white">
+                        {getTipeKonversiLabel(item.tipeKonversi)}
+                      </p>
+                    </div>
+
+                    <div className="app-panel p-4">
+                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                        Kategori
+                      </p>
+                      <p className="mt-1 font-black text-slate-950 dark:text-white">
+                        {item.kategori || '-'}
+                      </p>
+                    </div>
+
+                    <div className="app-panel p-4">
+                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                        Kuota
+                      </p>
+                      <p className="mt-1 font-black text-slate-950 dark:text-white">
+                        {item.kuota || '-'}
+                      </p>
+                    </div>
+
+                    <div className="app-panel p-4">
+                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                        Berlaku Sampai
+                      </p>
+                      <p className="mt-1 font-black text-slate-950 dark:text-white">
+                        {formatDate(item.valid_until)}
+                      </p>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </section>
+          )}
+        </div>
+
+        {isFormOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <div
+              className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+              onClick={resetForm}
+            />
+
+            <div className="relative z-10 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
+              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
+                    {isEditMode ? 'Edit Lowongan' : 'Tambah Lowongan'}
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+                    {isEditMode ? form.posisi : 'Data Lowongan Baru'}
+                  </h2>
+                </div>
 
                 <button
                   type="button"
                   onClick={resetForm}
-                  disabled={isSubmitting}
-                  className="app-btn-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                  className="app-btn-secondary"
                 >
-                  Batal
+                  Tutup
                 </button>
               </div>
-            </form>
-          </section>
-        )}
 
-        <section className="app-card mb-6 p-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_220px_220px]">
-            <div>
-              <label className="app-label">Cari Lowongan</label>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="app-input"
-                placeholder="Cari posisi, perusahaan, lokasi, atau kategori..."
-              />
-            </div>
-
-            <div>
-              <label className="app-label">Status</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="app-input"
-              >
-                <option value="Semua">Semua</option>
-                <option value="Aktif">Aktif</option>
-                <option value="Nonaktif">Nonaktif</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="app-label">Tipe Kerja</label>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="app-input"
-              >
-                <option value="Semua">Semua</option>
-                <option value="Onsite">Onsite</option>
-                <option value="Hybrid">Hybrid</option>
-                <option value="Remote">Remote</option>
-              </select>
-            </div>
-          </div>
-        </section>
-
-        {filteredLowongan.length === 0 ? (
-          <section className="app-card p-8 text-center">
-            <p className="font-bold text-slate-700 dark:text-slate-300">
-              Lowongan tidak ditemukan.
-            </p>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Coba ubah kata kunci pencarian atau filter.
-            </p>
-          </section>
-        ) : (
-          <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            {filteredLowongan.map((item) => (
-              <article key={item.id} className="app-card app-card-hover p-6">
-                <div className="mb-5 flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-black uppercase tracking-wide text-[#1e3a8a] dark:text-blue-300">
-                      {item.company}
-                    </p>
-
-                    <h2 className="mt-2 text-xl font-black text-slate-950 dark:text-white">
-                      {item.title}
-                    </h2>
-
-                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                      {item.location}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col items-end gap-2">
-                    <span className={getTypeBadgeClass(item.type)}>
-                      {item.type}
-                    </span>
-                    <span className={getStatusBadgeClass(item.status)}>
-                      {item.status}
-                    </span>
-                  </div>
-                </div>
-
-                <p className="line-clamp-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  {item.description}
-                </p>
-
-                <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="app-panel p-4">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Kategori
-                    </p>
-                    <p className="mt-1 font-bold text-slate-950 dark:text-white">
-                      {item.kategori}
-                    </p>
-                  </div>
-
-                  <div className="app-panel p-4">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Konversi
-                    </p>
-                    <p className="mt-1 font-bold text-slate-950 dark:text-white">
-{getTipeKonversiLabel(item.tipeKonversi)}
-                    </p>
-                  </div>
-
-                  <div className="app-panel p-4">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Kuota
-                    </p>
-                    <p className="mt-1 font-bold text-slate-950 dark:text-white">
-                      {item.kuota} mahasiswa
-                    </p>
-                  </div>
-
-                  <div className="app-panel p-4">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Batas Daftar
-                    </p>
-                    <p className="mt-1 font-bold text-slate-950 dark:text-white">
-                      {formatDate(item.valid_until)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                  <button
-                    type="button"
-                    onClick={() => openEditForm(item)}
-                    className="app-btn-secondary flex-1"
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label className="app-label">Pilih Mitra</label>
+                  <select
+                    value={selectedMitraId}
+                    onChange={(e) => handleMitraChange(e.target.value)}
+                    className="app-input"
                   >
-                    Edit
+                    <option value="">Pilih mitra aktif / isi manual</option>
+                    {mitraList.map((mitra) => (
+                      <option key={mitra.id} value={mitra.id}>
+                        {mitra.nama_mitra}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="app-label">Posisi</label>
+                    <input
+                      type="text"
+                      value={form.posisi}
+                      onChange={(e) => handleChange('posisi', e.target.value)}
+                      className="app-input"
+                      placeholder="Contoh: Frontend Developer Intern"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="app-label">Perusahaan</label>
+                    <input
+                      type="text"
+                      value={form.perusahaan}
+                      onChange={(e) =>
+                        handleChange('perusahaan', e.target.value)
+                      }
+                      className="app-input"
+                      placeholder="Nama perusahaan"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="app-label">Lokasi</label>
+                    <input
+                      type="text"
+                      value={form.location}
+                      onChange={(e) => handleChange('location', e.target.value)}
+                      className="app-input"
+                      placeholder="Karawang / Jakarta / Remote"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="app-label">Kategori</label>
+                    <input
+                      type="text"
+                      value={form.kategori}
+                      onChange={(e) => handleChange('kategori', e.target.value)}
+                      className="app-input"
+                      placeholder="IT, Administrasi, Data, UI/UX..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="app-label">Sistem Kerja</label>
+                    <select
+                      value={form.type}
+                      onChange={(e) =>
+                        handleChange('type', e.target.value as JobType)
+                      }
+                      className="app-input"
+                    >
+                      <option value="Onsite">Onsite</option>
+                      <option value="Hybrid">Hybrid</option>
+                      <option value="Remote">Remote</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="app-label">Jenis Magang</label>
+                    <select
+                      value={form.tipeKonversi}
+                      onChange={(e) =>
+                        handleChange(
+                          'tipeKonversi',
+                          e.target.value as JobTipeKonversi
+                        )
+                      }
+                      className="app-input"
+                    >
+                      <option value="Konversi 20 SKS">
+                        Konversi Maksimal 20 SKS
+                      </option>
+                      <option value="Tidak Konversi">Tidak Konversi</option>
+                      <option value="Konversi 2 SKS">
+                        Magang 2 SKS Khusus SI
+                      </option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="app-label">Kuota</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={form.kuota}
+                      onChange={(e) =>
+                        handleChange('kuota', Number(e.target.value))
+                      }
+                      className="app-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="app-label">Berlaku Sampai</label>
+                    <input
+                      type="date"
+                      value={form.valid_until}
+                      onChange={(e) =>
+                        handleChange('valid_until', e.target.value)
+                      }
+                      className="app-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="app-label">Link Pendaftaran</label>
+                    <input
+                      type="url"
+                      value={form.link_pendaftaran}
+                      onChange={(e) =>
+                        handleChange('link_pendaftaran', e.target.value)
+                      }
+                      className="app-input"
+                      placeholder="https://..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="app-label">Email Perusahaan</label>
+                    <input
+                      type="email"
+                      value={form.email_perusahaan}
+                      onChange={(e) =>
+                        handleChange('email_perusahaan', e.target.value)
+                      }
+                      className="app-input"
+                      placeholder="hr@perusahaan.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="app-label">Paid?</label>
+                    <select
+                      value={form.isPaid ? 'Ya' : 'Tidak'}
+                      onChange={(e) =>
+                        handleChange('isPaid', e.target.value === 'Ya')
+                      }
+                      className="app-input"
+                    >
+                      <option value="Tidak">Tidak</option>
+                      <option value="Ya">Ya</option>
+                    </select>
+                  </div>
+
+                  {isEditMode && (
+                    <div>
+                      <label className="app-label">Status</label>
+                      <select
+                        value={form.status}
+                        onChange={(e) =>
+                          handleChange('status', e.target.value as JobStatus)
+                        }
+                        className="app-input"
+                      >
+                        <option value="Aktif">Aktif</option>
+                        <option value="Nonaktif">Nonaktif</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="app-label">Deskripsi</label>
+                  <textarea
+                    value={form.deskripsi}
+                    onChange={(e) => handleChange('deskripsi', e.target.value)}
+                    className="app-input min-h-36"
+                    placeholder="Deskripsi pekerjaan, persyaratan, atau informasi tambahan."
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 dark:border-slate-800 sm:flex-row">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="app-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSubmitting
+                      ? 'Menyimpan...'
+                      : isEditMode
+                        ? 'Simpan Perubahan'
+                        : 'Tambah Lowongan'}
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => handleToggleStatus(item)}
+                    onClick={resetForm}
                     disabled={isSubmitting}
                     className="app-btn-secondary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {item.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(item)}
-                    disabled={isSubmitting}
-                    className="app-btn-danger flex-1 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Hapus
+                    Batal
                   </button>
                 </div>
-              </article>
-            ))}
-          </section>
+              </form>
+            </div>
+          </div>
         )}
-      </div>
-
-{selectedPengajuanLowongan && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-    <div
-      className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
-      onClick={() => {
-        setSelectedPengajuanLowongan(null);
-        setCatatanSuperAdmin('');
-      }}
-    />
-
-    <div className="relative z-10 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
-      <div className="mb-6">
-        <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
-          Detail Pengajuan Lowongan
-        </p>
-
-        <h3 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
-          {selectedPengajuanLowongan.posisi}
-        </h3>
-
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          {selectedPengajuanLowongan.nama_mitra}
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="app-panel p-4">
-          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-            PIC
-          </p>
-          <p className="mt-1 font-black text-slate-950 dark:text-white">
-            {selectedPengajuanLowongan.nama_pic}
-          </p>
-        </div>
-
-        <div className="app-panel p-4">
-          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-            Kontak PIC
-          </p>
-          <p className="mt-1 font-black text-slate-950 dark:text-white">
-            {selectedPengajuanLowongan.kontak_pic}
-          </p>
-        </div>
-
-        <div className="app-panel p-4">
-          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-            Sistem Kerja
-          </p>
-          <p className="mt-1 font-black text-slate-950 dark:text-white">
-            {selectedPengajuanLowongan.sistem_kerja}
-          </p>
-        </div>
-
-        <div className="app-panel p-4">
-          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-            Tipe Konversi
-          </p>
-          <p className="mt-1 font-black text-slate-950 dark:text-white">
-            {selectedPengajuanLowongan.tipe_konversi}
-          </p>
-        </div>
-
-        <div className="app-panel p-4 md:col-span-2">
-          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-            Deskripsi
-          </p>
-          <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700 dark:text-slate-300">
-            {selectedPengajuanLowongan.deskripsi}
-          </p>
-        </div>
-
-        <div className="app-panel p-4 md:col-span-2">
-          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-            Persyaratan
-          </p>
-          <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700 dark:text-slate-300">
-            {selectedPengajuanLowongan.persyaratan || '-'}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-5">
-        <label className="app-label">Catatan staff</label>
-        <textarea
-          value={catatanSuperAdmin}
-          onChange={(e) => setCatatanSuperAdmin(e.target.value)}
-          className="app-input min-h-28"
-          placeholder="Wajib diisi jika pengajuan ditolak."
-        />
-      </div>
-
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        {selectedPengajuanLowongan.status === 'Menunggu' && (
-          <>
-            <button
-              type="button"
-              onClick={() =>
-                handleUpdatePengajuanLowongan(
-                  selectedPengajuanLowongan,
-                  'Disetujui'
-                )
-              }
-              disabled={isSubmitting}
-              className="app-btn-primary flex-1"
-            >
-              Setujui
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                handleUpdatePengajuanLowongan(
-                  selectedPengajuanLowongan,
-                  'Ditolak'
-                )
-              }
-              disabled={isSubmitting}
-              className="app-btn-danger flex-1"
-            >
-              Tolak
-            </button>
-          </>
-        )}
-
-{selectedPengajuanLowongan.status === 'Disetujui' && (
-  <button
-    type="button"
-    onClick={() => handleUsePengajuanAsLowongan(selectedPengajuanLowongan)}
-    className="app-btn-primary flex-1"
-  >
-    Jadikan Lowongan
-  </button>
-)}
-
-        <button
-          type="button"
-          onClick={() => {
-            setSelectedPengajuanLowongan(null);
-            setCatatanSuperAdmin('');
-          }}
-          className="app-btn-secondary flex-1"
-        >
-          Tutup
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-    </main>
+      </main>
     </DashboardShell>
   );
 }
