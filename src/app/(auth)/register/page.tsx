@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import Alert from '@/components/ui/Alert';
+import { getMahasiswaKampusByNpm } from '@/lib/kampus-client';
 
 type RegisterFormData = {
   email: string;
