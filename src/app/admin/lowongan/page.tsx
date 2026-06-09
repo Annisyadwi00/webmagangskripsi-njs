@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import Alert from '@/components/ui/Alert';
+import { Mitra, getMitraList } from '@/lib/mitra-client';
 import {
   JobStatus,
   JobTipeKonversi,
@@ -94,6 +95,8 @@ function toDateInputValue(date?: string | null) {
 
 export default function AdminLowonganPage() {
   const [lowongan, setLowongan] = useState<Lowongan[]>([]);
+  const [mitraList, setMitraList] = useState<Mitra[]>([]);
+const [selectedMitraId, setSelectedMitraId] = useState('');
   const [pengajuanLowongan, setPengajuanLowongan] = useState<PengajuanLowongan[]>([]);
   const [selectedPengajuanLowongan, setSelectedPengajuanLowongan] =
     useState<PengajuanLowongan | null>(null);
@@ -118,13 +121,15 @@ export default function AdminLowonganPage() {
       setIsLoading(true);
       setErrorMsg('');
 
-      const [dataLowongan, dataPengajuanLowongan] = await Promise.all([
+      const [dataLowongan, dataPengajuanLowongan, dataMitra] = await Promise.all([
   getAllLowonganList(),
   getPengajuanLowonganList(),
+  getMitraList(),
 ]);
 
-setLowongan(dataLowongan);
-setPengajuanLowongan(dataPengajuanLowongan);
+setLowongan(dataLowongan || []);
+setPengajuanLowongan(dataPengajuanLowongan || []);
+setMitraList(dataMitra || []);
 
     } catch (error) {
       const msg =
@@ -177,6 +182,7 @@ const totalPengajuanMenunggu = pengajuanLowongan.filter(
 ).length;
   const resetForm = () => {
     setForm(initialForm);
+    setSelectedMitraId('');
     setIsFormOpen(false);
   };
 
@@ -184,6 +190,7 @@ const totalPengajuanMenunggu = pengajuanLowongan.filter(
     setMessage('');
     setErrorMsg('');
     setForm(initialForm);
+    setSelectedMitraId('');
     setIsFormOpen(true);
   };
 
@@ -207,7 +214,11 @@ const totalPengajuanMenunggu = pengajuanLowongan.filter(
       valid_until: toDateInputValue(item.valid_until),
       status: item.status,
     });
+const selectedMitra = mitraList.find(
+  (mitra) => mitra.nama_mitra === item.company
+);
 
+setSelectedMitraId(selectedMitra ? String(selectedMitra.id) : '');
     setIsFormOpen(true);
   };
 
@@ -220,6 +231,27 @@ const totalPengajuanMenunggu = pengajuanLowongan.filter(
       [field]: value,
     });
   };
+
+const handleMitraChange = (value: string) => {
+  setSelectedMitraId(value);
+
+  if (!value) {
+    handleChange('perusahaan', '');
+    return;
+  }
+
+  const selected = mitraList.find((mitra) => String(mitra.id) === value);
+
+  if (!selected) return;
+
+  setForm((prev) => ({
+    ...prev,
+    perusahaan: selected.nama_mitra,
+    location: selected.alamat || prev.location,
+    email_perusahaan: selected.email || prev.email_perusahaan,
+    link_pendaftaran: selected.website || prev.link_pendaftaran,
+  }));
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -680,19 +712,16 @@ description="Tambah, ubah, nonaktifkan, hapus, dan validasi lowongan magang yang
                 <div>
                   <label className="app-label">Tipe Konversi</label>
                   <select
-                    value={getTipeKonversiLabel(item.tipeKonversi)}
-                    onChange={(e) =>
-                      handleChange(
-                        'tipeKonversi',
-                        e.target.value as JobTipeKonversi
-                      )
-                    }
-                    className="app-input"
-                  >
-                    <option value="Konversi 20 SKS">Konversi Maksimal 20 SKS</option>
-<option value="Tidak Konversi">Tidak Konversi</option>
-<option value="Konversi 2 SKS">Konversi 2 SKS khusus Sistem Informasi</option>
-                  </select>
+  value={form.tipeKonversi}
+  onChange={(e) =>
+    handleChange('tipeKonversi', e.target.value as JobTipeKonversi)
+  }
+  className="app-input"
+>
+  <option value="Konversi 20 SKS">Konversi Maksimal 20 SKS</option>
+  <option value="Tidak Konversi">Tidak Konversi</option>
+  <option value="Konversi 2 SKS">Magang 2 SKS Khusus SI</option>
+</select>
                 </div>
 
                 <div>
@@ -761,7 +790,38 @@ description="Tambah, ubah, nonaktifkan, hapus, dan validasi lowongan magang yang
                     placeholder="https://..."
                   />
                 </div>
+<div>
+  <label className="app-label">Pilih Mitra Terdaftar</label>
+  <select
+    value={selectedMitraId}
+    onChange={(e) => handleMitraChange(e.target.value)}
+    className="app-input"
+  >
+    <option value="">Pilih mitra dari database</option>
+    {mitraList.map((mitra) => (
+      <option key={mitra.id} value={mitra.id}>
+        {mitra.nama_mitra}
+      </option>
+    ))}
+  </select>
+  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+    Pilihan ini akan mengisi nama perusahaan, email, website, dan alamat jika tersedia.
+  </p>
+</div>
 
+<div>
+  <label className="app-label">Nama Perusahaan</label>
+  <input
+    type="text"
+    value={form.perusahaan}
+    onChange={(e) => {
+      setSelectedMitraId('');
+      handleChange('perusahaan', e.target.value);
+    }}
+    className="app-input"
+    placeholder="Nama perusahaan/instansi"
+  />
+</div>
                 <div>
                   <label className="app-label">Email Perusahaan</label>
                   <input
