@@ -93,6 +93,12 @@ export default function LoginPage() {
           </section>
 
           <section className="app-card animate-fade-up p-6 md:p-8">
+            <Link
+  href="/"
+  className="mb-6 inline-flex text-sm font-black text-[#1e3a8a] hover:underline dark:text-blue-300"
+>
+  ← Balik ke Beranda
+</Link>
             <div className="mb-8 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-xl font-black text-[#1e3a8a] dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
                 SI
@@ -131,9 +137,12 @@ export default function LoginPage() {
                     Password
                   </label>
 
-                  <span className="text-sm font-bold text-slate-400">
-                    Hubungi staff jika lupa password
-                  </span>
+                  <Link
+  href="/forgot-password"
+  className="text-sm font-black text-[#1e3a8a] hover:underline dark:text-blue-300"
+>
+  Lupa Password?
+</Link>
                 </div>
 
                 <div className="relative">

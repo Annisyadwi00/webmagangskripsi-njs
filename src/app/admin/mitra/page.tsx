@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import DashboardShell from '@/components/dashboard/DashboardShell';
 import PageHeader from '@/components/ui/PageHeader';
 import Alert from '@/components/ui/Alert';
 import StatCard from '@/components/ui/StatCard';
@@ -281,7 +279,6 @@ export default function AdminMitraPage() {
 
   if (isLoading) {
     return (
-      <DashboardShell role="Admin">
         <main className="min-h-screen py-8">
           <div className="app-container">
             <div className="app-card p-8">
@@ -291,12 +288,10 @@ export default function AdminMitraPage() {
             </div>
           </div>
         </main>
-      </DashboardShell>
     );
   }
 
   return (
-    <DashboardShell role="Admin">
       <main className="min-h-screen py-8">
         <div className="app-container">
           <PageHeader
@@ -306,20 +301,14 @@ export default function AdminMitraPage() {
               currentUser?.name || 'Admin'
             }.`}
             action={
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Link href="/admin/dashboard" className="app-btn-secondary">
-                  Kembali
-                </Link>
-
-                <button
-                  type="button"
-                  onClick={openCreateForm}
-                  className="app-btn-primary"
-                >
-                  Tambah Mitra
-                </button>
-              </div>
-            }
+  <button
+    type="button"
+    onClick={openCreateForm}
+    className="app-btn-primary"
+  >
+    Tambah Mitra
+  </button>
+}
           />
 
           {message && <Alert variant="success">{message}</Alert>}
@@ -490,12 +479,13 @@ export default function AdminMitraPage() {
                 </div>
 
                 <button
-                  type="button"
-                  onClick={closeForm}
-                  className="app-btn-secondary"
-                >
-                  Tutup
-                </button>
+  type="button"
+  onClick={closeForm}
+  className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-xl font-black text-slate-600 hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+  aria-label="Tutup modal"
+>
+  ×
+</button>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
@@ -624,6 +614,5 @@ export default function AdminMitraPage() {
           </div>
         )}
       </main>
-    </DashboardShell>
   );
 }

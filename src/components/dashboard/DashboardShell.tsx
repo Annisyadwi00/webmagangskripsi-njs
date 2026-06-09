@@ -29,14 +29,13 @@ const navItems: Record<DashboardRole, NavItem[]> = {
     { label: 'Settings', href: '/settings' },
   ],
 
-  Admin: [
-    { label: 'Dashboard', href: '/admin/dashboard' },
-    { label: 'Pengajuan Magang', href: '/admin/pengajuan' },
-    { label: 'Pengajuan Mitra', href: '/admin/pengajuan-mitra' },
-    { label: 'Mitra', href: '/admin/mitra' },
-    { label: 'Lowongan', href: '/admin/lowongan' },
-    { label: 'Activity Log', href: '/admin/activity' },
-  ],
+ Admin: [
+  { label: 'Dashboard', href: '/admin/dashboard' },
+  { label: 'Pengajuan Magang', href: '/admin/pengajuan' },
+  { label: 'Pengajuan Mitra', href: '/admin/pengajuan-mitra' },
+  { label: 'Mitra', href: '/admin/mitra' },
+  { label: 'Lowongan', href: '/admin/lowongan' },
+],
 
   'Super Admin': [
     { label: 'Dashboard', href: '/super-admin/dashboard' },
@@ -66,6 +65,14 @@ function getRoleLabel(role: DashboardRole) {
   if (role === 'Dosen') return 'Dosen Pembimbing';
 
   return 'Mahasiswa';
+}
+
+function getRoleHome(role: DashboardRole) {
+  if (role === 'Super Admin') return '/super-admin/dashboard';
+  if (role === 'Admin') return '/admin/dashboard';
+  if (role === 'Dosen') return '/dosen/dashboard';
+
+  return '/dashboard';
 }
 
 export default function DashboardShell({
@@ -137,9 +144,9 @@ export default function DashboardShell({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+    <div className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-100">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-slate-200 bg-white px-5 py-6 dark:border-slate-800 dark:bg-slate-900 lg:block">
-        <Link href="/" className="flex items-center gap-3">
+        <Link href={getRoleHome(role)} className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-sm font-black text-[#1e3a8a] dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
             SI
           </div>
@@ -235,9 +242,9 @@ export default function DashboardShell({
         )}
       </header>
 
-      <div className="lg:pl-72">
-        <main>{children}</main>
-      </div>
+      <div className="min-w-0 lg:pl-72">
+  <main className="animate-fade-slide min-w-0">{children}</main>
+</div>
     </div>
   );
 }

@@ -195,8 +195,8 @@ export default function SettingsPage() {
             tersebut mengikuti data akademik kampus.
           </Alert>
 
-          <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="space-y-6 lg:col-span-2">
+          <section className="grid grid-cols-1 gap-6">
+  <div className="space-y-6">
               <div className="app-card p-6">
                 <h2 className="text-xl font-black text-slate-950 dark:text-white">
                   Data Akun
@@ -345,41 +345,6 @@ export default function SettingsPage() {
                       : 'Ubah Kata Sandi'}
                   </button>
                 </form>
-              </div>
-            </div>
-
-            <div className="app-card p-6">
-              <h2 className="text-xl font-black text-slate-950 dark:text-white">
-                Informasi Akun
-              </h2>
-
-              <div className="mt-5 space-y-4">
-                <div className="app-panel p-4">
-                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                    Role
-                  </p>
-                  <p className="mt-1 font-black text-slate-950 dark:text-white">
-                    {user?.role || '-'}
-                  </p>
-                </div>
-
-                <div className="app-panel p-4">
-                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                    Status Data
-                  </p>
-                  <p className="mt-1 font-black text-slate-950 dark:text-white">
-                    Mengikuti data kampus
-                  </p>
-                </div>
-
-                <div className="app-panel p-4">
-                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                    Keamanan
-                  </p>
-                  <p className="mt-1 font-black text-slate-950 dark:text-white">
-                    Kata sandi dapat diubah 
-                  </p>
-                </div>
               </div>
             </div>
           </section>
