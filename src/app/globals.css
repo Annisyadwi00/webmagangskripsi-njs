@@ -368,9 +368,10 @@ select:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
-  .animate-scale-in,
-  .animate-pulse-soft,
-  .app-bg-orb {
+.animate-fade-slide,
+.animate-scale-in,
+.animate-pulse-soft,
+.app-bg-orb {
     animation: none !important;
   }
 

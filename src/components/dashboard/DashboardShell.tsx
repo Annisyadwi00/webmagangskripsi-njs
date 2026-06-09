@@ -151,14 +151,14 @@ export default function DashboardShell({
             SI
           </div>
 
-          <div>
-            <p className="text-lg font-black leading-none text-slate-950 dark:text-white">
-              SI Magang
-            </p>
-            <p className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-              {getRoleLabel(role)}
-            </p>
-          </div>
+          <Link href={getRoleHome(role)} className="min-w-0">
+  <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+    {getRoleLabel(role)}
+  </p>
+  <p className="truncate text-lg font-black text-slate-950 dark:text-white">
+    SI Magang
+  </p>
+</Link>
         </Link>
 
         <nav className="mt-8 max-h-[calc(100vh-130px)] space-y-2 overflow-y-auto pr-1">
