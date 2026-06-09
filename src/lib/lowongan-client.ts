@@ -1,10 +1,12 @@
 import { apiClient } from '@/lib/api-client';
 
 export type JobType = 'Onsite' | 'Hybrid' | 'Remote';
+
 export type JobTipeKonversi =
   | 'Konversi 20 SKS'
   | 'Tidak Konversi'
   | 'Konversi 2 SKS';
+
 export type JobStatus = 'Aktif' | 'Nonaktif';
 
 export type Lowongan = {
@@ -26,20 +28,30 @@ export type Lowongan = {
   updatedAt: string;
 };
 
+function normalizeLowonganData(data?: Lowongan[] | { data?: Lowongan[] } | null) {
+  if (!data) return [];
+
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  return data.data || [];
+}
+
 export async function getLowonganList() {
-  const result = await apiClient<Lowongan[] | { data: Lowongan[] }>(
+  const result = await apiClient<Lowongan[] | { data?: Lowongan[] }>(
     '/api/lowongan'
   );
 
-  if (!result.data) {
-    return [];
-  }
+  return normalizeLowonganData(result.data);
+}
 
-  if (Array.isArray(result.data)) {
-    return result.data;
-  }
+export async function getAllLowonganList() {
+  const result = await apiClient<Lowongan[] | { data?: Lowongan[] }>(
+    '/api/lowongan?all=true'
+  );
 
-  return result.data.data || [];
+  return normalizeLowonganData(result.data);
 }
 
 export async function createLowongan(payload: {
@@ -115,19 +127,4 @@ export async function deleteLowongan(id: number) {
       action: 'delete',
     },
   });
-}
-export async function getAllLowonganList() {
-  const result = await apiClient<Lowongan[] | { data: Lowongan[] }>(
-    '/api/lowongan?all=true'
-  );
-
-  if (!result.data) {
-    return [];
-  }
-
-  if (Array.isArray(result.data)) {
-    return result.data;
-  }
-
-  return result.data.data || [];
 }

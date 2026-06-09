@@ -16,36 +16,37 @@ const features = [
       'Mahasiswa mengisi data tempat magang, periode magang, bukti penerimaan, dan rencana kegiatan untuk diperiksa oleh staff.',
   },
   {
-    title: 'Upload Laporan Akhir',
+    title: 'Laporan Akhir Magang',
     description:
-      'Mahasiswa wajib mengunggah laporan akhir dalam bentuk PDF sebagai syarat sebelum penilaian akhir diproses.',
+      'Mahasiswa mengunggah laporan atau output magang sesuai jenis magang yang dipilih.',
   },
   {
     title: 'Penilaian Akhir',
     description:
-      'Dosen pembimbing melihat laporan akhir mahasiswa lalu menginput seluruh komponen penilaian akhir.',
+      'Dosen pembimbing melihat dokumen laporan mahasiswa lalu menginput komponen penilaian akhir.',
   },
 ];
 
 const steps = [
-  'Mahasiswa melakukan registrasi menggunakan NPM/NIM dan email kampus.',
+  'Mahasiswa melakukan registrasi menggunakan data akademik dan email kampus.',
+  'Mahasiswa mengecek mitra atau mengajukan mitra baru jika perusahaan belum terdata.',
   'Mahasiswa mengisi pendataan magang dan mengunggah bukti penerimaan.',
-  'Staff memeriksa pengajuan dan menetapkan dosen pembimbing.',
+  'Staff memeriksa pengajuan magang dan menetapkan dosen pembimbing.',
   'Mahasiswa melaksanakan magang sesuai periode yang diajukan.',
-  'Mahasiswa mengunggah laporan akhir dalam bentuk PDF.',
-  'Dosen pembimbing memeriksa laporan akhir dan menginput nilai akhir.',
+  'Mahasiswa mengunggah laporan magang atau output magang sesuai jenis magang.',
+  'Dosen pembimbing memeriksa dokumen dan menginput nilai akhir.',
 ];
 
 const roles = [
   {
     title: 'Mahasiswa',
     description:
-      'Mengisi pendataan magang, mengajukan mitra, upload laporan akhir, dan memantau status magang.',
+      'Mengisi pendataan magang, mengajukan mitra, mengunggah laporan, dan memantau status magang.',
   },
   {
     title: 'Dosen Pembimbing',
     description:
-      'Melihat laporan akhir mahasiswa dan menginput nilai akhir magang.',
+      'Melihat laporan mahasiswa bimbingan dan menginput nilai akhir magang.',
   },
   {
     title: 'Staff',
@@ -55,7 +56,7 @@ const roles = [
   {
     title: 'Mitra',
     description:
-      'Mengajukan lowongan magang agar dapat ditampilkan pada sistem setelah diverifikasi.',
+      'Perusahaan atau instansi yang dapat menjadi tempat pelaksanaan magang mahasiswa.',
   },
 ];
 
@@ -63,7 +64,7 @@ const faqs: FAQ[] = [
   {
     tanya: 'Siapa saja yang bisa menggunakan SI Magang?',
     jawab:
-      'Sistem ini digunakan oleh mahasiswa, dosen pembimbing, staff, dan mitra sesuai kebutuhan proses magang.',
+      'Sistem ini digunakan oleh mahasiswa, dosen pembimbing, staff, dan super admin sesuai kebutuhan proses magang.',
   },
   {
     tanya: 'Bagaimana alur pengajuan magang?',
@@ -71,28 +72,37 @@ const faqs: FAQ[] = [
       'Mahasiswa mengisi pendataan magang dan bukti penerimaan, kemudian staff memeriksa data serta menetapkan dosen pembimbing.',
   },
   {
-  tanya: 'Apakah laporan akhir wajib diunggah?',
-  jawab:
-    'Ya. Mahasiswa wajib mengunggah laporan akhir dalam bentuk PDF sebelum dosen pembimbing dapat memproses penilaian akhir.',
-},
+    tanya: 'Apakah semua mahasiswa wajib mengunggah laporan akhir?',
+    jawab:
+      'Kewajiban laporan menyesuaikan jenis magang. Konversi Maksimal 20 SKS wajib laporan akhir dan output magang, Magang 2 SKS Khusus SI wajib laporan magang, sedangkan Tidak Konversi tidak memakai fitur laporan akhir.',
+  },
   {
     tanya: 'Bagaimana proses penilaian akhir?',
     jawab:
-      'Dosen pembimbing melihat laporan akhir mahasiswa lalu menginput seluruh komponen penilaian, termasuk nilai dari mitra atau tempat magang.',
+      'Dosen pembimbing melihat dokumen laporan mahasiswa lalu menginput komponen penilaian akhir, termasuk nilai mitra atau tempat magang.',
   },
 ];
+
+function getInitial(name?: string | null) {
+  return (name || 'M').charAt(0).toUpperCase();
+}
 
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [mitraList, setMitraList] = useState<Mitra[]>([]);
+  const [isLoadingMitra, setIsLoadingMitra] = useState(true);
 
   useEffect(() => {
     const fetchMitra = async () => {
       try {
+        setIsLoadingMitra(true);
+
         const data = await getMitraList(6);
-        setMitraList(data);
+        setMitraList(data || []);
       } catch {
         setMitraList([]);
+      } finally {
+        setIsLoadingMitra(false);
       }
     };
 
@@ -101,6 +111,53 @@ export default function LandingPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90">
+        <div className="app-container flex h-20 items-center justify-between">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-sm font-black text-[#1e3a8a] dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
+              SI
+            </div>
+
+            <div>
+              <p className="text-lg font-black leading-none text-slate-950 dark:text-white">
+                SI Magang
+              </p>
+              <p className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                FASILKOM UNSIKA
+              </p>
+            </div>
+          </Link>
+
+          <nav className="hidden items-center gap-6 text-sm font-black text-slate-600 dark:text-slate-300 md:flex">
+            <Link href="/" className="hover:text-[#1e3a8a] dark:hover:text-blue-300">
+              Beranda
+            </Link>
+            <Link
+              href="/lowongan"
+              className="hover:text-[#1e3a8a] dark:hover:text-blue-300"
+            >
+              Lowongan
+            </Link>
+            <Link
+              href="/mitra"
+              className="hover:text-[#1e3a8a] dark:hover:text-blue-300"
+            >
+              Mitra
+            </Link>
+            <Link
+              href="/ajukan-mitra"
+              className="hover:text-[#1e3a8a] dark:hover:text-blue-300"
+            >
+              Ajukan Mitra
+            </Link>
+          </nav>
+
+          <Link href="/login" className="app-btn-primary">
+            Masuk
+          </Link>
+        </div>
+      </header>
+
       <section className="relative overflow-hidden py-16 md:py-24">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.16),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.12),transparent_30%)]" />
 
@@ -108,7 +165,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
             <div>
               <p className="text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a] dark:text-blue-300">
-                SI Magang Fasilkom UNSIKA
+                SI Magang FASILKOM UNSIKA
               </p>
 
               <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight text-slate-950 dark:text-white md:text-6xl">
@@ -117,13 +174,17 @@ export default function LandingPage() {
 
               <p className="mt-6 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300 md:text-lg">
                 Digitalisasi proses magang mulai dari pendataan magang,
-                pengajuan mitra, upload laporan akhir, alokasi dosen
-                pembimbing, hingga penilaian akhir.
+                pengajuan mitra, informasi lowongan, alokasi dosen pembimbing,
+                laporan akhir, hingga penilaian akhir.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link href="/login" className="app-btn-primary">
-                  Masuk
+                  Masuk ke Sistem
+                </Link>
+
+                <Link href="/mitra" className="app-btn-secondary">
+                  Cek Mitra
                 </Link>
               </div>
             </div>
@@ -139,8 +200,8 @@ export default function LandingPage() {
                 </h2>
 
                 <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                  SI Magang membantu proses pendataan, pemantauan laporan akhir,
-                  dan evaluasi magang agar lebih terpusat.
+                  SI Magang membantu proses pendataan, pengelolaan mitra,
+                  pelaporan akhir, dan evaluasi magang agar lebih terpusat.
                 </p>
               </div>
 
@@ -236,64 +297,81 @@ export default function LandingPage() {
       </section>
 
       <section className="relative py-12">
-  <div className="app-container">
-    <div className="mb-8 text-center">
-      <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
-        Mitra Magang
-      </p>
+        <div className="app-container">
+          <div className="mb-8 text-center">
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
+              Mitra Magang
+            </p>
 
-      <h2 className="mt-3 text-3xl font-black text-slate-950 dark:text-white">
-        Perusahaan dan instansi yang terdata.
-      </h2>
+            <h2 className="mt-3 text-3xl font-black text-slate-950 dark:text-white">
+              Perusahaan dan instansi yang terdata.
+            </h2>
 
-      <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-        Daftar mitra ditampilkan dari data yang dikelola oleh staff.
-      </p>
-    </div>
-
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-      {mitraList.length === 0 ? (
-        <div className="col-span-full rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-8 text-center dark:border-slate-700 dark:bg-slate-900">
-          <p className="font-bold text-slate-700 dark:text-slate-300">
-            Data mitra belum tersedia.
-          </p>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Data akan tampil setelah staff menambahkan data mitra ke sistem.
-          </p>
-        </div>
-      ) : (
-        mitraList.slice(0, 6).map((mitra) => (
-          <div
-            key={mitra.id}
-            className="group rounded-[1.5rem] border border-slate-200 bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-400/40"
-          >
-            {mitra.logo ? (
-              <img
-                src={mitra.logo}
-                alt={mitra.nama_mitra}
-                className="mx-auto h-16 w-16 rounded-3xl object-contain"
-              />
-            ) : (
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-blue-100 bg-blue-50 text-2xl font-black text-[#1e3a8a] transition group-hover:scale-105 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
-                {mitra.nama_mitra.charAt(0)}
-              </div>
-            )}
-
-            <p className="mt-4 text-sm font-black leading-6 text-slate-950 dark:text-white">
-              {mitra.nama_mitra}
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+              Daftar mitra ditampilkan dari data aktif yang dikelola oleh staff.
             </p>
           </div>
-        ))
-      )}
-    </div>
 
-    <div className="mt-8 text-center">
-      <Link href="/mitra" className="app-btn-secondary">
-        Selengkapnya
-      </Link>
-    </div>
-  </div>
-</section>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+            {isLoadingMitra ? (
+              [1, 2, 3, 4, 5, 6].map((item) => (
+                <div key={item} className="app-card p-5 text-center">
+                  <div className="mx-auto h-16 w-16 animate-pulse rounded-3xl bg-slate-100 dark:bg-slate-800" />
+                  <div className="mx-auto mt-4 h-4 w-28 animate-pulse rounded-full bg-slate-100 dark:bg-slate-800" />
+                </div>
+              ))
+            ) : mitraList.length === 0 ? (
+              <div className="col-span-full rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-8 text-center dark:border-slate-700 dark:bg-slate-900">
+                <p className="font-bold text-slate-700 dark:text-slate-300">
+                  Data mitra belum tersedia.
+                </p>
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                  Data akan tampil setelah staff menambahkan data mitra aktif ke
+                  sistem.
+                </p>
+              </div>
+            ) : (
+              mitraList.slice(0, 6).map((mitra) => (
+                <Link
+                  href="/mitra"
+                  key={mitra.id}
+                  className="group rounded-[1.5rem] border border-slate-200 bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-400/40"
+                >
+                  {mitra.logo ? (
+                    <img
+                      src={mitra.logo}
+                      alt={mitra.nama_mitra}
+                      className="mx-auto h-16 w-16 rounded-3xl object-contain"
+                    />
+                  ) : (
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-blue-100 bg-blue-50 text-2xl font-black text-[#1e3a8a] transition group-hover:scale-105 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
+                      {getInitial(mitra.nama_mitra)}
+                    </div>
+                  )}
+
+                  <p className="mt-4 text-sm font-black leading-6 text-slate-950 dark:text-white">
+                    {mitra.nama_mitra}
+                  </p>
+
+                  <p className="mt-2 text-xs font-bold text-[#1e3a8a] dark:text-blue-300">
+                    Selengkapnya
+                  </p>
+                </Link>
+              ))
+            )}
+          </div>
+
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link href="/mitra" className="app-btn-secondary">
+              Lihat Semua Mitra
+            </Link>
+
+            <Link href="/ajukan-mitra" className="app-btn-primary">
+              Ajukan Mitra
+            </Link>
+          </div>
+        </div>
+      </section>
 
       <section className="relative py-12">
         <div className="app-container">
@@ -307,67 +385,55 @@ export default function LandingPage() {
             </h2>
           </div>
 
-          <div className="mx-auto max-w-3xl space-y-4">
-            {faqs.map((faq, index) => {
-              const isOpen = openFaq === index;
+          <div className="mx-auto max-w-4xl space-y-4">
+            {faqs.map((faq, index) => (
+              <div key={faq.tanya} className="app-card overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                  className="flex w-full items-center justify-between gap-4 p-5 text-left"
+                >
+                  <span className="font-black text-slate-950 dark:text-white">
+                    {faq.tanya}
+                  </span>
 
-              return (
-                <div key={faq.tanya} className="app-card p-5">
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaq(isOpen ? null : index)}
-                    className="flex w-full items-center justify-between gap-4 text-left"
-                  >
-                    <span className="font-black text-slate-950 dark:text-white">
-                      {faq.tanya}
-                    </span>
+                  <span className="text-xl font-black text-[#1e3a8a] dark:text-blue-300">
+                    {openFaq === index ? '−' : '+'}
+                  </span>
+                </button>
 
-                    <span className="text-xl font-black text-[#1e3a8a] dark:text-blue-300">
-                      {isOpen ? '−' : '+'}
-                    </span>
-                  </button>
-
-                  {isOpen && (
-                    <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                {openFaq === index && (
+                  <div className="border-t border-slate-100 px-5 pb-5 pt-4 dark:border-slate-800">
+                    <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">
                       {faq.jawab}
                     </p>
-                  )}
-                </div>
-              );
-            })}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="relative py-12">
-        <div className="app-container">
-          <div className="app-card grid grid-cols-1 gap-6 p-8 md:grid-cols-[1fr_auto] md:items-center">
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
-                Butuh Informasi?
-              </p>
+      <footer className="border-t border-slate-200 bg-white py-8 dark:border-slate-800 dark:bg-slate-900">
+        <div className="app-container flex flex-col gap-4 text-sm text-slate-500 dark:text-slate-400 md:flex-row md:items-center md:justify-between">
+          <p className="font-bold">
+            © {new Date().getFullYear()} SI Magang FASILKOM UNSIKA.
+          </p>
 
-              <h2 className="mt-3 text-2xl font-black text-slate-950 dark:text-white">
-                Hubungi TU Fasilkom
-              </h2>
-
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Jika membutuhkan informasi lebih lanjut terkait proses magang,
-                mahasiswa dapat menghubungi TU Fasilkom melalui WhatsApp.
-              </p>
-            </div>
-
-            <a
-              href="https://wa.me/6287896314494"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="app-btn-primary"
-            >
-              Hubungi TU
-            </a>
+          <div className="flex flex-wrap gap-4 font-bold">
+            <Link href="/lowongan" className="hover:text-[#1e3a8a]">
+              Lowongan
+            </Link>
+            <Link href="/mitra" className="hover:text-[#1e3a8a]">
+              Mitra
+            </Link>
+            <Link href="/ajukan-mitra" className="hover:text-[#1e3a8a]">
+              Ajukan Mitra
+            </Link>
           </div>
         </div>
-      </section>
+      </footer>
     </main>
   );
 }
