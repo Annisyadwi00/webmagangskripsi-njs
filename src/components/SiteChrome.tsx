@@ -16,7 +16,8 @@ type SiteChromeProps = {
   user: NavbarUser;
 };
 
-const appRoutes = [
+const customChromeRoutes = [
+  '/',
   '/dashboard',
   '/pengajuan',
   '/pengajuan-mitra',
@@ -33,11 +34,13 @@ const appRoutes = [
 export default function SiteChrome({ children, user }: SiteChromeProps) {
   const pathname = usePathname();
 
-  const isAppPage = appRoutes.some((route) =>
-    pathname === route || pathname.startsWith(`${route}/`)
-  );
+  const isCustomChromePage = customChromeRoutes.some((route) => {
+    if (route === '/') return pathname === '/';
 
-  if (isAppPage) {
+    return pathname === route || pathname.startsWith(`${route}/`);
+  });
+
+  if (isCustomChromePage) {
     return <>{children}</>;
   }
 
