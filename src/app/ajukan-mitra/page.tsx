@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Alert from '@/components/ui/Alert';
+import { apiClient } from '@/lib/api-client';
+import { getCurrentUserClient } from '@/lib/client-auth';
 
 type FormState = {
   nama_mitra: string;
@@ -54,6 +56,7 @@ export default function AjukanMitraPage() {
 
   const [errorMsg, setErrorMsg] = useState('');
   const [message, setMessage] = useState('');
+const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const savedDraft = localStorage.getItem(DRAFT_KEY);
@@ -90,51 +93,102 @@ export default function AjukanMitraPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    setErrorMsg('');
-    setMessage('');
+  setErrorMsg('');
+  setMessage('');
 
-    if (
-      !form.nama_mitra.trim() ||
-      !form.alamat.trim() ||
-      !form.nama_pic.trim() ||
-      !form.kontak_wa.trim() ||
-      !form.email_pic.trim() ||
-      !form.lokasi.trim() ||
-      !form.kuota.trim() ||
-      !form.deskripsi_lowongan.trim() ||
-      !form.persyaratan.trim()
-    ) {
-      setErrorMsg('Data mitra, narahubung, dan detail lowongan wajib diisi.');
-      return;
-    }
+  if (
+    !form.nama_mitra.trim() ||
+    !form.alamat.trim() ||
+    !form.nama_pic.trim() ||
+    !form.kontak_wa.trim() ||
+    !form.email_pic.trim() ||
+    !form.lokasi.trim() ||
+    !form.kuota.trim() ||
+    !form.deskripsi_lowongan.trim() ||
+    !form.persyaratan.trim()
+  ) {
+    setErrorMsg('Data mitra, narahubung, dan detail lowongan wajib diisi.');
+    return;
+  }
 
-    if (!/^62\d{8,15}$/.test(form.kontak_wa)) {
-      setErrorMsg(
-        'Nomor WhatsApp narahubung harus diawali 62. Contoh: 6285456123.'
-      );
-      return;
-    }
-
-    const fileErrors = [
-      validatePdf(aktaPendirian, 'Akta pendirian'),
-      validatePdf(aktaDireksi, 'Akta susunan direksi'),
-      validatePdf(ktpPenandatangan, 'KTP penandatangan'),
-      validatePdf(npwpPerusahaan, 'NPWP perusahaan'),
-      validatePdf(izinUsaha, 'Dokumen izin usaha terkait'),
-    ].filter(Boolean);
-
-    if (fileErrors.length > 0) {
-      setErrorMsg(fileErrors[0]);
-      return;
-    }
-
-    // API upload dokumen kita sambungkan di step berikutnya.
-    setMessage(
-      'Form sudah valid. Step berikutnya kita sambungkan ke API agar dokumen PDF bisa tersimpan.'
+  if (!/^62\d{8,15}$/.test(form.kontak_wa)) {
+    setErrorMsg(
+      'Nomor WhatsApp narahubung harus diawali 62. Contoh: 6285456123.'
     );
-  };
+    return;
+  }
+
+  const fileErrors = [
+    validatePdf(aktaPendirian, 'Akta pendirian'),
+    validatePdf(aktaDireksi, 'Akta susunan direksi'),
+    validatePdf(ktpPenandatangan, 'KTP penandatangan'),
+    validatePdf(npwpPerusahaan, 'NPWP perusahaan'),
+    validatePdf(izinUsaha, 'Dokumen izin usaha terkait'),
+  ].filter(Boolean);
+
+  if (fileErrors.length > 0) {
+    setErrorMsg(fileErrors[0]);
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    const currentUser = await getCurrentUserClient();
+
+    const result = await apiClient('/api/pengajuan-mitra', {
+      method: 'POST',
+      body: {
+        nama_mitra: form.nama_mitra,
+        alamat_kantor_mitra: form.alamat,
+        url_mitra: form.website || null,
+        nama_narahubung_mitra: form.nama_pic,
+        kontak_narahubung_mitra: form.kontak_wa,
+
+        nama_mahasiswa_pengusul: currentUser.name,
+        npm_mahasiswa_pengusul: currentUser.nim_nidn || '-',
+        program_studi_mahasiswa: currentUser.prodi || '-',
+        angkatan_mahasiswa: currentUser.angkatan || '-',
+        kontak_mahasiswa: currentUser.phone || form.kontak_wa,
+        kelas: currentUser.kelas || '-',
+
+        lokasi: form.lokasi,
+        sistem_kerja: form.sistem_kerja,
+        kuota: form.kuota,
+        link_pendaftaran: form.link_pendaftaran,
+        email_pic: form.email_pic,
+        deskripsi_lowongan: form.deskripsi_lowongan,
+        
+        link_akta_pendirian: null,
+link_akta_direksi: null,
+link_ktp_penandatangan: null,
+link_npwp: null,
+link_izin_usaha: null,
+      },
+    });
+
+    setMessage(result.message || 'Pengajuan mitra berhasil dikirim.');
+
+    setForm(initialForm);
+    setAktaPendirian(null);
+    setAktaDireksi(null);
+    setKtpPenandatangan(null);
+    setNpwpPerusahaan(null);
+    setIzinUsaha(null);
+    localStorage.removeItem(DRAFT_KEY);
+  } catch (error) {
+    const msg =
+      error instanceof Error
+        ? error.message
+        : 'Gagal mengirim pengajuan mitra.';
+
+    setErrorMsg(msg);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <main className="min-h-screen bg-slate-50 py-12 dark:bg-slate-950">
@@ -447,13 +501,13 @@ export default function AjukanMitraPage() {
                 </div>
               </section>
 
-              <div className="flex flex-col gap-3 border-t border-slate-100 pt-6 dark:border-slate-800 sm:flex-row">
-                <button
-                  type="submit"
-                  className="app-btn-primary flex-1"
-                >
-                  Kirim Pengajuan Mitra
-                </button>
+              <button
+  type="submit"
+  disabled={isSubmitting}
+  className="app-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
+>
+  {isSubmitting ? 'Mengirim...' : 'Kirim Pengajuan Mitra'}
+</button>
 
                 <button
                   type="button"
@@ -508,10 +562,6 @@ function FileInput({
           {file ? 'Klik untuk mengganti file' : 'Format file: PDF'}
         </span>
       </label>
-      <Alert variant="info">
-  Dokumen PDF akan diunggah ke folder Drive kampus setelah konfigurasi Drive
-  tersedia. Untuk saat ini, pengajuan mitra dapat disimpan terlebih dahulu.
-</Alert>
     </div>
   );
 }

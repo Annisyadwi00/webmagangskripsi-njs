@@ -12,6 +12,20 @@ export type PengajuanMitraAttributes = {
   url_mitra: string | null;
   nama_narahubung_mitra: string;
   kontak_narahubung_mitra: string;
+email_pic: string | null;
+
+lokasi: string | null;
+sistem_kerja: string | null;
+kuota: number | null;
+link_pendaftaran: string | null;
+deskripsi_lowongan: string | null;
+persyaratan: string | null;
+
+link_akta_pendirian: string | null;
+link_akta_direksi: string | null;
+link_ktp_penandatangan: string | null;
+link_npwp: string | null;
+link_izin_usaha: string | null;
 
   nama_mahasiswa_pengusul: string;
   npm_mahasiswa_pengusul: string;
@@ -29,7 +43,24 @@ export type PengajuanMitraAttributes = {
 
 export type PengajuanMitraCreationAttributes = Optional<
   PengajuanMitraAttributes,
-  'id' | 'url_mitra' | 'status' | 'catatan_admin' | 'createdAt' | 'updatedAt'
+  | 'id'
+  | 'url_mitra'
+  | 'email_pic'
+  | 'lokasi'
+  | 'sistem_kerja'
+  | 'kuota'
+  | 'link_pendaftaran'
+  | 'deskripsi_lowongan'
+  | 'persyaratan'
+  | 'link_akta_pendirian'
+  | 'link_akta_direksi'
+  | 'link_ktp_penandatangan'
+  | 'link_npwp'
+  | 'link_izin_usaha'
+  | 'status'
+  | 'catatan_admin'
+  | 'createdAt'
+  | 'updatedAt'
 >;
 
 class PengajuanMitra
@@ -44,6 +75,20 @@ class PengajuanMitra
   declare url_mitra: string | null;
   declare nama_narahubung_mitra: string;
   declare kontak_narahubung_mitra: string;
+declare email_pic: string | null;
+
+declare lokasi: string | null;
+declare sistem_kerja: string | null;
+declare kuota: number | null;
+declare link_pendaftaran: string | null;
+declare deskripsi_lowongan: string | null;
+declare persyaratan: string | null;
+
+declare link_akta_pendirian: string | null;
+declare link_akta_direksi: string | null;
+declare link_ktp_penandatangan: string | null;
+declare link_npwp: string | null;
+declare link_izin_usaha: string | null;
 
   declare nama_mahasiswa_pengusul: string;
   declare npm_mahasiswa_pengusul: string;
@@ -91,7 +136,56 @@ PengajuanMitra.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
+email_pic: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
 
+lokasi: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+sistem_kerja: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+kuota: {
+  type: DataTypes.INTEGER,
+  allowNull: true,
+},
+link_pendaftaran: {
+  type: DataTypes.TEXT,
+  allowNull: true,
+},
+deskripsi_lowongan: {
+  type: DataTypes.TEXT,
+  allowNull: true,
+},
+persyaratan: {
+  type: DataTypes.TEXT,
+  allowNull: true,
+},
+
+link_akta_pendirian: {
+  type: DataTypes.TEXT,
+  allowNull: true,
+},
+link_akta_direksi: {
+  type: DataTypes.TEXT,
+  allowNull: true,
+},
+link_ktp_penandatangan: {
+  type: DataTypes.TEXT,
+  allowNull: true,
+},
+link_npwp: {
+  type: DataTypes.TEXT,
+  allowNull: true,
+},
+link_izin_usaha: {
+  type: DataTypes.TEXT,
+  allowNull: true,
+},
     nama_mahasiswa_pengusul: {
       type: DataTypes.STRING,
       allowNull: false,

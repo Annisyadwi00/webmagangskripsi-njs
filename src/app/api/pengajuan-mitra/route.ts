@@ -116,7 +116,21 @@ export async function POST(request: Request) {
     const url_mitra = trimString(body.url_mitra) || null;
     const nama_narahubung_mitra = trimString(body.nama_narahubung_mitra);
     const kontak_narahubung_mitra = trimString(body.kontak_narahubung_mitra);
+const email_pic = trimString(body.email_pic) || null;
 
+const lokasi = trimString(body.lokasi) || null;
+const sistem_kerja = trimString(body.sistem_kerja) || null;
+const kuota = Number(body.kuota) || null;
+const link_pendaftaran = trimString(body.link_pendaftaran) || null;
+const deskripsi_lowongan = trimString(body.deskripsi_lowongan) || null;
+const persyaratan = trimString(body.persyaratan) || null;
+
+const link_akta_pendirian = trimString(body.link_akta_pendirian) || null;
+const link_akta_direksi = trimString(body.link_akta_direksi) || null;
+const link_ktp_penandatangan =
+  trimString(body.link_ktp_penandatangan) || null;
+const link_npwp = trimString(body.link_npwp) || null;
+const link_izin_usaha = trimString(body.link_izin_usaha) || null;
     const nama_mahasiswa_pengusul =
       trimString(body.nama_mahasiswa_pengusul) || user.name;
     const npm_mahasiswa_pengusul = trimString(body.npm_mahasiswa_pengusul);
@@ -152,7 +166,12 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
+if (link_pendaftaran && !isValidUrl(link_pendaftaran)) {
+  return NextResponse.json(
+    { message: 'Format link pendaftaran tidak valid.' },
+    { status: 400 }
+  );
+}
     if (!isValidPhone(kontak_narahubung_mitra)) {
       return NextResponse.json(
         {
@@ -181,6 +200,20 @@ export async function POST(request: Request) {
       url_mitra,
       nama_narahubung_mitra,
       kontak_narahubung_mitra,
+email_pic,
+
+lokasi,
+sistem_kerja,
+kuota,
+link_pendaftaran,
+deskripsi_lowongan,
+persyaratan,
+
+link_akta_pendirian,
+link_akta_direksi,
+link_ktp_penandatangan,
+link_npwp,
+link_izin_usaha,
 
       nama_mahasiswa_pengusul,
       npm_mahasiswa_pengusul,
