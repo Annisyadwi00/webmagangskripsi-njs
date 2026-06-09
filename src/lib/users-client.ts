@@ -36,7 +36,11 @@ export async function createUser(payload: {
   nim_nidn?: string;
   prodi?: string | null;
   semester?: string | null;
+  angkatan?: string | null;
+  kelas?: string | null;
   kategori_dosen?: string | null;
+  kuota_bimbingan?: number | null;
+  phone?: string | null;
 }) {
   return apiClient<{
     defaultPassword: string | null;
