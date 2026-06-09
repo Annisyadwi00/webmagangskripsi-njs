@@ -28,23 +28,25 @@ const navItems: Record<DashboardRole, NavItem[]> = {
     { label: 'Settings', href: '/settings' },
   ],
 
-  Admin: [
-    { label: 'Dashboard', href: '/admin/dashboard' },
-    { label: 'Pengajuan Magang', href: '/admin/pengajuan' },
-    { label: 'Pengajuan Mitra', href: '/admin/pengajuan-mitra' },
-    { label: 'Lowongan', href: '/admin/lowongan' },
-    { label: 'Activity Log', href: '/admin/activity' },
-  ],
+ Admin: [
+  { label: 'Dashboard', href: '/admin/dashboard' },
+  { label: 'Pengajuan Magang', href: '/admin/pengajuan' },
+  { label: 'Pengajuan Mitra', href: '/admin/pengajuan-mitra' },
+  { label: 'Mitra', href: '/admin/mitra' },
+  { label: 'Lowongan', href: '/admin/lowongan' },
+  { label: 'Activity Log', href: '/admin/activity' },
+],
 
   'Super Admin': [
-    { label: 'Dashboard', href: '/super-admin/dashboard' },
-    { label: 'Data Mahasiswa Magang', href: '/super-admin/mahasiswa-magang' },
-    { label: 'Pengajuan Magang', href: '/super-admin/pengajuan' },
-    { label: 'Alokasi Dosen', href: '/super-admin/alokasi-dosen' },
-    { label: 'Pengajuan Mitra', href: '/super-admin/pengajuan-mitra' },
-    { label: 'Lowongan', href: '/super-admin/lowongan' },
-    { label: 'User Management', href: '/super-admin/users' },
-  ],
+  { label: 'Dashboard', href: '/super-admin/dashboard' },
+  { label: 'Data Mahasiswa Magang', href: '/super-admin/mahasiswa-magang' },
+  { label: 'Pengajuan Magang', href: '/super-admin/pengajuan' },
+  { label: 'Alokasi Dosen', href: '/super-admin/alokasi-dosen' },
+  { label: 'Pengajuan Mitra', href: '/super-admin/pengajuan-mitra' },
+  { label: 'Mitra', href: '/super-admin/mitra' },
+  { label: 'Lowongan', href: '/super-admin/lowongan' },
+  { label: 'User Management', href: '/super-admin/users' },
+],
 
   Dosen: [
     { label: 'Dashboard', href: '/dosen/dashboard' },

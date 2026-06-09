@@ -54,10 +54,7 @@ const initialForm: LowonganForm = {
   valid_until: '',
   status: 'Aktif',
 };
-const [pengajuanLowongan, setPengajuanLowongan] = useState<PengajuanLowongan[]>([]);
-const [selectedPengajuanLowongan, setSelectedPengajuanLowongan] =
-  useState<PengajuanLowongan | null>(null);
-const [catatanSuperAdmin, setCatatanSuperAdmin] = useState('');
+
 function getTypeBadgeClass(type: string) {
   if (type === 'Remote') return 'app-badge app-badge-green';
   if (type === 'Hybrid') return 'app-badge app-badge-yellow';
@@ -69,6 +66,14 @@ function getStatusBadgeClass(status: string) {
   if (status === 'Aktif') return 'app-badge app-badge-green';
 
   return 'app-badge app-badge-red';
+}
+
+function getTipeKonversiLabel(value?: string | null) {
+  if (value === 'Konversi 20 SKS') return 'Konversi Maksimal 20 SKS';
+  if (value === 'Konversi 2 SKS') return 'Magang 2 SKS Khusus SI';
+  if (value === 'Tidak Konversi') return 'Tidak Konversi';
+
+  return value || '-';
 }
 
 function formatDate(date?: string | null) {
@@ -87,8 +92,12 @@ function toDateInputValue(date?: string | null) {
   return String(date).slice(0, 10);
 }
 
-export default function AdminLowonganPage() {
+export default function SuperAdminLowonganPage() {
   const [lowongan, setLowongan] = useState<Lowongan[]>([]);
+  const [pengajuanLowongan, setPengajuanLowongan] = useState<PengajuanLowongan[]>([]);
+  const [selectedPengajuanLowongan, setSelectedPengajuanLowongan] =
+    useState<PengajuanLowongan | null>(null);
+  const [catatanSuperAdmin, setCatatanSuperAdmin] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
   const [typeFilter, setTypeFilter] = useState('Semua');
@@ -137,12 +146,18 @@ setPengajuanLowongan(dataPengajuanLowongan);
     const keyword = search.toLowerCase();
 
     return lowongan.filter((item) => {
-      const matchesKeyword =
-        item.title.toLowerCase().includes(keyword) ||
-        item.company.toLowerCase().includes(keyword) ||
-        item.location.toLowerCase().includes(keyword) ||
-        item.kategori.toLowerCase().includes(keyword);
+     const title = item.title || '';
+const company = item.company || '';
+const location = item.location || '';
+const kategori = item.kategori || '';
+const description = item.description || '';
 
+const matchesKeyword =
+  title.toLowerCase().includes(keyword) ||
+  company.toLowerCase().includes(keyword) ||
+  location.toLowerCase().includes(keyword) ||
+  kategori.toLowerCase().includes(keyword) ||
+  description.toLowerCase().includes(keyword);
       const matchesStatus =
         statusFilter === 'Semua' || item.status === statusFilter;
 
@@ -212,7 +227,23 @@ const totalPengajuanMenunggu = pengajuanLowongan.filter(
     setIsSubmitting(true);
     setMessage('');
     setErrorMsg('');
+if (
+  !form.posisi.trim() ||
+  !form.perusahaan.trim() ||
+  !form.deskripsi.trim() ||
+  !form.location.trim() ||
+  !form.kategori.trim()
+) {
+  setErrorMsg('Posisi, perusahaan, deskripsi, lokasi, dan kategori wajib diisi.');
+  setIsSubmitting(false);
+  return;
+}
 
+if (Number(form.kuota) < 1) {
+  setErrorMsg('Kuota minimal 1 mahasiswa.');
+  setIsSubmitting(false);
+  return;
+}
     try {
       const payload = {
         posisi: form.posisi.trim(),
@@ -649,7 +680,7 @@ description="Tambah, ubah, nonaktifkan, hapus, dan validasi lowongan magang yang
                 <div>
                   <label className="app-label">Tipe Konversi</label>
                   <select
-                    value={form.tipeKonversi}
+                    value={getTipeKonversiLabel(item.tipeKonversi)}
                     onChange={(e) =>
                       handleChange(
                         'tipeKonversi',
@@ -882,7 +913,7 @@ description="Tambah, ubah, nonaktifkan, hapus, dan validasi lowongan magang yang
                       Konversi
                     </p>
                     <p className="mt-1 font-bold text-slate-950 dark:text-white">
-                      {item.tipeKonversi}
+{getTipeKonversiLabel(item.tipeKonversi)}
                     </p>
                   </div>
 

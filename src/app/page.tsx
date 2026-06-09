@@ -237,47 +237,63 @@ export default function LandingPage() {
 
       <section className="relative py-12">
   <div className="app-container">
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-  {mitraList.length === 0 ? (
-    <div className="col-span-full rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-8 text-center dark:border-slate-700 dark:bg-slate-900">
-      <p className="font-bold text-slate-700 dark:text-slate-300">
-        Data mitra belum tersedia.
+    <div className="mb-8 text-center">
+      <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
+        Mitra Magang
       </p>
-      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-        Data akan tampil setelah staff menambahkan data mitra ke sistem.
+
+      <h2 className="mt-3 text-3xl font-black text-slate-950 dark:text-white">
+        Perusahaan dan instansi yang terdata.
+      </h2>
+
+      <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+        Daftar mitra ditampilkan dari data yang dikelola oleh staff.
       </p>
     </div>
-  ) : (
-    mitraList.slice(0, 6).map((mitra) => (
-      <div
-        key={mitra.id}
-        className="group rounded-[1.5rem] border border-slate-200 bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-400/40"
-      >
-        {mitra.logo ? (
-          <img
-            src={mitra.logo}
-            alt={mitra.nama_mitra}
-            className="mx-auto h-16 w-16 rounded-3xl object-contain"
-          />
-        ) : (
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-blue-100 bg-blue-50 text-2xl font-black text-[#1e3a8a] transition group-hover:scale-105 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
-            {mitra.nama_mitra.charAt(0)}
+
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+      {mitraList.length === 0 ? (
+        <div className="col-span-full rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-8 text-center dark:border-slate-700 dark:bg-slate-900">
+          <p className="font-bold text-slate-700 dark:text-slate-300">
+            Data mitra belum tersedia.
+          </p>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            Data akan tampil setelah staff menambahkan data mitra ke sistem.
+          </p>
+        </div>
+      ) : (
+        mitraList.slice(0, 6).map((mitra) => (
+          <div
+            key={mitra.id}
+            className="group rounded-[1.5rem] border border-slate-200 bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-400/40"
+          >
+            {mitra.logo ? (
+              <img
+                src={mitra.logo}
+                alt={mitra.nama_mitra}
+                className="mx-auto h-16 w-16 rounded-3xl object-contain"
+              />
+            ) : (
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-blue-100 bg-blue-50 text-2xl font-black text-[#1e3a8a] transition group-hover:scale-105 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
+                {mitra.nama_mitra.charAt(0)}
+              </div>
+            )}
+
+            <p className="mt-4 text-sm font-black leading-6 text-slate-950 dark:text-white">
+              {mitra.nama_mitra}
+            </p>
           </div>
-        )}
+        ))
+      )}
+    </div>
 
-        <p className="mt-4 text-sm font-black leading-6 text-slate-950 dark:text-white">
-          {mitra.nama_mitra}
-        </p>
-      </div>
-    ))
-  )}
-</div>
-
-<div className="mt-8 text-center">
-  <Link href="/mitra" className="app-btn-secondary">
-    Selengkapnya
-  </Link>
-</div>
+    <div className="mt-8 text-center">
+      <Link href="/mitra" className="app-btn-secondary">
+        Selengkapnya
+      </Link>
+    </div>
+  </div>
+</section>
 
       <section className="relative py-12">
         <div className="app-container">
