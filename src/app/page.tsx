@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Mitra, getMitraList } from '@/lib/mitra-client';
-
+import ThemeIcon from '@/components/ui/ThemeIcon';
+import Footer from '@/components/Footer';
 type FAQ = {
   tanya: string;
   jawab: string;
@@ -89,8 +90,27 @@ function getInitial(name?: string | null) {
 
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [mitraList, setMitraList] = useState<Mitra[]>([]);
-  const [isLoadingMitra, setIsLoadingMitra] = useState(true);
+const [mitraList, setMitraList] = useState<Mitra[]>([]);
+const [isLoadingMitra, setIsLoadingMitra] = useState(true);
+const [isDarkMode, setIsDarkMode] = useState(false);
+
+useEffect(() => {
+  const savedTheme = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+  const shouldUseDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+
+  document.documentElement.classList.toggle('dark', shouldUseDark);
+  setIsDarkMode(shouldUseDark);
+}, []);
+
+const toggleDarkMode = () => {
+  const nextMode = !isDarkMode;
+
+  document.documentElement.classList.toggle('dark', nextMode);
+  localStorage.setItem('theme', nextMode ? 'dark' : 'light');
+  setIsDarkMode(nextMode);
+};
 
   useEffect(() => {
     const fetchMitra = async () => {
@@ -152,33 +172,45 @@ export default function LandingPage() {
             </Link>
           </nav>
 
-          <Link href="/login" className="app-btn-primary">
-            Masuk
-          </Link>
+          <div className="flex items-center gap-3">
+  <button
+    type="button"
+    onClick={toggleDarkMode}
+    className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 hover:border-[#1e3a8a] hover:text-[#1e3a8a] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-blue-300 dark:hover:text-blue-300"
+    aria-label="Ganti mode tema"
+    title={isDarkMode ? 'Ganti ke light mode' : 'Ganti ke dark mode'}
+  >
+    <ThemeIcon type={isDarkMode ? 'sun' : 'moon'} />
+  </button>
+
+  <Link href="/login" className="app-btn-primary">
+    Masuk
+  </Link>
+</div>
         </div>
       </header>
 
-      <section className="relative overflow-hidden py-16 md:py-24">
+      <section className="relative overflow-hidden py-10 md:py-14 lg:py-16">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.16),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.12),transparent_30%)]" />
 
         <div className="app-container">
-          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
             <div>
               <p className="text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a] dark:text-blue-300">
                 SI Magang FASILKOM UNSIKA
               </p>
 
-              <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight text-slate-950 dark:text-white md:text-6xl">
+              <h1 className="mt-4 text-4xl font-black leading-tight tracking-tight text-slate-950 dark:text-white md:text-5xl lg:text-6xl">
                 Sistem Informasi Magang Berbasis Web.
               </h1>
 
-              <p className="mt-6 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300 md:text-lg">
+              <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300 md:text-lg">
                 Digitalisasi proses magang mulai dari pendataan magang,
                 pengajuan mitra, informasi lowongan, alokasi dosen pembimbing,
                 laporan akhir, hingga penilaian akhir.
               </p>
 
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <Link href="/login" className="app-btn-primary">
                   Masuk ke Sistem
                 </Link>
@@ -414,26 +446,7 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      <footer className="border-t border-slate-200 bg-white py-8 dark:border-slate-800 dark:bg-slate-900">
-        <div className="app-container flex flex-col gap-4 text-sm text-slate-500 dark:text-slate-400 md:flex-row md:items-center md:justify-between">
-          <p className="font-bold">
-            © {new Date().getFullYear()} SI Magang FASILKOM UNSIKA.
-          </p>
-
-          <div className="flex flex-wrap gap-4 font-bold">
-            <Link href="/lowongan" className="hover:text-[#1e3a8a]">
-              Lowongan
-            </Link>
-            <Link href="/mitra" className="hover:text-[#1e3a8a]">
-              Mitra
-            </Link>
-            <Link href="/ajukan-mitra" className="hover:text-[#1e3a8a]">
-              Ajukan Mitra
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <footer />
     </main>
   );
 }

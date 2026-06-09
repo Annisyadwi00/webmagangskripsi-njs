@@ -87,18 +87,17 @@ export default function AjukanMitraPage() {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    const savedDraft = localStorage.getItem(DRAFT_KEY);
+ useEffect(() => {
+  const savedDraft = localStorage.getItem(DRAFT_KEY);
 
-    if (savedDraft) {
-      try {
-        setForm(JSON.parse(savedDraft));
-        setShowForm(true);
-      } catch {
-        localStorage.removeItem(DRAFT_KEY);
-      }
+  if (savedDraft) {
+    try {
+      setForm(JSON.parse(savedDraft));
+    } catch {
+      localStorage.removeItem(DRAFT_KEY);
     }
-  }, []);
+  }
+}, []);
 
   useEffect(() => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
@@ -265,10 +264,6 @@ export default function AjukanMitraPage() {
                 pengajuan mitra berikut.
               </p>
             </div>
-
-            <Link href="/" className="app-btn-secondary lg:shrink-0">
-              Beranda
-            </Link>
           </div>
         </section>
 
@@ -323,7 +318,7 @@ export default function AjukanMitraPage() {
 
         {showForm && (
           <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:p-8">
-            <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="mb-8">
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
                   Form Pengajuan
@@ -338,14 +333,6 @@ export default function AjukanMitraPage() {
                   ter-refresh, isian tidak langsung hilang.
                 </p>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="app-btn-secondary"
-              >
-                Kembali
-              </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
