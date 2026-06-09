@@ -8,6 +8,7 @@ import Alert from '@/components/ui/Alert';
 import ProgressStepper from '@/components/ui/ProgressStepper';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 import { getDashboardPathByRole } from '@/lib/role-redirect';
+
 import {
   Pengajuan,
   createPengajuan,
@@ -115,6 +116,18 @@ function getStatusLabel(status?: string | null) {
   return 'Belum Ada';
 }
 
+function getJenisMagangLabel(value?: string | null) {
+  if (value === 'Konversi 20 SKS') return 'Konversi Maksimal 20 SKS';
+  if (value === 'Konversi 2 SKS') return 'Magang 2 SKS Khusus SI';
+  if (value === 'Tidak Konversi') return 'Tidak Konversi';
+
+  return value || '-';
+}
+
+function isSistemInformasi(prodi?: string | null) {
+  return String(prodi || '').toLowerCase().includes('sistem informasi');
+}
+
 function getMagangSteps(status?: string | null) {
   const currentStatus = status || 'Belum_Ada';
 
@@ -189,6 +202,8 @@ export default function PengajuanMahasiswaPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [pengajuan, setPengajuan] = useState<Pengajuan | null>(null);
 const [mitraList, setMitraList] = useState<Mitra[]>([]);
+const [selectedMitraId, setSelectedMitraId] = useState('');
+const [isMitraTerdaftar, setIsMitraTerdaftar] = useState('ya');
 
   const [form, setForm] = useState<PengajuanForm>(initialForm);
   const isSistemInformasi =
@@ -221,11 +236,13 @@ if (form.status_mitra === 'Terdaftar' && !form.mitra_id) {
   return;
 }
 
-      const [currentUser, pengajuanData, mitraData] = await Promise.all([
+    const [me, pengajuanData, mitraData] = await Promise.all([
   getCurrentUserClient(),
-  getPengajuanList(1, 10),
+  getPengajuanList(),
   getMitraList(),
 ]);
+
+setMitraList(mitraData || []);
 
       if (currentUser.role !== 'Mahasiswa') {
         window.location.href = getDashboardPathByRole(currentUser.role);
@@ -311,6 +328,46 @@ useEffect(() => {
       [e.target.name]: e.target.value,
     });
   };
+
+
+  const handleJenisMagangChange = (value: string) => {
+  if (value === 'Konversi 2 SKS' && !isSistemInformasi(currentUser?.prodi)) {
+    setErrorMsg('Magang 2 SKS Khusus SI hanya tersedia untuk mahasiswa Sistem Informasi.');
+    return;
+  }
+
+  setErrorMsg('');
+
+  setForm((prev) => ({
+    ...prev,
+    jenis_magang: value,
+    perusahaan: value === 'Tidak Konversi' ? prev.perusahaan : '',
+    alamat_tempat_magang:
+      value === 'Tidak Konversi' ? prev.alamat_tempat_magang : '',
+    nama_penanggung_jawab:
+      value === 'Tidak Konversi' ? prev.nama_penanggung_jawab : '',
+    kontak_penanggung_jawab:
+      value === 'Tidak Konversi' ? prev.kontak_penanggung_jawab : '',
+  }));
+
+  setSelectedMitraId('');
+  setIsMitraTerdaftar(value === 'Tidak Konversi' ? 'tidak' : 'ya');
+};
+
+const handleMitraChange = (value: string) => {
+  setSelectedMitraId(value);
+
+  const selected = mitraList.find((mitra) => String(mitra.id) === value);
+
+  if (!selected) return;
+
+  setForm((prev) => ({
+    ...prev,
+    perusahaan: selected.nama_mitra,
+    alamat_tempat_magang: selected.alamat || prev.alamat_tempat_magang,
+    kontak_penanggung_jawab: selected.kontak_wa || prev.kontak_penanggung_jawab,
+  }));
+};
 
   const handleSelectMitra = (mitraId: string) => {
   const selectedMitra = mitraList.find((item) => String(item.id) === mitraId);
@@ -681,22 +738,128 @@ setForm(initialForm);
                     <div>
                       <label className="app-label">Jenis Magang</label>
                       <select
-                        name="jenis_magang"
-                        required
-                        value={form.jenis_magang}
-                        onChange={handleChange}
-                        className="app-input"
-                      >
-                        <option value="Konversi 20 SKS">Konversi Maksimal 20 SKS</option>
-<option value="Tidak Konversi">Tidak Konversi</option>
-{isSistemInformasi && (
-  <option value="Magang 2 SKS Khusus SI">
-    Magang 2 SKS Khusus SI
-  </option>
-)}
-                      </select>
-                    </div>
+  value={form.jenis_magang}
+  onChange={(e) => handleJenisMagangChange(e.target.value)}
+  className="app-input"
+>
+  <option value="Konversi 20 SKS">Konversi Maksimal 20 SKS</option>
+  <option value="Tidak Konversi">Tidak Konversi</option>
 
+  {isSistemInformasi(currentUser?.prodi) && (
+    <option value="Konversi 2 SKS">Magang 2 SKS Khusus SI</option>
+  )}
+</select>
+                    </div>
+                    if (
+  form.jenis_magang !== 'Tidak Konversi' &&
+  isMitraTerdaftar === 'tidak'
+) {
+  setErrorMsg('Untuk magang konversi, ajukan mitra terlebih dahulu sebelum mengirim pengajuan magang.');
+  return;
+}
+
+if (
+  form.jenis_magang !== 'Tidak Konversi' &&
+  isMitraTerdaftar === 'ya' &&
+  !selectedMitraId
+) {
+  setErrorMsg('Pilih mitra terdaftar terlebih dahulu.');
+  return;
+}
+
+if (
+  form.jenis_magang === 'Konversi 2 SKS' &&
+  !isSistemInformasi(currentUser?.prodi)
+) {
+  setErrorMsg('Magang 2 SKS Khusus SI hanya tersedia untuk mahasiswa Sistem Informasi.');
+  return;
+}
+{form.jenis_magang !== 'Tidak Konversi' && (
+  <div className="md:col-span-2">
+    <label className="app-label">Apakah perusahaan sudah terdaftar sebagai mitra?</label>
+
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <button
+        type="button"
+        onClick={() => setIsMitraTerdaftar('ya')}
+        className={
+          isMitraTerdaftar === 'ya'
+            ? 'app-btn-primary'
+            : 'app-btn-secondary'
+        }
+      >
+        Ya, sudah terdaftar
+      </button>
+
+      <button
+        type="button"
+        onClick={() => {
+          setIsMitraTerdaftar('tidak');
+          setSelectedMitraId('');
+        }}
+        className={
+          isMitraTerdaftar === 'tidak'
+            ? 'app-btn-primary'
+            : 'app-btn-secondary'
+        }
+      >
+        Belum terdaftar
+      </button>
+    </div>
+
+    {isMitraTerdaftar === 'tidak' && (
+      <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200">
+        Untuk magang konversi, perusahaan perlu diajukan sebagai mitra terlebih dahulu.
+        <a href="/ajukan-mitra" className="ml-1 font-black underline">
+          Ajukan mitra di sini.
+        </a>
+      </div>
+    )}
+  </div>
+)}
+{form.jenis_magang !== 'Tidak Konversi' && (
+  <div className="md:col-span-2">
+    <label className="app-label">Apakah perusahaan sudah terdaftar sebagai mitra?</label>
+
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <button
+        type="button"
+        onClick={() => setIsMitraTerdaftar('ya')}
+        className={
+          isMitraTerdaftar === 'ya'
+            ? 'app-btn-primary'
+            : 'app-btn-secondary'
+        }
+      >
+        Ya, sudah terdaftar
+      </button>
+
+      <button
+        type="button"
+        onClick={() => {
+          setIsMitraTerdaftar('tidak');
+          setSelectedMitraId('');
+        }}
+        className={
+          isMitraTerdaftar === 'tidak'
+            ? 'app-btn-primary'
+            : 'app-btn-secondary'
+        }
+      >
+        Belum terdaftar
+      </button>
+    </div>
+
+    {isMitraTerdaftar === 'tidak' && (
+      <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200">
+        Untuk magang konversi, perusahaan perlu diajukan sebagai mitra terlebih dahulu.
+        <a href="/ajukan-mitra" className="ml-1 font-black underline">
+          Ajukan mitra di sini.
+        </a>
+      </div>
+    )}
+  </div>
+)}
                     <div>
   <label className="app-label">Status Mitra</label>
   <select
