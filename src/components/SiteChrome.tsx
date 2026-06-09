@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+
 type NavbarUser = {
   id?: number;
   name?: string;
@@ -19,8 +20,11 @@ const appRoutes = [
   '/dashboard',
   '/pengajuan',
   '/pengajuan-mitra',
+  '/ajukan-mitra',
   '/laporan-akhir',
   '/settings',
+  '/mitra',
+  '/lowongan',
   '/admin',
   '/dosen',
   '/super-admin',
@@ -41,9 +45,7 @@ export default function SiteChrome({ children, user }: SiteChromeProps) {
     <>
       <Navbar user={user} />
 
-      <div className="flex-grow">
-        {children}
-      </div>
+      <div className="flex-grow">{children}</div>
 
       <Footer />
     </>
