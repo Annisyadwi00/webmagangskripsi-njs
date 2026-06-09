@@ -16,6 +16,7 @@ export type Pengajuan = {
   npm: string | null;
   program_studi: string | null;
   angkatan: string | null;
+  semester: string | null;
   kelas: string | null;
 
   jenis_magang: string | null;
@@ -41,13 +42,14 @@ export type Pengajuan = {
   semester_konversi: string | null;
 
   link_laporan_akhir: string | null;
-link_output_magang: string | null;
+  link_output_magang: string | null;
 
   dosenId: number | null;
   nama_dosen: string | null;
   status_dosen: StatusDosen | null;
-dosenPengujiId: number | null;
-nama_dosen_penguji: string | null;
+
+  dosenPengujiId: number | null;
+  nama_dosen_penguji: string | null;
 
   nilai_dari_dosen: string | null;
   nilai_kedisiplinan: number | null;
@@ -80,6 +82,7 @@ export type CreatePengajuanPayload = {
   npm: string;
   program_studi: string;
   angkatan?: string | null;
+  semester?: string | null;
   kelas?: string | null;
 
   jenis_magang: string;
@@ -186,13 +189,14 @@ export async function batalPengajuan() {
 
 export async function setujuiPengajuan(payload: {
   id: number;
-  tipeKonversi?: string;
-  matkulKonversi?: unknown;
-  semester_konversi?: string;
   dosenId: number;
   nama_dosen: string;
   dosenPengujiId?: number | null;
   nama_dosen_penguji?: string | null;
+
+  tipeKonversi?: string | null;
+  matkulKonversi?: unknown;
+  semester_konversi?: string | null;
 }) {
   return apiClient<null>('/api/pengajuan', {
     method: 'PUT',

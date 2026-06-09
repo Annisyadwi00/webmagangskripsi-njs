@@ -17,6 +17,7 @@ export type PengajuanAttributes = {
   npm: string | null;
   program_studi: string | null;
   angkatan: string | null;
+  semester: string | null;
   kelas: string | null;
 
   jenis_magang: string | null;
@@ -54,8 +55,10 @@ export type PengajuanAttributes = {
   dosenId: number | null;
   nama_dosen: string | null;
   status_dosen: StatusDosen | null;
-dosenPengujiId: number | null;
-nama_dosen_penguji: string | null;
+
+  dosenPengujiId: number | null;
+  nama_dosen_penguji: string | null;
+
   status: PengajuanStatus;
   alasan_penolakan: string | null;
 
@@ -69,6 +72,7 @@ export type PengajuanCreationAttributes = Optional<
   | 'npm'
   | 'program_studi'
   | 'angkatan'
+  | 'semester'
   | 'kelas'
   | 'jenis_magang'
   | 'no_hp_mahasiswa'
@@ -98,17 +102,17 @@ export type PengajuanCreationAttributes = Optional<
   | 'nama_dosen'
   | 'status_dosen'
   | 'dosenPengujiId'
-| 'nama_dosen_penguji'
+  | 'nama_dosen_penguji'
   | 'status'
   | 'alasan_penolakan'
   | 'createdAt'
   | 'updatedAt'
 >;
 
-class Pengajuan extends Model<
-  PengajuanAttributes,
-  PengajuanCreationAttributes
-> implements PengajuanAttributes {
+class Pengajuan
+  extends Model<PengajuanAttributes, PengajuanCreationAttributes>
+  implements PengajuanAttributes
+{
   declare id: number;
   declare user_id: number;
 
@@ -116,6 +120,7 @@ class Pengajuan extends Model<
   declare npm: string | null;
   declare program_studi: string | null;
   declare angkatan: string | null;
+  declare semester: string | null;
   declare kelas: string | null;
 
   declare jenis_magang: string | null;
@@ -142,6 +147,7 @@ class Pengajuan extends Model<
 
   declare link_laporan_akhir: string | null;
   declare link_output_magang: string | null;
+
   declare nilai_dari_dosen: string | null;
   declare nilai_kedisiplinan: number | null;
   declare nilai_materi: number | null;
@@ -152,8 +158,9 @@ class Pengajuan extends Model<
   declare dosenId: number | null;
   declare nama_dosen: string | null;
   declare status_dosen: StatusDosen | null;
-declare dosenPengujiId: number | null;
-declare nama_dosen_penguji: string | null;
+
+  declare dosenPengujiId: number | null;
+  declare nama_dosen_penguji: string | null;
 
   declare status: PengajuanStatus;
   declare alasan_penolakan: string | null;
@@ -169,6 +176,7 @@ Pengajuan.init(
       autoIncrement: true,
       primaryKey: true,
     },
+
     user_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -178,36 +186,47 @@ Pengajuan.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
+
     npm: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     program_studi: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     angkatan: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
+    semester: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
     kelas: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-    
 
     jenis_magang: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     no_hp_mahasiswa: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     foto_diri: {
       type: DataTypes.TEXT('long'),
       allowNull: true,
     },
+
     bukti_penerimaan: {
       type: DataTypes.TEXT('long'),
       allowNull: true,
@@ -217,12 +236,14 @@ Pengajuan.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
+
     posisi: {
       type: DataTypes.STRING,
       allowNull: false,
     },
+
     link_loa: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT('long'),
       allowNull: true,
     },
 
@@ -230,22 +251,27 @@ Pengajuan.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+
     nama_penanggung_jawab: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     kontak_penanggung_jawab: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     latitude: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     longitude: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     rencana_magang: {
       type: DataTypes.TEXT,
       allowNull: true,
@@ -255,51 +281,78 @@ Pengajuan.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     tgl_mulai: {
       type: DataTypes.DATEONLY,
       allowNull: true,
     },
+
     tgl_berakhir: {
       type: DataTypes.DATEONLY,
       allowNull: true,
     },
+
     matkulKonversi: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
+
     semester_konversi: {
       type: DataTypes.STRING,
       allowNull: true,
     },
 
     link_laporan_akhir: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT('long'),
       allowNull: true,
     },
-link_output_magang: {
-  type: DataTypes.STRING,
-  allowNull: true,
-},
+
+    link_output_magang: {
+      type: DataTypes.TEXT('long'),
+      allowNull: true,
+    },
+
     nilai_dari_dosen: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+
     nilai_kedisiplinan: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      validate: {
+        min: 0,
+        max: 100,
+      },
     },
+
     nilai_materi: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      validate: {
+        min: 0,
+        max: 100,
+      },
     },
+
     nilai_koding: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      validate: {
+        min: 0,
+        max: 100,
+      },
     },
+
     nilai_laporan: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      validate: {
+        min: 0,
+        max: 100,
+      },
     },
+
     nilai_mitra: {
       type: DataTypes.INTEGER,
       allowNull: true,
@@ -313,23 +366,26 @@ link_output_magang: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+
     nama_dosen: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-dosenPengujiId: {
-  type: DataTypes.INTEGER,
-  allowNull: true,
-},
-nama_dosen_penguji: {
-  type: DataTypes.STRING,
-  allowNull: true,
-},
 
     status_dosen: {
       type: DataTypes.ENUM('Menunggu', 'Disetujui', 'Ditolak'),
       allowNull: true,
       defaultValue: 'Menunggu',
+    },
+
+    dosenPengujiId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+
+    nama_dosen_penguji: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
 
     status: {
@@ -342,6 +398,7 @@ nama_dosen_penguji: {
       allowNull: false,
       defaultValue: 'Menunggu_Verifikasi',
     },
+
     alasan_penolakan: {
       type: DataTypes.TEXT,
       allowNull: true,

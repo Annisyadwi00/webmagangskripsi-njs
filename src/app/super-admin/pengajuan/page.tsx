@@ -1,6 +1,8 @@
 "use client";
+
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import DashboardShell from '@/components/dashboard/DashboardShell';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import Alert from '@/components/ui/Alert';
@@ -13,7 +15,6 @@ import {
   tolakPengajuan,
 } from '@/lib/pengajuan-client';
 import { User, getUsers } from '@/lib/users-client';
-import DashboardShell from '@/components/dashboard/DashboardShell';
 
 type VerifikasiForm = {
   id: number;
@@ -21,6 +22,8 @@ type VerifikasiForm = {
   perusahaan: string;
   dosenId: string;
   nama_dosen: string;
+  dosenPengujiId: string;
+  nama_dosen_penguji: string;
 };
 
 const initialVerifikasiForm: VerifikasiForm = {
@@ -29,6 +32,8 @@ const initialVerifikasiForm: VerifikasiForm = {
   perusahaan: '',
   dosenId: '',
   nama_dosen: '',
+  dosenPengujiId: '',
+  nama_dosen_penguji: '',
 };
 
 function getBuktiPenerimaanLink(item: {
@@ -38,19 +43,24 @@ function getBuktiPenerimaanLink(item: {
   return item.bukti_penerimaan || item.link_loa || '';
 }
 
+function getJenisMagangLabel(value?: string | null) {
+  if (value === 'Konversi 20 SKS') return 'Konversi Maksimal 20 SKS';
+  if (value === 'Konversi 2 SKS') return 'Magang 2 SKS Khusus SI';
+  if (value === 'Tidak Konversi') return 'Tidak Konversi';
+
+  return value || '-';
+}
+
 function getStatusBadgeClass(status?: string | null) {
   if (status === 'Aktif' || status === 'Selesai' || status === 'Disetujui') {
     return 'app-badge app-badge-green';
   }
 
-  if (
-    status === 'Menunggu_Verifikasi' ||
-    status === 'Menunggu'
-  ) {
+  if (status === 'Menunggu_Verifikasi' || status === 'Menunggu') {
     return 'app-badge app-badge-yellow';
   }
 
-  if (status === 'Ditolak' || status === 'Revisi') {
+  if (status === 'Ditolak') {
     return 'app-badge app-badge-red';
   }
 
@@ -68,7 +78,36 @@ function getStatusLabel(status?: string | null) {
   return '-';
 }
 
-export default function AdminPengajuanPage() {
+function formatDate(date?: string | null) {
+  if (!date) return '-';
+
+  return new Date(date).toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function DetailItem({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string | number | null;
+}) {
+  return (
+    <div className="app-panel p-4">
+      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+        {label}
+      </p>
+      <p className="mt-1 break-words font-black text-slate-950 dark:text-white">
+        {value || '-'}
+      </p>
+    </div>
+  );
+}
+
+export default function SuperAdminPengajuanPage() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [pengajuans, setPengajuans] = useState<Pengajuan[]>([]);
   const [dosens, setDosens] = useState<User[]>([]);
@@ -78,8 +117,9 @@ export default function AdminPengajuanPage() {
 
   const [selectedPengajuan, setSelectedPengajuan] =
     useState<Pengajuan | null>(null);
-
-const [detailPengajuan, setDetailPengajuan] = useState<Pengajuan | null>(null);
+  const [detailPengajuan, setDetailPengajuan] = useState<Pengajuan | null>(
+    null
+  );
 
   const [verifikasiForm, setVerifikasiForm] =
     useState<VerifikasiForm>(initialVerifikasiForm);
@@ -104,14 +144,14 @@ const [detailPengajuan, setDetailPengajuan] = useState<Pengajuan | null>(null);
         getUsers(),
       ]);
 
-     if (me.role !== 'Super Admin') {
-  window.location.href = getDashboardPathByRole(me.role);
-  return;
-}
+      if (me.role !== 'Super Admin') {
+        window.location.href = getDashboardPathByRole(me.role);
+        return;
+      }
 
       setCurrentUser(me);
       setPengajuans(pengajuanData?.items || []);
-      setDosens(usersData.filter((item) => item.role === 'Dosen'));
+      setDosens((usersData || []).filter((item) => item.role === 'Dosen'));
     } catch (error) {
       const errMessage =
         error instanceof Error
@@ -132,13 +172,20 @@ const [detailPengajuan, setDetailPengajuan] = useState<Pengajuan | null>(null);
     const keyword = search.toLowerCase();
 
     return pengajuans.filter((item) => {
+      const nama = item.nama_mahasiswa || '';
+      const perusahaan = item.perusahaan || '';
+      const posisi = item.posisi || '';
+      const npm = item.npm || '';
+      const prodi = item.program_studi || '';
+      const jenisMagang = getJenisMagangLabel(item.jenis_magang);
+
       const matchesKeyword =
-        item.nama_mahasiswa.toLowerCase().includes(keyword) ||
-        item.perusahaan.toLowerCase().includes(keyword) ||
-        item.posisi.toLowerCase().includes(keyword) ||
-        (item.npm || '').toLowerCase().includes(keyword) ||
-        (item.program_studi || '').toLowerCase().includes(keyword) ||
-        (item.jenis_magang || '').toLowerCase().includes(keyword);
+        nama.toLowerCase().includes(keyword) ||
+        perusahaan.toLowerCase().includes(keyword) ||
+        posisi.toLowerCase().includes(keyword) ||
+        npm.toLowerCase().includes(keyword) ||
+        prodi.toLowerCase().includes(keyword) ||
+        jenisMagang.toLowerCase().includes(keyword);
 
       const matchesStatus =
         statusFilter === 'Semua' || item.status === statusFilter;
@@ -157,48 +204,77 @@ const [detailPengajuan, setDetailPengajuan] = useState<Pengajuan | null>(null);
     (item) => item.status === 'Selesai'
   );
 
- const openApproveModal = (pengajuan: Pengajuan) => {
-  setSelectedPengajuan(pengajuan);
-  setMessage('');
-  setErrorMsg('');
-  setRejectId(null);
-  setRejectReason('');
-  setDetailPengajuan(null);
+  const openApproveModal = (pengajuan: Pengajuan) => {
+    setSelectedPengajuan(pengajuan);
+    setMessage('');
+    setErrorMsg('');
+    setRejectId(null);
+    setRejectReason('');
+    setDetailPengajuan(null);
 
-  setVerifikasiForm({
-    id: pengajuan.id,
-    nama_mahasiswa: pengajuan.nama_mahasiswa,
-    perusahaan: pengajuan.perusahaan,
-    dosenId: pengajuan.dosenId ? String(pengajuan.dosenId) : '',
-    nama_dosen: pengajuan.nama_dosen || '',
-  });
-};
+    setVerifikasiForm({
+      id: pengajuan.id,
+      nama_mahasiswa: pengajuan.nama_mahasiswa,
+      perusahaan: pengajuan.perusahaan,
+      dosenId: pengajuan.dosenId ? String(pengajuan.dosenId) : '',
+      nama_dosen: pengajuan.nama_dosen || '',
+      dosenPengujiId: pengajuan.dosenPengujiId
+        ? String(pengajuan.dosenPengujiId)
+        : '',
+      nama_dosen_penguji: pengajuan.nama_dosen_penguji || '',
+    });
+  };
 
   const closeApproveModal = () => {
     setSelectedPengajuan(null);
     setVerifikasiForm(initialVerifikasiForm);
   };
 
- const openRejectModal = (id: number) => {
-  setRejectId(id);
-  setRejectReason('');
-  setSelectedPengajuan(null);
-  setDetailPengajuan(null);
-  setMessage('');
-  setErrorMsg('');
-};
+  const openRejectModal = (id: number) => {
+    setRejectId(id);
+    setRejectReason('');
+    setSelectedPengajuan(null);
+    setDetailPengajuan(null);
+    setMessage('');
+    setErrorMsg('');
+  };
 
- const openDetailModal = (pengajuan: Pengajuan) => {
-  setDetailPengajuan(pengajuan);
-  setSelectedPengajuan(null);
-  setRejectId(null);
-  setMessage('');
-  setErrorMsg('');
-};
+  const closeRejectModal = () => {
+    setRejectId(null);
+    setRejectReason('');
+  };
 
-const closeDetailModal = () => {
-  setDetailPengajuan(null);
-};
+  const openDetailModal = (pengajuan: Pengajuan) => {
+    setDetailPengajuan(pengajuan);
+    setSelectedPengajuan(null);
+    setRejectId(null);
+    setMessage('');
+    setErrorMsg('');
+  };
+
+  const closeDetailModal = () => {
+    setDetailPengajuan(null);
+  };
+
+  const handleSelectDosenPembimbing = (value: string) => {
+    const selected = dosens.find((item) => String(item.id) === value);
+
+    setVerifikasiForm((prev) => ({
+      ...prev,
+      dosenId: value,
+      nama_dosen: selected?.name || '',
+    }));
+  };
+
+  const handleSelectDosenPenguji = (value: string) => {
+    const selected = dosens.find((item) => String(item.id) === value);
+
+    setVerifikasiForm((prev) => ({
+      ...prev,
+      dosenPengujiId: value,
+      nama_dosen_penguji: selected?.name || '',
+    }));
+  };
 
   const handleApprove = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,12 +290,15 @@ const closeDetailModal = () => {
     }
 
     try {
-
       const result = await setujuiPengajuan({
-  id: verifikasiForm.id,
-  dosenId: Number(verifikasiForm.dosenId),
-  nama_dosen: verifikasiForm.nama_dosen,
-});
+        id: verifikasiForm.id,
+        dosenId: Number(verifikasiForm.dosenId),
+        nama_dosen: verifikasiForm.nama_dosen,
+        dosenPengujiId: verifikasiForm.dosenPengujiId
+          ? Number(verifikasiForm.dosenPengujiId)
+          : null,
+        nama_dosen_penguji: verifikasiForm.nama_dosen_penguji || null,
+      });
 
       setMessage(
         result.message ||
@@ -276,349 +355,456 @@ const closeDetailModal = () => {
   if (isLoading) {
     return (
       <DashboardShell role="Super Admin">
-      <main className="min-h-screen py-8">
-        <div className="app-container">
-          <div className="app-card p-8">
-            <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
-            <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+        <main className="min-h-screen py-8">
+          <div className="app-container">
+            <div className="app-card p-8">
+              <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+              <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
 
-            <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
-              {[1, 2, 3].map((item) => (
-                <div
-                  key={item}
-                  className="h-36 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800"
-                />
-              ))}
+              <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+                {[1, 2, 3].map((item) => (
+                  <div
+                    key={item}
+                    className="h-36 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800"
+                  />
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
       </DashboardShell>
     );
   }
 
   if (errorMsg && !message && !selectedPengajuan && !rejectId) {
     return (
-<DashboardShell role="Super Admin">
-      <main className="min-h-screen py-8">
-        <div className="app-container">
-          <Alert variant="error">{errorMsg}</Alert>
-        </div>
-      </main>
+      <DashboardShell role="Super Admin">
+        <main className="min-h-screen py-8">
+          <div className="app-container">
+            <Alert variant="error">{errorMsg}</Alert>
+          </div>
+        </main>
       </DashboardShell>
     );
   }
 
   return (
     <DashboardShell role="Super Admin">
-    <main className="min-h-screen py-8">
-      <div className="app-container">
-        <PageHeader
-          eyebrow="staff"
-title="Pengajuan Mahasiswa Magang"
-          description="Pantau pengajuan magang mahasiswa, verifikasi data, dan tetapkan dosen pembimbing."
-          action={
-            <Link href="/super-admin/dashboard" className="app-btn-secondary">
-  Kembali ke Dashboard
-</Link>
-          }
-        />
-
-        {message && <Alert variant="success">{message}</Alert>}
-        {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
-
-        {pendingPengajuan.length > 0 && (
-          <Alert variant="warning">
-            Ada {pendingPengajuan.length} pengajuan yang menunggu verifikasi.
-          </Alert>
-        )}
-
-        <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
-          <StatCard
-            title="Menunggu Verifikasi"
-            value={pendingPengajuan.length}
-            description="Pengajuan baru yang perlu diproses."
-            icon="clock"
+      <main className="min-h-screen py-8">
+        <div className="app-container">
+          <PageHeader
+            eyebrow="Super Admin Pengajuan"
+            title={`Verifikasi Pengajuan ${currentUser?.name || ''}`}
+            description="Periksa data pendataan magang mahasiswa, bukti penerimaan, lalu tentukan dosen pembimbing dan dosen penguji."
+            action={
+              <Link href="/super-admin/dashboard" className="app-btn-secondary">
+                Kembali ke Dashboard
+              </Link>
+            }
           />
 
-          <StatCard
-            title="Magang Aktif"
-            value={pengajuanAktif.length}
-            description="Pengajuan yang sedang berjalan."
-            icon="briefcase"
-          />
+          {message && <Alert variant="success">{message}</Alert>}
+          {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
 
-          <StatCard
-            title="Selesai"
-            value={pengajuanSelesai.length}
-            description="Magang yang sudah selesai dinilai."
-            icon="check"
-          />
-        </section>
+          {pendingPengajuan.length > 0 && (
+            <Alert variant="warning">
+              Ada {pendingPengajuan.length} pengajuan yang menunggu verifikasi.
+            </Alert>
+          )}
 
-        <section className="app-card p-6">
-          <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-xl font-black text-slate-950 dark:text-white">
-                Daftar Pengajuan
-              </h2>
+          <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+            <StatCard
+              title="Menunggu Verifikasi"
+              value={pendingPengajuan.length}
+              description="Pengajuan baru yang perlu diproses."
+              icon="clock"
+            />
 
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Cari, filter, dan verifikasi pendataan magang mahasiswa.
-              </p>
-            </div>
-          </div>
+            <StatCard
+              title="Magang Aktif"
+              value={pengajuanAktif.length}
+              description="Pengajuan yang sedang berjalan."
+              icon="briefcase"
+            />
 
-          <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-[1fr_240px]">
-            <div>
-              <label className="app-label">Cari Pengajuan</label>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="app-input"
-                placeholder="Cari nama, NPM, perusahaan, prodi, atau jenis magang..."
-              />
-            </div>
+            <StatCard
+              title="Selesai"
+              value={pengajuanSelesai.length}
+              description="Magang yang sudah selesai dinilai."
+              icon="check"
+            />
+          </section>
 
-            <div>
-              <label className="app-label">Filter Status</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="app-input"
-              >
-                <option value="Semua">Semua</option>
-                <option value="Menunggu_Verifikasi">
-                  Menunggu Verifikasi
-                </option>
-                <option value="Aktif">Aktif</option>
-                <option value="Ditolak">Ditolak</option>
-                <option value="Selesai">Selesai</option>
-              </select>
-            </div>
-          </div>
-
-          {filteredPengajuans.length === 0 ? (
-  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-800/70">
-    <p className="font-bold text-slate-700 dark:text-slate-300">
-      Pengajuan tidak ditemukan.
-    </p>
-
-    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-      Coba ubah kata kunci pencarian atau filter status.
-    </p>
-  </div>
-) : (
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-    {filteredPengajuans.map((item) => {
-      const buktiLink = getBuktiPenerimaanLink(item);
-
-      return (
-        <article
-          key={item.id}
-          className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-black text-slate-950 dark:text-white">
-                {item.nama_mahasiswa}
-              </h3>
-
-              <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
-                {item.npm || '-'} • {item.program_studi || '-'}
-              </p>
-            </div>
-
-            <span className={getStatusBadgeClass(item.status)}>
-              {getStatusLabel(item.status)}
-            </span>
-          </div>
-
-          <div className="mt-4 space-y-3">
-            <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/70">
-              <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Perusahaan
-              </p>
-              <p className="mt-1 font-black text-slate-950 dark:text-white">
-                {item.perusahaan || '-'}
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/70">
-              <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Jenis Magang
-              </p>
-              <p className="mt-1 font-black text-slate-950 dark:text-white">
-                {item.jenis_magang || '-'}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-5 grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => openDetailModal(item)}
-              className="app-btn-secondary px-3 py-2 text-sm"
-            >
-              Lihat Detail
-            </button>
-
-            {buktiLink ? (
-              <a
-                href={buktiLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="app-btn-secondary px-3 py-2 text-center text-sm"
-              >
-                Lihat Bukti
-              </a>
-            ) : (
-              <button
-                type="button"
-                disabled
-                className="app-btn-secondary px-3 py-2 text-sm opacity-50"
-              >
-                Lihat Bukti
-              </button>
-            )}
-
-            {item.foto_diri ? (
-              <a
-                href={item.foto_diri}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="app-btn-secondary px-3 py-2 text-center text-sm"
-              >
-                Lihat Foto
-              </a>
-            ) : (
-              <button
-                type="button"
-                disabled
-                className="app-btn-secondary px-3 py-2 text-sm opacity-50"
-              >
-                Lihat Foto
-              </button>
-            )}
-
-            {item.status === 'Menunggu_Verifikasi' ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => openApproveModal(item)}
-                  className="app-btn-primary px-3 py-2 text-sm"
-                >
-                  Setujui
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => openRejectModal(item.id)}
-                  className="app-btn-danger col-span-2 px-3 py-2 text-sm"
-                >
-                  Tolak
-                </button>
-              </>
-            ) : (
-              <div className="col-span-2 rounded-2xl bg-slate-100 px-3 py-2 text-center text-sm font-black text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                Sudah Diproses
-              </div>
-            )}
-          </div>
-        </article>
-      );
-    })}
-  </div>
-)}
-        </section>
-      </div>
-
-      {selectedPengajuan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div
-            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
-            onClick={closeApproveModal}
-          />
-
-          <div className="animate-scale-in relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900">
-            <div className="overflow-y-auto p-6">
-              <div className="mb-6">
-                <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
-                  Verifikasi Pengajuan Magang
-                </p>
-
-                <h3 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
-                  {selectedPengajuan.nama_mahasiswa}
-                </h3>
+          <section className="app-card p-6">
+            <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-xl font-black text-slate-950 dark:text-white">
+                  Daftar Pengajuan
+                </h2>
 
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  {selectedPengajuan.perusahaan} - {selectedPengajuan.posisi}
+                  Cari, filter, dan verifikasi pendataan magang mahasiswa.
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-[1fr_240px]">
+              <div>
+                <label className="app-label">Cari Pengajuan</label>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="app-input"
+                  placeholder="Cari nama, NPM, perusahaan, prodi, atau jenis magang..."
+                />
+              </div>
+
+              <div>
+                <label className="app-label">Filter Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="app-input"
+                >
+                  <option value="Semua">Semua</option>
+                  <option value="Menunggu_Verifikasi">
+                    Menunggu Verifikasi
+                  </option>
+                  <option value="Aktif">Aktif</option>
+                  <option value="Selesai">Selesai</option>
+                  <option value="Ditolak">Ditolak</option>
+                </select>
+              </div>
+            </div>
+
+            {filteredPengajuans.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-slate-200 p-8 text-center dark:border-slate-700">
+                <p className="font-bold text-slate-500 dark:text-slate-400">
+                  Data pengajuan tidak ditemukan.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.14em] text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                      <th className="px-4 py-3">Mahasiswa</th>
+                      <th className="px-4 py-3">Tempat Magang</th>
+                      <th className="px-4 py-3">Jenis</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Dosen</th>
+                      <th className="px-4 py-3 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {filteredPengajuans.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="border-b border-slate-100 dark:border-slate-800"
+                      >
+                        <td className="px-4 py-4 align-top">
+                          <p className="font-black text-slate-950 dark:text-white">
+                            {item.nama_mahasiswa}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {item.npm || '-'} • {item.program_studi || '-'}
+                          </p>
+                        </td>
+
+                        <td className="px-4 py-4 align-top">
+                          <p className="font-bold text-slate-800 dark:text-slate-200">
+                            {item.perusahaan}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {item.posisi || 'Peserta Magang'}
+                          </p>
+                        </td>
+
+                        <td className="px-4 py-4 align-top">
+                          <p className="font-bold text-slate-700 dark:text-slate-300">
+                            {getJenisMagangLabel(item.jenis_magang)}
+                          </p>
+                        </td>
+
+                        <td className="px-4 py-4 align-top">
+                          <span className={getStatusBadgeClass(item.status)}>
+                            {getStatusLabel(item.status)}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-4 align-top">
+                          <p className="font-bold text-slate-700 dark:text-slate-300">
+                            {item.nama_dosen || '-'}
+                          </p>
+                          {item.nama_dosen_penguji && (
+                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                              Penguji: {item.nama_dosen_penguji}
+                            </p>
+                          )}
+                        </td>
+
+                        <td className="px-4 py-4 align-top">
+                          <div className="flex flex-col items-stretch gap-2 sm:items-end">
+                            <button
+                              type="button"
+                              onClick={() => openDetailModal(item)}
+                              className="app-btn-secondary px-3 py-2 text-xs"
+                            >
+                              Detail
+                            </button>
+
+                            {item.status === 'Menunggu_Verifikasi' && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => openApproveModal(item)}
+                                  className="app-btn-primary px-3 py-2 text-xs"
+                                >
+                                  Setujui
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => openRejectModal(item.id)}
+                                  className="app-btn-danger px-3 py-2 text-xs"
+                                >
+                                  Tolak
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </div>
+
+        {detailPengajuan && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <div
+              className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+              onClick={closeDetailModal}
+            />
+
+            <div className="relative z-10 max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
+              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
+                    Detail Pengajuan
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+                    {detailPengajuan.nama_mahasiswa}
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {detailPengajuan.perusahaan} •{' '}
+                    {getJenisMagangLabel(detailPengajuan.jenis_magang)}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeDetailModal}
+                  className="app-btn-secondary"
+                >
+                  Tutup
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <DetailItem
+                  label="Nama Mahasiswa"
+                  value={detailPengajuan.nama_mahasiswa}
+                />
+                <DetailItem label="NPM" value={detailPengajuan.npm} />
+                <DetailItem
+                  label="Program Studi"
+                  value={detailPengajuan.program_studi}
+                />
+                <DetailItem label="Angkatan" value={detailPengajuan.angkatan} />
+                <DetailItem label="Semester" value={detailPengajuan.semester} />
+                <DetailItem label="Kelas" value={detailPengajuan.kelas} />
+                <DetailItem
+                  label="Jenis Magang"
+                  value={getJenisMagangLabel(detailPengajuan.jenis_magang)}
+                />
+                <DetailItem
+                  label="Nomor HP"
+                  value={detailPengajuan.no_hp_mahasiswa}
+                />
+                <DetailItem
+                  label="Perusahaan"
+                  value={detailPengajuan.perusahaan}
+                />
+                <DetailItem label="Posisi" value={detailPengajuan.posisi} />
+                <DetailItem
+                  label="Tanggal Mulai"
+                  value={formatDate(detailPengajuan.tgl_mulai)}
+                />
+                <DetailItem
+                  label="Tanggal Berakhir"
+                  value={formatDate(detailPengajuan.tgl_berakhir)}
+                />
+                <DetailItem
+                  label="Dosen Pembimbing"
+                  value={detailPengajuan.nama_dosen}
+                />
+                <DetailItem
+                  label="Dosen Penguji"
+                  value={detailPengajuan.nama_dosen_penguji}
+                />
+                <DetailItem
+                  label="Status"
+                  value={getStatusLabel(detailPengajuan.status)}
+                />
+              </div>
+
+              <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div className="app-panel p-4">
+                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                    Alamat Tempat Magang
+                  </p>
+                  <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700 dark:text-slate-300">
+                    {detailPengajuan.alamat_tempat_magang || '-'}
+                  </p>
+                </div>
+
+                <div className="app-panel p-4">
+                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                    Rencana Magang
+                  </p>
+                  <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700 dark:text-slate-300">
+                    {detailPengajuan.rencana_magang || '-'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                {getBuktiPenerimaanLink(detailPengajuan) && (
+                  <a
+                    href={getBuktiPenerimaanLink(detailPengajuan)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="app-btn-secondary"
+                  >
+                    Buka Bukti Penerimaan
+                  </a>
+                )}
+
+                {detailPengajuan.foto_diri && (
+                  <a
+                    href={detailPengajuan.foto_diri}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="app-btn-secondary"
+                  >
+                    Buka Foto Diri
+                  </a>
+                )}
+
+                {detailPengajuan.link_laporan_akhir && (
+                  <a
+                    href={detailPengajuan.link_laporan_akhir}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="app-btn-secondary"
+                  >
+                    Buka Laporan
+                  </a>
+                )}
+
+                {detailPengajuan.link_output_magang && (
+                  <a
+                    href={detailPengajuan.link_output_magang}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="app-btn-secondary"
+                  >
+                    Buka Output Magang
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {selectedPengajuan && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <div
+              className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+              onClick={closeApproveModal}
+            />
+
+            <div className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
+              <div className="mb-6">
+                <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
+                  Setujui Pengajuan
+                </p>
+                <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+                  {selectedPengajuan.nama_mahasiswa}
+                </h2>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  {selectedPengajuan.perusahaan} •{' '}
+                  {getJenisMagangLabel(selectedPengajuan.jenis_magang)}
                 </p>
               </div>
 
+              <form onSubmit={handleApprove} className="space-y-5">
                 <div>
                   <label className="app-label">Dosen Pembimbing</label>
                   <select
-                    required
                     value={verifikasiForm.dosenId}
-                    onChange={(e) => {
-                      const selectedDosen = dosens.find(
-                        (dosen) => dosen.id === Number(e.target.value)
-                      );
-
-                      setVerifikasiForm({
-                        ...verifikasiForm,
-                        dosenId: e.target.value,
-                        nama_dosen: selectedDosen?.name || '',
-                      });
-                    }}
+                    onChange={(e) => handleSelectDosenPembimbing(e.target.value)}
                     className="app-input"
                   >
-                    <option value="">Pilih Dosen Pembimbing</option>
-
-                    {dosens.map((dosen) => {
-                      const dosenData = dosen as User & {
-                        kategori_dosen?: string | null;
-                      };
-
-                      return (
-                        <option key={dosen.id} value={dosen.id}>
-                          {dosen.name}
-                          {dosenData.kategori_dosen
-                            ? ` - ${dosenData.kategori_dosen}`
-                            : ''}
-                        </option>
-                      );
-                    })}
+                    <option value="">Pilih dosen pembimbing</option>
+                    {dosens.map((dosen) => (
+                      <option key={dosen.id} value={dosen.id}>
+                        {dosen.name}
+                        {dosen.nim_nidn ? ` - ${dosen.nim_nidn}` : ''}
+                      </option>
+                    ))}
                   </select>
+                </div>
 
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    Dosen yang dipilih akan langsung menjadi dosen pembimbing
-                    mahasiswa.
+                <div>
+                  <label className="app-label">Dosen Penguji</label>
+                  <select
+                    value={verifikasiForm.dosenPengujiId}
+                    onChange={(e) => handleSelectDosenPenguji(e.target.value)}
+                    className="app-input"
+                  >
+                    <option value="">Pilih dosen penguji jika sudah ada</option>
+                    {dosens.map((dosen) => (
+                      <option key={dosen.id} value={dosen.id}>
+                        {dosen.name}
+                        {dosen.nim_nidn ? ` - ${dosen.nim_nidn}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Dosen penguji hanya untuk kebutuhan internal staff dan tidak
+                    ditampilkan ke mahasiswa.
                   </p>
                 </div>
 
-                {dosens.length === 0 && (
-                  <Alert variant="warning">
-                    Belum ada data dosen di sistem. Tambahkan akun dosen
-                    terlebih dahulu melalui menu Pengguna.
-                  </Alert>
-                )}
-
-                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-400/20 dark:bg-blue-400/10">
-                  <p className="text-sm font-bold text-[#1e3a8a] dark:text-blue-300">
-                    Setelah disetujui
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                    Ringkasan
                   </p>
-
-                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                    Status pengajuan akan langsung menjadi “Aktif”. Dosen
-                    pembimbing yang dipilih admin akan menjadi DPM mahasiswa
-                    sesuai alur penentuan dosen pembimbing magang.
+                  <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
+                    Pengajuan akan disetujui, status magang menjadi aktif, dan
+                    mahasiswa dapat mengunggah dokumen magang sesuai jenis
+                    magangnya.
                   </p>
                 </div>
 
-                <div className="sticky bottom-0 -mx-6 -mb-6 flex flex-col gap-3 border-t border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 sm:flex-row">
+                <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 dark:border-slate-800 sm:flex-row">
                   <button
                     type="submit"
                     disabled={isSubmitting}
@@ -639,102 +825,59 @@ title="Pengajuan Mahasiswa Magang"
               </form>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {rejectId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div
-            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
-            onClick={closeRejectModal}
-          />
+        {rejectId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <div
+              className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+              onClick={closeRejectModal}
+            />
 
-          <div className="animate-scale-in relative z-10 w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
-            <div className="mb-6">
-              <p className="text-sm font-black uppercase tracking-[0.18em] text-red-600 dark:text-red-300">
-                Tolak Pengajuan
-              </p>
+            <div className="relative z-10 w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
+              <div className="mb-6">
+                <p className="text-sm font-black uppercase tracking-[0.18em] text-red-600 dark:text-red-300">
+                  Tolak Pengajuan
+                </p>
+                <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+                  Alasan Penolakan
+                </h2>
+              </div>
 
-              <h3 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
-                Alasan Penolakan
-              </h3>
+              <form onSubmit={handleReject} className="space-y-5">
+                <div>
+                  <label className="app-label">Alasan</label>
+                  <textarea
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    className="app-input min-h-32"
+                    placeholder="Tuliskan alasan penolakan agar mahasiswa dapat memperbaiki data."
+                  />
+                </div>
 
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Berikan alasan yang jelas agar mahasiswa dapat memperbaiki
-                pengajuannya.
-              </p>
+                <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 dark:border-slate-800 sm:flex-row">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="app-btn-danger flex-1 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSubmitting ? 'Memproses...' : 'Tolak Pengajuan'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={closeRejectModal}
+                    disabled={isSubmitting}
+                    className="app-btn-secondary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </form>
             </div>
-
-            <form onSubmit={handleApprove} className="space-y-5">
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-    <div className="app-panel p-4">
-      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-        Mahasiswa
-      </p>
-      <p className="mt-1 font-black text-slate-950 dark:text-white">
-        {selectedPengajuan.nama_mahasiswa}
-      </p>
-    </div>
-
-    <div className="app-panel p-4">
-      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-        Perusahaan
-      </p>
-      <p className="mt-1 font-black text-slate-950 dark:text-white">
-        {selectedPengajuan.perusahaan}
-      </p>
-    </div>
-  </div>
-
-  <div>
-    <label className="app-label">Dosen Pembimbing</label>
-    <select
-      required
-      value={verifikasiForm.dosenId}
-      onChange={(e) => {
-        const selectedDosen = dosens.find(
-          (item) => String(item.id) === e.target.value
-        );
-
-        setVerifikasiForm((prev) => ({
-          ...prev,
-          dosenId: e.target.value,
-          nama_dosen: selectedDosen?.name || '',
-        }));
-      }}
-      className="app-input"
-    >
-      <option value="">Pilih dosen pembimbing</option>
-      {dosens.map((dosen) => (
-        <option key={dosen.id} value={dosen.id}>
-          {dosen.name}
-        </option>
-      ))}
-    </select>
-  </div>
-
-  <div className="flex flex-col gap-3 sm:flex-row">
-    <button
-      type="button"
-      onClick={closeApproveModal}
-      className="app-btn-secondary flex-1"
-    >
-      Batal
-    </button>
-
-    <button
-      type="submit"
-      disabled={isSubmitting}
-      className="app-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      {isSubmitting ? 'Menyimpan...' : 'Setujui Pengajuan'}
-    </button>
-  </div>
-</form>
           </div>
-        </div>
-      )}
-    </main>
+        )}
+      </main>
     </DashboardShell>
   );
 }

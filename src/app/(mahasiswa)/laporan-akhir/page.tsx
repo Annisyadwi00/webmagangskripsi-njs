@@ -13,25 +13,35 @@ import {
   uploadLaporanAkhir,
 } from '@/lib/pengajuan-client';
 
+function getJenisMagangLabel(value?: string | null) {
+  if (value === 'Konversi 20 SKS') return 'Konversi Maksimal 20 SKS';
+  if (value === 'Konversi 2 SKS') return 'Magang 2 SKS Khusus SI';
+  if (value === 'Tidak Konversi') return 'Tidak Konversi';
+
+  return value || '-';
+}
+
 function getLaporanRequirement(jenisMagang?: string | null) {
   if (jenisMagang === 'Konversi 20 SKS') {
     return {
       showForm: true,
       needLaporan: true,
       needOutput: true,
-      labelLaporan: 'Laporan Akhir PDF',
-      labelOutput: 'Output Magang PDF',
+      title: 'Upload Laporan Akhir',
+      labelLaporan: 'Link Laporan Akhir PDF',
+      labelOutput: 'Link Output Magang PDF',
       emptyMessage:
         'Laporan akhir dan output magang wajib diunggah sebelum penilaian akhir diproses.',
     };
   }
 
-  if (jenisMagang === 'Magang 2 SKS Khusus SI') {
+  if (jenisMagang === 'Konversi 2 SKS') {
     return {
       showForm: true,
       needLaporan: true,
       needOutput: false,
-      labelLaporan: 'Laporan Magang PDF',
+      title: 'Upload Laporan Magang',
+      labelLaporan: 'Link Laporan Magang PDF',
       labelOutput: '',
       emptyMessage:
         'Laporan magang wajib diunggah sebelum penilaian akhir diproses.',
@@ -42,6 +52,7 @@ function getLaporanRequirement(jenisMagang?: string | null) {
     showForm: false,
     needLaporan: false,
     needOutput: false,
+    title: 'Laporan Magang',
     labelLaporan: '',
     labelOutput: '',
     emptyMessage: '',
@@ -152,7 +163,7 @@ export default function LaporanAkhirMahasiswaPage() {
     }
 
     if (linkLaporan.trim() && !isValidUrl(linkLaporan.trim())) {
-      setErrorMsg(`Format link ${requirement.labelLaporan} tidak valid.`);
+      setErrorMsg(`Format ${requirement.labelLaporan} tidak valid.`);
       return;
     }
 
@@ -162,7 +173,7 @@ export default function LaporanAkhirMahasiswaPage() {
     }
 
     if (linkOutputMagang.trim() && !isValidUrl(linkOutputMagang.trim())) {
-      setErrorMsg(`Format link ${requirement.labelOutput} tidak valid.`);
+      setErrorMsg(`Format ${requirement.labelOutput} tidak valid.`);
       return;
     }
 
@@ -212,8 +223,14 @@ export default function LaporanAkhirMahasiswaPage() {
         <div className="app-container">
           <PageHeader
             eyebrow="Laporan Magang"
-            title="Upload Dokumen Magang"
-            description="Lengkapi dokumen sesuai jenis magang yang kamu pilih."
+            title={requirement.title}
+            description={
+              pengajuan
+                ? `Jenis magang kamu: ${getJenisMagangLabel(
+                    pengajuan.jenis_magang
+                  )}.`
+                : 'Lengkapi dokumen laporan magang sesuai status pengajuan.'
+            }
             action={
               <Link href="/dashboard" className="app-btn-secondary">
                 Kembali ke Dashboard
@@ -238,10 +255,11 @@ export default function LaporanAkhirMahasiswaPage() {
             </Alert>
           )}
 
-          {pengajuan && !requirement.showForm && (
+          {pengajuan && pengajuan.jenis_magang === 'Tidak Konversi' && (
             <Alert variant="info">
-              Jenis magang Tidak Konversi tidak memerlukan pengunggahan laporan
-              melalui sistem.
+              Jenis magang Tidak Konversi tidak mewajibkan upload laporan
+              melalui sistem. Jika ada kebutuhan dokumen tambahan, ikuti arahan
+              dari program studi atau dosen pembimbing.
             </Alert>
           )}
 
@@ -273,7 +291,11 @@ export default function LaporanAkhirMahasiswaPage() {
                         value={linkLaporan}
                         onChange={(e) => setLinkLaporan(e.target.value)}
                         className="app-input"
-                        placeholder="https://drive.google.com/..."
+                        placeholder={
+                          pengajuan.jenis_magang === 'Konversi 2 SKS'
+                            ? 'Masukkan link laporan magang PDF'
+                            : 'Masukkan link laporan akhir PDF'
+                        }
                       />
                     </div>
 
@@ -286,10 +308,16 @@ export default function LaporanAkhirMahasiswaPage() {
                           type="url"
                           required
                           value={linkOutputMagang}
-                          onChange={(e) => setLinkOutputMagang(e.target.value)}
+                          onChange={(e) =>
+                            setLinkOutputMagang(e.target.value)
+                          }
                           className="app-input"
-                          placeholder="https://drive.google.com/..."
+                          placeholder="Masukkan link output magang PDF"
                         />
+
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          Wajib untuk Konversi Maksimal 20 SKS.
+                        </p>
                       </div>
                     )}
 
@@ -323,7 +351,7 @@ export default function LaporanAkhirMahasiswaPage() {
                         Jenis Magang
                       </p>
                       <p className="mt-1 font-black text-slate-950 dark:text-white">
-                        {pengajuan.jenis_magang || '-'}
+                        {getJenisMagangLabel(pengajuan.jenis_magang)}
                       </p>
                     </div>
 

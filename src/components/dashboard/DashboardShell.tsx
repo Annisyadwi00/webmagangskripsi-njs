@@ -22,36 +22,40 @@ const navItems: Record<DashboardRole, NavItem[]> = {
   Mahasiswa: [
     { label: 'Dashboard', href: '/dashboard' },
     { label: 'Pengajuan Magang', href: '/pengajuan' },
-    { label: 'Pengajuan Mitra', href: '/pengajuan-mitra' },
+    { label: 'Pengajuan Mitra', href: '/ajukan-mitra' },
     { label: 'Laporan Magang', href: '/laporan-akhir' },
     { label: 'Lowongan', href: '/lowongan' },
+    { label: 'Mitra', href: '/mitra' },
     { label: 'Settings', href: '/settings' },
   ],
 
- Admin: [
-  { label: 'Dashboard', href: '/admin/dashboard' },
-  { label: 'Pengajuan Magang', href: '/admin/pengajuan' },
-  { label: 'Pengajuan Mitra', href: '/admin/pengajuan-mitra' },
-  { label: 'Mitra', href: '/admin/mitra' },
-  { label: 'Lowongan', href: '/admin/lowongan' },
-  { label: 'Activity Log', href: '/admin/activity' },
-],
+  Admin: [
+    { label: 'Dashboard', href: '/admin/dashboard' },
+    { label: 'Pengajuan Magang', href: '/admin/pengajuan' },
+    { label: 'Pengajuan Mitra', href: '/admin/pengajuan-mitra' },
+    { label: 'Mitra', href: '/admin/mitra' },
+    { label: 'Lowongan', href: '/admin/lowongan' },
+    { label: 'Activity Log', href: '/admin/activity' },
+  ],
 
   'Super Admin': [
-  { label: 'Dashboard', href: '/super-admin/dashboard' },
-  { label: 'Data Mahasiswa Magang', href: '/super-admin/mahasiswa-magang' },
-  { label: 'Pengajuan Magang', href: '/super-admin/pengajuan' },
-  { label: 'Alokasi Dosen', href: '/super-admin/alokasi-dosen' },
-  { label: 'Pengajuan Mitra', href: '/super-admin/pengajuan-mitra' },
-  { label: 'Mitra', href: '/super-admin/mitra' },
-  { label: 'Lowongan', href: '/super-admin/lowongan' },
-  { label: 'User Management', href: '/super-admin/users' },
-],
+    { label: 'Dashboard', href: '/super-admin/dashboard' },
+    {
+      label: 'Data Mahasiswa Magang',
+      href: '/super-admin/mahasiswa-magang',
+    },
+    { label: 'Pengajuan Magang', href: '/super-admin/pengajuan' },
+    { label: 'Alokasi Dosen', href: '/super-admin/alokasi-dosen' },
+    { label: 'Pengajuan Mitra', href: '/super-admin/pengajuan-mitra' },
+    { label: 'Mitra', href: '/super-admin/mitra' },
+    { label: 'Lowongan', href: '/super-admin/lowongan' },
+    { label: 'User Management', href: '/super-admin/users' },
+  ],
 
   Dosen: [
     { label: 'Dashboard', href: '/dosen/dashboard' },
     { label: 'Laporan Magang', href: '/dosen/laporan-akhir' },
-    { label: 'Penilaian', href: '/dosen/penilaian' },
+    { label: 'Penilaian Akhir', href: '/dosen/penilaian' },
     { label: 'Settings', href: '/settings' },
   ],
 };
@@ -64,7 +68,10 @@ function getRoleLabel(role: DashboardRole) {
   return 'Mahasiswa';
 }
 
-export default function DashboardShell({ role, children }: DashboardShellProps) {
+export default function DashboardShell({
+  role,
+  children,
+}: DashboardShellProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -74,7 +81,9 @@ export default function DashboardShell({ role, children }: DashboardShellProps) 
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const prefersDark = window.matchMedia(
+      '(prefers-color-scheme: dark)'
+    ).matches;
 
     const shouldUseDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
 
@@ -113,9 +122,14 @@ export default function DashboardShell({ role, children }: DashboardShellProps) 
   };
 
   const getLinkClass = (href: string) => {
+    const isDashboardRoot =
+      href === '/dashboard' ||
+      href === '/admin/dashboard' ||
+      href === '/super-admin/dashboard' ||
+      href === '/dosen/dashboard';
+
     const isActive =
-      pathname === href ||
-      (href !== '/dashboard' && pathname.startsWith(`${href}/`));
+      pathname === href || (!isDashboardRoot && pathname.startsWith(`${href}/`));
 
     return isActive
       ? 'bg-blue-50 text-[#1e3a8a] ring-1 ring-blue-100 dark:bg-blue-400/10 dark:text-blue-300 dark:ring-blue-400/20'
