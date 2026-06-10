@@ -18,6 +18,17 @@ export type User = {
   updatedAt: string;
 };
 
+export type Dosen = {
+  id: string;
+  nidn: string | null;
+  nama_gelar: string | null;
+  nip: string | null;
+  nama: string | null;
+  email: string | null;
+  jabatan: string | null;
+  unit: string | null;
+};
+
 export async function getUsers() {
   const result = await apiClient<User[]>('/api/users');
 
@@ -93,5 +104,20 @@ export async function updateCurrentUserPassword(payload: {
       action: 'update_password',
       ...payload,
     },
+  });
+}
+
+/**
+ * Ambil data dosen dari Siska,
+ * filter hanya Teknik Informatika dan Sistem Informasi,
+ * lalu insert/update ke tabel dosen.
+ */
+export async function syncDosenFromSiska() {
+  return apiClient<{
+    totalFetched: number;
+    totalFiltered: number;
+    totalInserted: number;
+  }>('/api/dosen/sync-siska', {
+    method: 'POST',
   });
 }

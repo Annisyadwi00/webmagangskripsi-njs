@@ -14,6 +14,7 @@ import {
   deleteUser,
   getUsers,
   resetUserPassword,
+  syncDosenFromSiska,
 } from '@/lib/users-client';
 
 type UserForm = {
@@ -54,6 +55,7 @@ export default function SuperAdminUsersPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSyncingDosen, setIsSyncingDosen] = useState(false);
 
   const [message, setMessage] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -200,6 +202,41 @@ export default function SuperAdminUsersPage() {
       setErrorMsg(msg);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSyncDosenFromSiska = async () => {
+    const confirmed = window.confirm(
+      'Sinkronisasi data dosen dari Siska? Data yang masuk hanya unit Teknik Informatika dan Sistem Informasi.'
+    );
+
+    if (!confirmed) return;
+
+    setMessage('');
+    setErrorMsg('');
+    setDefaultPassword('');
+    setIsSyncingDosen(true);
+
+    try {
+      const result = await syncDosenFromSiska();
+
+      setMessage(
+        result.message ||
+          `Sinkronisasi berhasil. Total dosen masuk: ${
+            result.data?.totalInserted ?? 0
+          }.`
+      );
+
+      await fetchData();
+    } catch (error) {
+      const msg =
+        error instanceof Error
+          ? error.message
+          : 'Gagal sinkronisasi data dosen dari Siska.';
+
+      setErrorMsg(msg);
+    } finally {
+      setIsSyncingDosen(false);
     }
   };
 
@@ -460,13 +497,24 @@ export default function SuperAdminUsersPage() {
                   </p>
                 </div>
 
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="app-input md:max-w-xs"
-                  placeholder="Cari nama/email/role/NIDN..."
-                />
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <button
+                    type="button"
+                    onClick={handleSyncDosenFromSiska}
+                    disabled={isSyncingDosen}
+                    className="app-btn-primary whitespace-nowrap px-4 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSyncingDosen ? 'Sinkronisasi...' : 'Sinkron Dosen Siska'}
+                  </button>
+
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="app-input md:max-w-xs"
+                    placeholder="Cari nama/email/role/NIDN..."
+                  />
+                </div>
               </div>
 
               {filteredUsers.length === 0 ? (
