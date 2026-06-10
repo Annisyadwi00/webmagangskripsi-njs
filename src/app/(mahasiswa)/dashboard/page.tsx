@@ -194,6 +194,99 @@ function DetailItem({
     </div>
   );
 }
+const documentTemplates = [
+  {
+    title: 'Pengajuan Surat Magang',
+    description:
+      'Form pengajuan surat pengantar, permohonan, atau rekomendasi magang.',
+    href: 'https://digiletter.marooners.my.id/login',
+    note: '',
+  },
+  {
+    title: 'Pengajuan Mitra Magang',
+    description:
+      'Form untuk pengajuan perusahaan/instansi sebagai mitra magang.',
+    href: '/dashboard/pengajuan-mitra',
+    note: '',
+  },
+  {
+    title: 'Pendataan Magang (Permohonan Dosen Pembimbing)',
+    description:
+      'Form pendataan mahasiswa magang sekaligus permohonan dosen pembimbing.',
+    href: '/dashboard/pengajuan-magang',
+    note: '',
+  },
+  {
+    title: 'Lembar Aktivitas Magang',
+    description:
+      'Template pencatatan aktivitas atau kegiatan mahasiswa selama magang.',
+    href: 'https://docs.google.com/document/d/1O7oAuNjv3WmTqwW9zL563ep4om2b1WIa/edit?rtpof=true&sd=true',
+    note: '',
+  },
+  {
+    title: 'Lembar Bimbingan Magang',
+    description:
+      'Template pencatatan kegiatan bimbingan antara mahasiswa dan dosen pembimbing.',
+    href: 'https://docs.google.com/document/d/19swBB4iH2nRmBL4Mnu8lQbIVEp04hW5R/edit',
+    note: '',
+  },
+  {
+    title: 'Surat Tugas Dosen Pendamping Magang (DPM)',
+    description:
+      'Template surat tugas untuk dosen pendamping magang.',
+    href: 'https://drive.google.com/drive/folders/1TT5U86q_bJjJNZI42WPA3mvfmgEDlRmV?usp=drive_link',
+    note: '',
+  },
+  {
+    title: 'Implementation of Arrangement (IA)',
+    description:
+      'Dokumen kerja sama teknis antara pihak kampus/fakultas dengan mitra.',
+    href: '#',
+    note: 'Hubungi TU Fasilkom/Fasilkom Official untuk proses pembuatannya.',
+  },
+  {
+    title: 'Surat Perpanjangan Waktu Magang',
+    description:
+      'Template surat permohonan perpanjangan waktu pelaksanaan magang.',
+    href: 'https://docs.google.com/document/d/1qbRwc7ZYHg8mcip26QBS5Gmrq-XUHlez/edit?rtpof=true&sd=true',
+    note: '',
+  },
+  {
+    title: 'Surat Keterangan Selesai Magang',
+    description:
+      'Template surat keterangan bahwa mahasiswa telah menyelesaikan magang.',
+    href: 'https://docs.google.com/document/d/1Ypx5-qwjdVnPbKpPLMrmmeS3ovlrXNhS/edit?rtpof=true&sd=true',
+    note: '',
+  },
+  {
+    title: 'Pelaporan Magang',
+    description:
+      'Template atau panduan pelaporan hasil pelaksanaan magang.',
+    href: 'MASUKKAN_LINK_DIRECT_DI_SINI',
+    note: '',
+  },
+  {
+    title: 'Lembar Penilaian Mitra',
+    description:
+      'Template penilaian mahasiswa dari pihak mitra atau pembimbing lapangan.',
+    href: 'https://docs.google.com/document/d/1BXMz5Zp0SHj-40_6D1hOb9V6X7AwxP0I/edit',
+    note: '',
+  },
+  {
+    title: 'Lembar Penilaian Dosen Pembimbing Magang',
+    description:
+      'Template penilaian mahasiswa dari dosen pembimbing magang.',
+    href: 'https://docs.google.com/document/d/1N1_gGM6nWVM_b38nfk6U2kJaFyMou30L/edit?rtpof=true&sd=true&tab=t.0',
+    note: '',
+  },
+  {
+    title: 'Laporan Pelaksanaan Kerja Sama',
+    description:
+      'Dokumen laporan pelaksanaan kerja sama magang dengan mitra.',
+    href: '#',
+    note: 'Hubungi TU Fasilkom/Fasilkom Official untuk proses pembuatannya.',
+  },
+];
 
 export default function PengajuanMahasiswaPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
@@ -571,6 +664,82 @@ export default function PengajuanMahasiswaPage() {
 
           {message && <Alert variant="success">{message}</Alert>}
           {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
+
+<section className="mt-8">
+  <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+    <div>
+      <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
+        Dokumen Magang
+      </p>
+
+      <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+        Template Dokumen Magang
+      </h2>
+
+      <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+        Unduh template dokumen yang dibutuhkan untuk pengajuan, pendataan,
+        pelaksanaan, bimbingan, penilaian, dan pelaporan magang.
+      </p>
+    </div>
+  </div>
+
+  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+    {documentTemplates.map((item) => {
+      const isManualProcess = item.href === '#';
+
+      if (isManualProcess) {
+        return (
+          <div
+            key={item.title}
+            className="app-panel p-5 opacity-90"
+          >
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-lg font-black text-amber-700 dark:bg-amber-400/10 dark:text-amber-300">
+              !
+            </div>
+
+            <h3 className="mt-4 text-lg font-black leading-snug text-slate-950 dark:text-white">
+              {item.title}
+            </h3>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+              {item.description}
+            </p>
+
+            <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-800 dark:bg-amber-400/10 dark:text-amber-200">
+              {item.note}
+            </p>
+          </div>
+        );
+      }
+
+      return (
+       <a
+  key={item.title}
+  href={item.href}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="app-panel app-card-hover p-5"
+>
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-lg font-black text-[#1e3a8a] dark:bg-blue-400/10 dark:text-blue-300">
+            ↓
+          </div>
+
+          <h3 className="mt-4 text-lg font-black leading-snug text-slate-950 dark:text-white">
+            {item.title}
+          </h3>
+
+          <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+            {item.description}
+          </p>
+
+          <span className="mt-4 inline-flex text-sm font-black text-[#1e3a8a] dark:text-blue-300">
+            Buka Dokumen →
+          </span>
+        </a>
+      );
+    })}
+  </div>
+</section>
 
           <section className="mb-8">
             <ProgressStepper steps={getMagangSteps(pengajuan?.status)} />

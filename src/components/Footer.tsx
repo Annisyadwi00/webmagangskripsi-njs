@@ -75,7 +75,7 @@ export default function Footer() {
           </p>
 
           <p className="font-bold">
-            Developed by{' Annisya Dwi Chaerani '}
+            Developed by{' Annisya Dwi Chaerani '}n
           </p>
         </div>
       </div>
