@@ -37,7 +37,6 @@ export async function POST() {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${process.env.SISKA_API_TOKEN}`,
-        Cookie: `server_name_session=${process.env.SISKA_SERVER_NAME_SESSION}`,
       },
       cache: 'no-store',
     });
