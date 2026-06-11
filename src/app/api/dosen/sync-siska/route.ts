@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import mysql from 'mysql2/promise';
+import { QueryTypes } from 'sequelize';
+import User from '@/models/User';
+import { connectDB } from '@/lib/db';
 
 type SiskaDosen = {
   id: string;
@@ -18,21 +20,111 @@ type SiskaResponse = {
   data: SiskaDosen[][];
 };
 
-function isAllowedUnit(unit?: string | null) {
-  if (!unit) return false;
+const ALLOWED_DOSEN_NAMES = [
+  'Aries Suharso',
+  'Adhi Rizal',
+  'Agung Susilo Yuda Irawan',
+  'Ahmad Khusaeri',
+  'Aji Primajaya',
+  'Asep Jamaludin',
+  'Azhari Ali Ridha',
+  'Arip Solehudin',
+  "Aziz Ma'shum",
+  'Bagja Nugraha',
+  'Betha Nurina Sari',
+  'Billy Ibrahim H',
+  'Budi Arif Darmawan',
+  'Carudin',
+  'Chaerur Rozikin',
+  'Dadang Yusuf',
+  'Didi Juardi',
+  'Garno',
+  'Haodudin Nurkifli',
+  'Hannie',
+  'Intan Purnamasari',
+  'Iqbal Maulana',
+  'Irfan Sriyono',
+  'Jajam Haerul Jaman',
+  'Mohamad Jajuli',
+  'Nina Sulistiyowati',
+  'Nono Heryana',
+  'Oman Komarudin',
+  'Purwantoro',
+  'Rini Mayasari',
+  'Siska',
+  'Susilawati',
+  'Sofi Defiyanti',
+  'Taufik Ridwan',
+  'Tesa Nur Padilah',
+  'Ultach Enri',
+  'Yuyun Umaidah',
+  'Ratna Mufidah',
+  'Kamal Prihandani',
+  'Ade Andri Hendriadi',
+  'Riza Ibnu Adam',
+];
+
+function normalizeName(name?: string | null) {
+  return (name || '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const allowedNameSet = new Set(
+  ALLOWED_DOSEN_NAMES.map((name) => normalizeName(name))
+);
+
+function isAllowedDosenName(nama?: string | null) {
+  if (!nama) return false;
+
+  return allowedNameSet.has(normalizeName(nama));
+}
+
+function getProdiFromUnit(unit?: string | null) {
+  if (!unit) return null;
 
   const normalized = unit.toLowerCase();
 
-  return (
-    normalized.includes('teknik informatika') ||
-    normalized.includes('sistem informasi')
-  );
+  if (normalized.includes('sistem informasi')) {
+    return 'Sistem Informasi';
+  }
+
+  if (normalized.includes('informatika')) {
+    return 'Teknik Informatika';
+  }
+
+  return null;
+}
+
+function getNimNidn(dosen: SiskaDosen) {
+  if (dosen.nidn && dosen.nidn !== '0000000000') {
+    return dosen.nidn;
+  }
+
+  if (dosen.nip) {
+    return dosen.nip;
+  }
+
+  return '-';
 }
 
 export async function POST() {
-  let connection: mysql.Connection | null = null;
-
   try {
+    await connectDB();
+
+    const sequelize = User.sequelize;
+
+    if (!sequelize) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Koneksi database Sequelize tidak ditemukan.',
+        },
+        { status: 500 }
+      );
+    }
+
     const response = await fetch('https://siska.unsika.ac.id/api/dosen', {
       method: 'GET',
       headers: {
@@ -66,64 +158,150 @@ export async function POST() {
     const allDosen = result.data.flat();
 
     const filteredDosen = allDosen.filter((dosen) =>
-      isAllowedUnit(dosen.unit)
+      isAllowedDosenName(dosen.nama)
     );
 
-    connection = await mysql.createConnection({
-      host: process.env.DB_HOST,
-      port: Number(process.env.DB_PORT || 3306),
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-    });
-
-    let totalInserted = 0;
+    let totalInsertedUser = 0;
+    let totalUpdatedUser = 0;
+    let totalInsertedDosen = 0;
+    let totalUpdatedDosen = 0;
+    let totalSkipped = 0;
 
     for (const dosen of filteredDosen) {
-      await connection.execute(
+      if (!dosen.id || !dosen.email || !dosen.nama) {
+        totalSkipped++;
+        continue;
+      }
+
+      const existingUser = await User.findOne({
+        where: {
+          email: dosen.email,
+        },
+      });
+
+      const payloadUser = {
+        name: dosen.nama,
+        email: dosen.email,
+        role: 'Dosen',
+        nim_nidn: getNimNidn(dosen),
+        prodi: getProdiFromUnit(dosen.unit),
+        semester: null,
+        angkatan: null,
+        kelas: null,
+        kategori_dosen: dosen.jabatan || null,
+        kuota_bimbingan: 5,
+        phone: null,
+      };
+
+      if (existingUser) {
+        await existingUser.update(payloadUser);
+        totalUpdatedUser++;
+      } else {
+        await User.create({
+          ...payloadUser,
+          password: process.env.DEFAULT_DOSEN_PASSWORD || 'dosen12345',
+        });
+
+        totalInsertedUser++;
+      }
+
+      const existingDosen = await sequelize.query(
         `
-          INSERT INTO dosen (
-            id,
-            nidn,
-            nama_gelar,
-            nip,
-            nama,
-            email,
-            jabatan,
-            unit
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-          ON DUPLICATE KEY UPDATE
-            nidn = VALUES(nidn),
-            nama_gelar = VALUES(nama_gelar),
-            nip = VALUES(nip),
-            nama = VALUES(nama),
-            email = VALUES(email),
-            jabatan = VALUES(jabatan),
-            unit = VALUES(unit)
+          SELECT id
+          FROM dosen
+          WHERE id = :id
+          LIMIT 1
         `,
-        [
-          dosen.id,
-          dosen.nidn,
-          dosen.nama_gelar,
-          dosen.nip,
-          dosen.nama,
-          dosen.email,
-          dosen.jabatan,
-          dosen.unit,
-        ]
+        {
+          replacements: {
+            id: dosen.id,
+          },
+          type: QueryTypes.SELECT,
+        }
       );
 
-      totalInserted++;
+      if (existingDosen.length > 0) {
+        await sequelize.query(
+          `
+            UPDATE dosen
+            SET
+              nidn = :nidn,
+              nama_gelar = :nama_gelar,
+              nip = :nip,
+              nama = :nama,
+              email = :email,
+              jabatan = :jabatan,
+              unit = :unit
+            WHERE id = :id
+          `,
+          {
+            replacements: {
+              id: dosen.id,
+              nidn: dosen.nidn,
+              nama_gelar: dosen.nama_gelar,
+              nip: dosen.nip,
+              nama: dosen.nama,
+              email: dosen.email,
+              jabatan: dosen.jabatan,
+              unit: dosen.unit,
+            },
+          }
+        );
+
+        totalUpdatedDosen++;
+      } else {
+        await sequelize.query(
+          `
+            INSERT INTO dosen (
+              id,
+              nidn,
+              nama_gelar,
+              nip,
+              nama,
+              email,
+              jabatan,
+              unit
+            )
+            VALUES (
+              :id,
+              :nidn,
+              :nama_gelar,
+              :nip,
+              :nama,
+              :email,
+              :jabatan,
+              :unit
+            )
+          `,
+          {
+            replacements: {
+              id: dosen.id,
+              nidn: dosen.nidn,
+              nama_gelar: dosen.nama_gelar,
+              nip: dosen.nip,
+              nama: dosen.nama,
+              email: dosen.email,
+              jabatan: dosen.jabatan,
+              unit: dosen.unit,
+            },
+          }
+        );
+
+        totalInsertedDosen++;
+      }
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Data dosen berhasil disinkronkan.',
+      message: 'Data dosen berhasil disinkronkan dari Siska berdasarkan daftar nama.',
       data: {
         totalFetched: allDosen.length,
         totalFiltered: filteredDosen.length,
-        totalInserted,
+        totalInsertedUser,
+        totalUpdatedUser,
+        totalInsertedDosen,
+        totalUpdatedDosen,
+        totalSkipped,
       },
     });
   } catch (error) {
@@ -136,9 +314,5 @@ export async function POST() {
       },
       { status: 500 }
     );
-  } finally {
-    if (connection) {
-      await connection.end();
-    }
   }
 }
