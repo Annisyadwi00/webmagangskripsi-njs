@@ -10,7 +10,7 @@ export type KampusMahasiswa = {
 };
 
 export async function getMahasiswaKampusByNpm(npm: string) {
-  const response = await fetch(`/api/kampus/mahasiswa?npm=${npm}`, {
+  const response = await fetch(`/api/auth/register/check-npm`, {
     method: 'GET',
   });
 

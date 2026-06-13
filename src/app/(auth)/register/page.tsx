@@ -5,7 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import Alert from '@/components/ui/Alert';
-import { getMahasiswaKampusByNpm } from '@/lib/kampus-client';
+import {
+  type KampusMahasiswa,
+  getMahasiswaKampusByNpm,
+} from '@/lib/kampus-client';
 
 type RegisterFormData = {
   email: string;
@@ -30,8 +33,13 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingMahasiswa, setIsCheckingMahasiswa] = useState(false);
+
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  const [mahasiswa, setMahasiswa] = useState<KampusMahasiswa | null>(null);
+  const [checkedNpm, setCheckedNpm] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -41,10 +49,70 @@ export default function RegisterPage() {
   };
 
   const handleNumberInput = (field: 'nim_nidn' | 'phone', value: string) => {
+    const cleanValue = value.replace(/[^0-9]/g, '');
+
     setFormData({
       ...formData,
-      [field]: value.replace(/[^0-9]/g, ''),
+      [field]: cleanValue,
     });
+
+    if (field === 'nim_nidn') {
+      setMahasiswa(null);
+      setCheckedNpm('');
+      setSuccessMsg('');
+    }
+  };
+
+  const handleCheckMahasiswa = async () => {
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    if (!formData.nim_nidn.trim()) {
+      setErrorMsg('NPM/NIM wajib diisi dulu.');
+      return null;
+    }
+
+    if (!/^[0-9]+$/.test(formData.nim_nidn)) {
+      setErrorMsg('NPM/NIM hanya boleh berisi angka.');
+      return null;
+    }
+
+    setIsCheckingMahasiswa(true);
+
+    try {
+      const data = await getMahasiswaKampusByNpm(formData.nim_nidn);
+
+      if (data.npm && data.npm !== formData.nim_nidn) {
+        setErrorMsg('NPM/NIM tidak sesuai dengan data mahasiswa kampus.');
+        setMahasiswa(null);
+        setCheckedNpm('');
+        return null;
+      }
+
+      setMahasiswa(data);
+      setCheckedNpm(formData.nim_nidn);
+      setSuccessMsg('Data mahasiswa berhasil ditemukan.');
+
+      setFormData((prev) => ({
+        ...prev,
+        email: data.email || prev.email,
+        phone: data.no_hp ? data.no_hp.replace(/[^0-9]/g, '') : prev.phone,
+      }));
+
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Data mahasiswa tidak ditemukan.';
+
+      setErrorMsg(message);
+      setMahasiswa(null);
+      setCheckedNpm('');
+      return null;
+    } finally {
+      setIsCheckingMahasiswa(false);
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -70,7 +138,7 @@ export default function RegisterPage() {
       return;
     }
 
-    if (!formData.email.trim().endsWith('unsika.ac.id')) {
+    if (!formData.email.trim().toLowerCase().endsWith('unsika.ac.id')) {
       setErrorMsg('Registrasi wajib menggunakan email kampus UNSIKA.');
       return;
     }
@@ -94,6 +162,24 @@ export default function RegisterPage() {
       return;
     }
 
+    let mahasiswaKampus = mahasiswa;
+
+    if (!mahasiswaKampus || checkedNpm !== formData.nim_nidn) {
+      mahasiswaKampus = await handleCheckMahasiswa();
+
+      if (!mahasiswaKampus) {
+        return;
+      }
+    }
+
+    if (
+      mahasiswaKampus.email &&
+      mahasiswaKampus.email.toLowerCase() !== formData.email.trim().toLowerCase()
+    ) {
+      setErrorMsg('Email kampus tidak sesuai dengan data akademik mahasiswa.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -101,7 +187,7 @@ export default function RegisterPage() {
         method: 'POST',
         body: {
           nim_nidn: formData.nim_nidn,
-          email: formData.email.trim(),
+          email: formData.email.trim().toLowerCase(),
           phone: formData.phone,
           password: formData.password,
         },
@@ -186,17 +272,29 @@ export default function RegisterPage() {
                   <label htmlFor="nim_nidn" className="app-label">
                     NPM/NIM
                   </label>
-                  <input
-                    id="nim_nidn"
-                    type="text"
-                    required
-                    value={formData.nim_nidn}
-                    onChange={(e) =>
-                      handleNumberInput('nim_nidn', e.target.value)
-                    }
-                    className="app-input"
-                    placeholder="2210631170001"
-                  />
+
+                  <div className="flex gap-2">
+                    <input
+                      id="nim_nidn"
+                      type="text"
+                      required
+                      value={formData.nim_nidn}
+                      onChange={(e) =>
+                        handleNumberInput('nim_nidn', e.target.value)
+                      }
+                      className="app-input"
+                      placeholder="2210631170001"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={handleCheckMahasiswa}
+                      disabled={isCheckingMahasiswa || !formData.nim_nidn}
+                      className="app-btn-secondary whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isCheckingMahasiswa ? 'Cek...' : 'Cek Data'}
+                    </button>
+                  </div>
                 </div>
 
                 <div>
@@ -214,6 +312,58 @@ export default function RegisterPage() {
                   />
                 </div>
               </div>
+
+              {mahasiswa && checkedNpm === formData.nim_nidn && (
+                <div className="rounded-2xl border border-green-100 bg-green-50 p-4 text-sm dark:border-green-400/20 dark:bg-green-400/10">
+                  <p className="font-black text-green-700 dark:text-green-300">
+                    Data Mahasiswa Ditemukan
+                  </p>
+
+                  <div className="mt-3 grid grid-cols-1 gap-3 text-slate-600 dark:text-slate-300 md:grid-cols-2">
+                    <p>
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        Nama:
+                      </span>{' '}
+                      {mahasiswa.nama || '-'}
+                    </p>
+
+                    <p>
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        NPM:
+                      </span>{' '}
+                      {mahasiswa.npm || formData.nim_nidn}
+                    </p>
+
+                    <p>
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        Prodi:
+                      </span>{' '}
+                      {mahasiswa.prodi || '-'}
+                    </p>
+
+                    <p>
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        Kelas:
+                      </span>{' '}
+                      {mahasiswa.kelas || '-'}
+                    </p>
+
+                    <p>
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        Semester:
+                      </span>{' '}
+                      {mahasiswa.semester || '-'}
+                    </p>
+
+                    <p>
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        Angkatan:
+                      </span>{' '}
+                      {mahasiswa.angkatan || '-'}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label htmlFor="phone" className="app-label">
@@ -295,7 +445,7 @@ export default function RegisterPage() {
 
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || isCheckingMahasiswa}
                 className="app-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isLoading ? 'Memproses Registrasi...' : 'Daftar Sekarang'}
