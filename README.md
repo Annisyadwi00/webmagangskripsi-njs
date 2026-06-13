@@ -24,7 +24,6 @@ Project ini dibuat sebagai bagian dari tugas akhir/skripsi dan digunakan untuk k
 ### Admin / Staff TU
 - Melihat pengajuan mitra.
 - Melihat data lowongan magang.
-- Melihat activity log sistem.
 
 ### Super Admin
 - Mengelola data mahasiswa magang.

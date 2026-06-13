@@ -44,5 +44,21 @@ export async function GET() {
         created_at: item.created_at || item.createdAt || null,
       };
     });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Data mahasiswa terdaftar berhasil diambil.',
+      data,
+    });
+  } catch (error) {
+    console.error('GET_MAHASISWA_REGISTERED_ERROR:', error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Terjadi kesalahan server.',
+      },
+      { status: 500 }
+    );
   }
 }

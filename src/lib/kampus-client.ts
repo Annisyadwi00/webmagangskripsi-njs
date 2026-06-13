@@ -10,14 +10,19 @@ export type KampusMahasiswa = {
 };
 
 export async function getMahasiswaKampusByNpm(npm: string) {
-  const response = await fetch(`/api/auth/register/check-npm`, {
-    method: 'GET',
+  const response = await fetch('/api/auth/register/check-npm', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ npm }),
+    cache: 'no-store',
   });
 
   const result = await response.json();
 
   if (!response.ok || !result.success) {
-    throw new Error(result.message || 'Gagal mengambil data mahasiswa kampus.');
+    throw new Error(result.message || 'Gagal mengecek data mahasiswa.');
   }
 
   return result.data as KampusMahasiswa;

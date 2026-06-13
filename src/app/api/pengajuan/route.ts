@@ -3,7 +3,7 @@ import { Op } from 'sequelize';
 import Pengajuan from '@/models/Pengajuan';
 import { connectDB } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
-import { createActivityLog } from '@/lib/activity-log';
+
 
 const allowedJenisMagang = [
   'Konversi 20 SKS',
@@ -358,13 +358,7 @@ export async function POST(request: Request) {
       status: 'Menunggu_Verifikasi',
     });
 
-    await createActivityLog({
-      actor: user,
-      action: 'CREATE_PENGAJUAN',
-      description: `${user.name} mengajukan magang di ${perusahaan} sebagai ${posisi}.`,
-      target_id: newPengajuan.getDataValue('id'),
-      target_type: 'Pengajuan',
-    });
+    
 
     return NextResponse.json(
       {
@@ -490,13 +484,7 @@ export async function PUT(request: Request) {
             jenisMagang === 'Konversi 20 SKS' ? link_output_magang : null,
         });
 
-        await createActivityLog({
-          actor: user,
-          action: 'UPLOAD_LAPORAN_AKHIR',
-          description: `${user.name} mengunggah dokumen magang.`,
-          target_id: pengajuan.getDataValue('id'),
-          target_type: 'Pengajuan',
-        });
+        
 
         return NextResponse.json(
           {
@@ -532,13 +520,7 @@ export async function PUT(request: Request) {
 
         await pengajuan.destroy();
 
-        await createActivityLog({
-          actor: user,
-          action: 'BATAL_PENGAJUAN',
-          description: `${user.name} membatalkan pengajuan magang di ${perusahaanPengajuan}.`,
-          target_id: pengajuanId,
-          target_type: 'Pengajuan',
-        });
+       
 
         return NextResponse.json(
           {
@@ -603,15 +585,7 @@ export async function PUT(request: Request) {
           alasan_penolakan: null,
         });
 
-        await createActivityLog({
-          actor: user,
-          action: 'SETUJUI_PENGAJUAN',
-          description: `${user.name} menyetujui pengajuan magang ${pengajuan.getDataValue(
-            'nama_mahasiswa'
-          )} dan menetapkan ${body.nama_dosen} sebagai dosen pembimbing.`,
-          target_id: pengajuan.getDataValue('id'),
-          target_type: 'Pengajuan',
-        });
+       
 
         return NextResponse.json(
           {
@@ -641,15 +615,7 @@ export async function PUT(request: Request) {
           alasan_penolakan: alasan,
         });
 
-        await createActivityLog({
-          actor: user,
-          action: 'TOLAK_PENGAJUAN',
-          description: `${user.name} menolak pengajuan magang ${pengajuan.getDataValue(
-            'nama_mahasiswa'
-          )}. Alasan: ${alasan}`,
-          target_id: pengajuan.getDataValue('id'),
-          target_type: 'Pengajuan',
-        });
+       
 
         return NextResponse.json(
           {
@@ -772,15 +738,7 @@ export async function PUT(request: Request) {
           status: 'Selesai',
         });
 
-        await createActivityLog({
-          actor: user,
-          action: 'BERI_NILAI',
-          description: `${user.name} memberi nilai akhir ${nilai_dari_dosen} untuk ${pengajuan.getDataValue(
-            'nama_mahasiswa'
-          )}.`,
-          target_id: pengajuan.getDataValue('id'),
-          target_type: 'Pengajuan',
-        });
+       
 
         return NextResponse.json(
           {

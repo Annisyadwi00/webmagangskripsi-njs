@@ -4,7 +4,6 @@ import PengajuanMitra, {
 } from '@/models/PengajuanMitra';
 import { connectDB } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
-import { createActivityLog } from '@/lib/activity-log';
 
 const allowedStatus: PengajuanMitraStatus[] = [
   'Menunggu',
@@ -324,13 +323,7 @@ export async function POST(request: Request) {
       catatan_admin: null,
     });
 
-    await createActivityLog({
-      actor: user,
-      action: 'CREATE_PENGAJUAN_MITRA',
-      description: `${user.name} mengajukan mitra ${nama_mitra}.`,
-      target_id: newPengajuanMitra.getDataValue('id'),
-      target_type: 'PengajuanMitra',
-    });
+    
 
     return NextResponse.json(
       {
@@ -433,15 +426,7 @@ export async function PUT(request: Request) {
       catatan_admin,
     });
 
-    await createActivityLog({
-      actor: user,
-      action: 'VERIFIKASI_PENGAJUAN_MITRA',
-      description: `${user.name} mengubah status pengajuan mitra ${pengajuanMitra.getDataValue(
-        'nama_mitra'
-      )} menjadi ${status}.`,
-      target_id: pengajuanMitra.getDataValue('id'),
-      target_type: 'PengajuanMitra',
-    });
+    
 
     return NextResponse.json(
       {
