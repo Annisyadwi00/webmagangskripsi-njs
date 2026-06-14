@@ -16,7 +16,21 @@ type RegisterFormData = {
   password: string;
   confirmPassword: string;
   nim_nidn: string;
+  name: string;
 };
+
+// Helper: konversi nomor HP ke format 62
+function formatPhoneNumber(rawPhone: string): string {
+  let cleaned = rawPhone.replace(/[^0-9+]/g, '');
+  if (cleaned.startsWith('0')) {
+    return '62' + cleaned.substring(1);
+  } else if (cleaned.startsWith('+62')) {
+    return cleaned.substring(1);
+  } else if (cleaned.startsWith('62')) {
+    return cleaned;
+  }
+  return cleaned;
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -27,6 +41,7 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
     nim_nidn: '',
+    name: '',
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -60,6 +75,7 @@ export default function RegisterPage() {
       setMahasiswa(null);
       setCheckedNpm('');
       setSuccessMsg('');
+      setFormData((prev) => ({ ...prev, name: '' }));
     }
   };
 
@@ -93,10 +109,17 @@ export default function RegisterPage() {
       setCheckedNpm(formData.nim_nidn);
       setSuccessMsg('Data mahasiswa berhasil ditemukan.');
 
+      // Format nomor WhatsApp jika ada
+      let formattedPhone = '';
+      if (data.no_hp) {
+        formattedPhone = formatPhoneNumber(data.no_hp);
+      }
+
       setFormData((prev) => ({
         ...prev,
         email: data.email || prev.email,
-        phone: data.no_hp ? data.no_hp.replace(/[^0-9]/g, '') : prev.phone,
+        phone: formattedPhone || prev.phone,
+        name: data.nama || prev.name,
       }));
 
       return data;
@@ -128,6 +151,11 @@ export default function RegisterPage() {
 
     if (!/^[0-9]+$/.test(formData.nim_nidn)) {
       setErrorMsg('NPM/NIM hanya boleh berisi angka.');
+      return;
+    }
+
+    if (!formData.name.trim()) {
+      setErrorMsg('Nama lengkap wajib diisi.');
       return;
     }
 
@@ -190,6 +218,7 @@ export default function RegisterPage() {
           email: formData.email.trim().toLowerCase(),
           phone: formData.phone,
           password: formData.password,
+          name: formData.name,
         },
       });
 
@@ -239,6 +268,7 @@ export default function RegisterPage() {
                   <li>NPM/NIM wajib sesuai data akademik kampus.</li>
                   <li>Email wajib menggunakan domain UNSIKA.</li>
                   <li>Nomor WhatsApp menggunakan format 62.</li>
+                  <li>Nama lengkap akan diisi otomatis dari data kampus.</li>
                   <li>
                     Password minimal 8 karakter, memiliki huruf kapital dan
                     angka.
@@ -295,6 +325,25 @@ export default function RegisterPage() {
                       {isCheckingMahasiswa ? 'Cek...' : 'Cek Data'}
                     </button>
                   </div>
+                </div>
+
+                <div>
+                  <label htmlFor="name" className="app-label">
+                    Nama Lengkap
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="app-input"
+                    placeholder="Nama sesuai KTP"
+                  />
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    Akan terisi otomatis setelah cek data. Bisa diedit jika
+                    perlu.
+                  </p>
                 </div>
 
                 <div>
@@ -379,7 +428,8 @@ export default function RegisterPage() {
                   placeholder="628xxxxxxxxxx"
                 />
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                  Gunakan format 62. Contoh: 6285456123.
+                  Gunakan format 62. Contoh: 6285456123. Akan terisi otomatis
+                  dari data kampus jika tersedia.
                 </p>
               </div>
 

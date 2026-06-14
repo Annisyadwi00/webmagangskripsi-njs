@@ -97,8 +97,8 @@ function buildKampusUrl(apiUrl: string, npm: string) {
 }
 
 async function getMahasiswaKampusByNpm(npm: string) {
-  const apiUrl = process.env.KAMPUS_MAHASISWA_API_URL;
-  const apiToken = process.env.KAMPUS_API_TOKEN;
+  const apiUrl = process.env.SISKA_MAHASISWA_API_URL;
+  const apiToken = process.env.SISKA_API_TOKEN;
 
   if (!apiUrl || !apiToken) {
     throw new KampusApiError(
@@ -155,11 +155,16 @@ export async function POST(request: Request) {
     const password = trimString(body.password);
     const nim_nidn = trimString(body.nim_nidn);
     const phone = trimString(body.phone);
+    const name = trimString(body.name);
 
     if (!email || !password || !nim_nidn || !phone) {
       return badRequestResponse(
         'NPM/NIM, email kampus, nomor WhatsApp, dan password wajib diisi.'
       );
+    }
+
+    if (!name) {
+      return badRequestResponse('Nama lengkap wajib diisi.');
     }
 
     if (!/^[0-9]+$/.test(nim_nidn)) {
@@ -236,8 +241,10 @@ export async function POST(request: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const finalName = mahasiswa.nama || name || `Mahasiswa ${nim_nidn}`;
+
     await User.create({
-      name: mahasiswa.nama || `Mahasiswa ${nim_nidn}`,
+      name: finalName,
       email,
       password: hashedPassword,
       role: 'Mahasiswa',

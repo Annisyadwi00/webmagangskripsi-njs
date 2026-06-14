@@ -90,8 +90,8 @@ export async function GET(request: Request) {
       );
     }
 
-    const apiUrl = process.env.KAMPUS_MAHASISWA_API_URL;
-    const apiToken = process.env.KAMPUS_API_TOKEN;
+    const apiUrl = process.env.SISKA_MAHASISWA_API_URL;
+    const apiToken = process.env.SISKA_API_TOKEN;
 
     if (!apiUrl || !apiToken) {
       return NextResponse.json(

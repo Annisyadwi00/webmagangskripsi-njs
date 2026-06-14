@@ -104,7 +104,7 @@ setLowongan(lowonganData || []);
       <main className="min-h-screen py-8">
         <div className="app-container">
           <div className="app-card p-8">
-            <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+            <div className="h-4 w-40 anitreee-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
             <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
 
             <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-4">
