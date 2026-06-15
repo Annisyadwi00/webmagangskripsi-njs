@@ -10,6 +10,7 @@ type PengajuanMitraStatus = 'Menunggu' | 'Disetujui' | 'Ditolak';
 const allowedStatus: PengajuanMitraStatus[] = ['Menunggu', 'Disetujui', 'Ditolak'];
 const allowedSistemKerja = ['Onsite', 'Hybrid', 'Remote'];
 
+
 async function parseFormData(request: Request): Promise<{
   fields: Record<string, string>;
   files: Record<string, File>;

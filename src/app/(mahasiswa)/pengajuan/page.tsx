@@ -163,16 +163,6 @@ function DetailItem({ label, value }: { label: string; value?: string | number |
   );
 }
 
-// Fungsi upload file ke server (sesuaikan endpoint)
-async function uploadFile(file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await fetch('/api/upload', { method: 'POST', body: formData });
-  if (!res.ok) throw new Error('Gagal upload file');
-  const data = await res.json();
-  return data.url; // asumsikan response { url: string }
-}
-
 export default function PengajuanMahasiswaPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [pengajuan, setPengajuan] = useState<Pengajuan | null>(null);
@@ -183,14 +173,8 @@ export default function PengajuanMahasiswaPage() {
   const [selectedMitraId, setSelectedMitraId] = useState('');
   const [isMitraTerdaftar, setIsMitraTerdaftar] = useState('ya');
 
-  // State untuk menyimpan file sebelum upload
-  const [buktiFile, setBuktiFile] = useState<File | null>(null);
-  const [fotoFile, setFotoFile] = useState<File | null>(null);
-
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploading, setUploading] = useState(false);
-
   const [message, setMessage] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -319,17 +303,6 @@ export default function PengajuanMahasiswaPage() {
     }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'bukti' | 'foto') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.type !== 'application/pdf') {
-      setErrorMsg('Hanya file PDF yang diperbolehkan.');
-      return;
-    }
-    if (type === 'bukti') setBuktiFile(file);
-    else setFotoFile(file);
-  };
-
   const validateForm = () => {
     if (
       !form.nama_mahasiswa.trim() ||
@@ -355,13 +328,9 @@ export default function PengajuanMahasiswaPage() {
     if (form.jenis_magang !== 'Tidak Konversi' && isMitraTerdaftar === 'ya' && !selectedMitraId) {
       return 'Pilih mitra terdaftar terlebih dahulu.';
     }
-    // Data tempat magang akan diambil dari mitra yang dipilih, tidak perlu validasi manual
     if (!form.tgl_mulai.trim() || !form.tgl_berakhir.trim() || !form.rencana_magang.trim()) {
       return 'Periode dan rencana magang wajib diisi.';
     }
-   if (!buktiFile && !form.bukti_penerimaan && !pengajuan?.bukti_penerimaan) {
-  return 'File bukti penerimaan magang wajib diupload.';
-}
     if (form.tgl_mulai && form.tgl_berakhir) {
       const start = new Date(form.tgl_mulai);
       const end = new Date(form.tgl_berakhir);
@@ -383,44 +352,55 @@ export default function PengajuanMahasiswaPage() {
       return;
     }
 
+    // Ambil file dari input elements
+    const buktiInput = document.querySelector('input[name="bukti_penerimaan"]') as HTMLInputElement;
+    const fotoInput = document.querySelector('input[name="foto_diri"]') as HTMLInputElement;
+    const buktiFile = buktiInput?.files?.[0];
+    const fotoFile = fotoInput?.files?.[0];
+
+    if (!buktiFile || buktiFile.type !== 'application/pdf') {
+      setErrorMsg('File bukti penerimaan magang (PDF) wajib diupload.');
+      return;
+    }
+    if (!fotoFile || fotoFile.type !== 'application/pdf') {
+      setErrorMsg('File foto diri (PDF) wajib diupload.');
+      return;
+    }
+
     setIsSubmitting(true);
-    setUploading(true);
 
     try {
-      let buktiUrl = form.bukti_penerimaan;
-      let fotoUrl = form.foto_diri;
+      const formData = new FormData();
+      formData.append('nama_mahasiswa', form.nama_mahasiswa.trim());
+      formData.append('npm', form.npm.trim());
+      formData.append('program_studi', form.program_studi.trim());
+      formData.append('angkatan', form.angkatan.trim() || '');
+      formData.append('semester', form.semester.trim() || '');
+      formData.append('kelas', form.kelas.trim() || '');
+      formData.append('jenis_magang', form.jenis_magang);
+      formData.append('no_hp_mahasiswa', form.no_hp_mahasiswa.trim());
+      formData.append('perusahaan', form.perusahaan.trim());
+      formData.append('posisi', form.posisi.trim() || 'Peserta Magang');
+      formData.append('alamat_tempat_magang', form.alamat_tempat_magang.trim());
+      formData.append('nama_penanggung_jawab', form.nama_penanggung_jawab.trim() || 'Belum diisi');
+      formData.append('kontak_penanggung_jawab', form.kontak_penanggung_jawab.trim() || form.no_hp_mahasiswa.trim());
+      formData.append('latitude', form.latitude.trim() || '');
+      formData.append('longitude', form.longitude.trim() || '');
+      formData.append('tgl_mulai', form.tgl_mulai);
+      formData.append('tgl_berakhir', form.tgl_berakhir);
+      formData.append('rencana_magang', form.rencana_magang.trim());
+      formData.append('bukti_penerimaan', buktiFile);
+      formData.append('foto_diri', fotoFile);
 
-      // Upload file bukti penerimaan jika ada
-      if (buktiFile) {
-        buktiUrl = await uploadFile(buktiFile);
-      }
-      // Upload file foto diri jika ada
-      if (fotoFile) {
-        fotoUrl = await uploadFile(fotoFile);
-      }
-
-      const result = await createPengajuan({
-        nama_mahasiswa: form.nama_mahasiswa.trim(),
-        npm: form.npm.trim(),
-        program_studi: form.program_studi.trim(),
-        angkatan: form.angkatan.trim() || null,
-        kelas: form.kelas.trim() || null,
-        jenis_magang: form.jenis_magang,
-        no_hp_mahasiswa: form.no_hp_mahasiswa.trim(),
-        foto_diri: fotoUrl || null,
-        bukti_penerimaan: buktiUrl,
-        perusahaan: form.perusahaan.trim(),
-        posisi: form.posisi.trim() || 'Peserta Magang',
-        link_loa: buktiUrl,
-        alamat_tempat_magang: form.alamat_tempat_magang.trim(),
-        nama_penanggung_jawab: form.nama_penanggung_jawab.trim() || 'Belum diisi',
-        kontak_penanggung_jawab: form.kontak_penanggung_jawab.trim() || form.no_hp_mahasiswa.trim(),
-        latitude: form.latitude.trim() || null,
-        longitude: form.longitude.trim() || null,
-        tgl_mulai: form.tgl_mulai,
-        tgl_berakhir: form.tgl_berakhir,
-        rencana_magang: form.rencana_magang.trim(),
+      const res = await fetch('/api/pengajuan', {
+        method: 'POST',
+        body: formData,
       });
+
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.message || 'Gagal mengirim pengajuan magang.');
+      }
 
       setMessage(result.message || 'Pengajuan magang berhasil dikirim.');
       localStorage.removeItem(DRAFT_KEY);
@@ -430,7 +410,6 @@ export default function PengajuanMahasiswaPage() {
       setErrorMsg(msg);
     } finally {
       setIsSubmitting(false);
-      setUploading(false);
     }
   };
 
@@ -463,9 +442,12 @@ export default function PengajuanMahasiswaPage() {
     }));
     setSelectedMitraId('');
     setIsMitraTerdaftar('ya');
-    setBuktiFile(null);
-    setFotoFile(null);
     localStorage.removeItem(DRAFT_KEY);
+    // Reset file inputs secara manual
+    const buktiInput = document.querySelector('input[name="bukti_penerimaan"]') as HTMLInputElement;
+    const fotoInput = document.querySelector('input[name="foto_diri"]') as HTMLInputElement;
+    if (buktiInput) buktiInput.value = '';
+    if (fotoInput) fotoInput.value = '';
   };
 
   if (isLoading) {
@@ -684,13 +666,11 @@ export default function PengajuanMahasiswaPage() {
                   </div>
                   <div>
                     <label className="app-label">Upload Bukti Penerimaan Magang (PDF)</label>
-                    <input type="file" accept="application/pdf" onChange={(e) => handleFileChange(e, 'bukti')} className="app-input" />
-                    {buktiFile && <p className="mt-1 text-xs text-green-600">File siap: {buktiFile.name}</p>}
+                    <input type="file" name="bukti_penerimaan" accept="application/pdf" className="app-input" />
                   </div>
                   <div>
                     <label className="app-label">Upload Foto Diri (PDF)</label>
-                    <input type="file" accept="application/pdf" onChange={(e) => handleFileChange(e, 'foto')} className="app-input" />
-                    {fotoFile && <p className="mt-1 text-xs text-green-600">File siap: {fotoFile.name}</p>}
+                    <input type="file" name="foto_diri" accept="application/pdf" className="app-input" />
                   </div>
                   <div className="md:col-span-2">
                     <label className="app-label">Rencana Magang</label>
@@ -700,8 +680,8 @@ export default function PengajuanMahasiswaPage() {
               </section>
 
               <div className="flex flex-col gap-3 sm:flex-row">
-                <button type="submit" disabled={isSubmitting || uploading} className="app-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-60">
-                  {isSubmitting || uploading ? 'Memproses...' : 'Kirim Pengajuan Magang'}
+                <button type="submit" disabled={isSubmitting} className="app-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-60">
+                  {isSubmitting ? 'Memproses...' : 'Kirim Pengajuan Magang'}
                 </button>
                 <button type="button" onClick={resetDraft} disabled={isSubmitting} className="app-btn-secondary flex-1 disabled:cursor-not-allowed disabled:opacity-60">
                   Reset Form

@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { Op } from 'sequelize';
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
+import busboy from 'busboy';
 import Pengajuan from '@/models/Pengajuan';
 import { connectDB } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
-
 
 const allowedJenisMagang = [
   'Konversi 20 SKS',
@@ -22,11 +24,9 @@ function isValidUrl(url: string) {
 
 function parsePositiveNumber(value: string | null, fallback: number) {
   const parsed = Number(value);
-
   if (!Number.isInteger(parsed) || parsed < 1) {
     return fallback;
   }
-
   return parsed;
 }
 
@@ -52,7 +52,6 @@ function getJenisMagangLabel(value?: string | null) {
   if (value === 'Konversi 20 SKS') return 'Konversi Maksimal 20 SKS';
   if (value === 'Konversi 2 SKS') return 'Magang 2 SKS Khusus SI';
   if (value === 'Tidak Konversi') return 'Tidak Konversi';
-
   return value || '-';
 }
 
@@ -60,14 +59,67 @@ function isStaffRole(role?: string | null) {
   return role === 'Admin' || role === 'Super Admin';
 }
 
-// src/app/api/pengajuan/route.ts (bagian GET yang diperbaiki)
+// ==================== FUNGSI PARSING FORM-DATA ====================
+async function parseFormData(request: Request): Promise<{
+  fields: Record<string, string>;
+  files: Record<string, File>;
+}> {
+  const contentType = request.headers.get('content-type') || '';
+  if (!contentType.includes('multipart/form-data')) {
+    throw new Error('Content-Type harus multipart/form-data');
+  }
 
+  const body = await request.arrayBuffer();
+  const buffer = Buffer.from(body);
+
+  return new Promise((resolve, reject) => {
+    const bb = busboy({ headers: { 'content-type': contentType } });
+    const fields: Record<string, string> = {};
+    const files: Record<string, File> = {};
+
+    bb.on('field', (name, value) => {
+      fields[name] = value;
+    });
+
+    bb.on('file', (name, file, info) => {
+      const chunks: Buffer[] = [];
+      file.on('data', (chunk) => {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      });
+      file.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        const fileObj = new File([buffer], info.filename, { type: info.mimeType });
+        files[name] = fileObj;
+      });
+    });
+
+    bb.on('close', () => {
+      resolve({ fields, files });
+    });
+
+    bb.on('error', (err) => reject(err));
+    bb.end(buffer);
+  });
+}
+
+async function saveFile(file: File, prefix: string): Promise<string> {
+  const uploadDir = path.join(process.cwd(), 'public/uploads/pengajuan');
+  await mkdir(uploadDir, { recursive: true });
+
+  const timestamp = Date.now();
+  const safeName = `${prefix}_${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+  const filePath = path.join(uploadDir, safeName);
+  const buffer = Buffer.from(await file.arrayBuffer());
+  await writeFile(filePath, buffer);
+
+  return `/uploads/pengajuan/${safeName}`;
+}
+
+// ==================== GET ====================
 export async function GET(request: Request) {
   try {
-    // Pastikan koneksi DB berhasil
     await connectDB();
 
-    // Cek apakah model Pengajuan sudah terdefinisi
     if (!Pengajuan) {
       console.error('Model Pengajuan tidak ditemukan');
       return NextResponse.json(
@@ -98,18 +150,16 @@ export async function GET(request: Request) {
     const limit = Math.min(requestedLimit, 50);
     const offset = (page - 1) * limit;
 
-    // Build where clause berdasarkan role
     let where: any = undefined;
     if (user.role === 'Mahasiswa') {
       where = { user_id: user.id };
     } else if (user.role === 'Dosen') {
-      // Pastikan kolom dosenId ada di model, jika tidak -> fallback ke kondisi kosong
       const attributes = Object.keys(Pengajuan.getAttributes());
       if (attributes.includes('dosenId')) {
         where = { dosenId: user.id };
       } else {
         console.warn('Kolom dosenId tidak ditemukan di model Pengajuan');
-        where = { id: null }; // tidak akan mengembalikan data
+        where = { id: null };
       }
     }
 
@@ -137,10 +187,7 @@ export async function GET(request: Request) {
       { status: 200 }
     );
   } catch (error) {
-    // Log error secara mendetail untuk debugging
     console.error('GET_PENGAJUAN_ERROR DETAIL:', error);
-
-    // Kirim pesan error yang lebih jelas (untuk development)
     const errorMessage =
       process.env.NODE_ENV === 'development'
         ? error instanceof Error
@@ -158,6 +205,7 @@ export async function GET(request: Request) {
   }
 }
 
+// ==================== POST ====================
 export async function POST(request: Request) {
   try {
     await connectDB();
@@ -166,62 +214,59 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Akses ditolak.',
-        },
+        { success: false, message: 'Akses ditolak.' },
         { status: 401 }
       );
     }
 
     if (user.role !== 'Mahasiswa') {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Hanya mahasiswa yang dapat mengajukan magang.',
-        },
+        { success: false, message: 'Hanya mahasiswa yang dapat mengajukan magang.' },
         { status: 403 }
       );
     }
 
-    const body = await request.json();
+    // Parse multipart form-data
+    let fields: Record<string, string>;
+    let files: Record<string, File>;
+    try {
+      const parsed = await parseFormData(request);
+      fields = parsed.fields;
+      files = parsed.files;
+    } catch (err) {
+      return NextResponse.json(
+        { success: false, message: 'Gagal memproses form data. Pastikan menggunakan multipart/form-data.' },
+        { status: 400 }
+      );
+    }
 
-    const nama_mahasiswa = body.nama_mahasiswa?.trim() || user.name;
-    const npm = body.npm?.trim() || null;
-    const program_studi = body.program_studi?.trim() || null;
-    const angkatan = body.angkatan?.trim() || null;
-    const semester = body.semester?.trim() || null;
-    const kelas = body.kelas?.trim() || null;
+    const nama_mahasiswa = fields.nama_mahasiswa?.trim() || user.name;
+    const npm = fields.npm?.trim() || null;
+    const program_studi = fields.program_studi?.trim() || null;
+    const angkatan = fields.angkatan?.trim() || null;
+    const semester = fields.semester?.trim() || null;
+    const kelas = fields.kelas?.trim() || null;
 
-    const jenis_magang = body.jenis_magang?.trim();
-    const no_hp_mahasiswa = body.no_hp_mahasiswa?.trim();
-    const foto_diri = body.foto_diri?.trim() || null;
-    const bukti_penerimaan = body.bukti_penerimaan?.trim();
+    const jenis_magang = fields.jenis_magang?.trim();
+    const no_hp_mahasiswa = fields.no_hp_mahasiswa?.trim();
+    const perusahaan = fields.perusahaan?.trim();
+    const posisi = fields.posisi?.trim() || 'Peserta Magang';
+    const alamat_tempat_magang = fields.alamat_tempat_magang?.trim();
+    const nama_penanggung_jawab = fields.nama_penanggung_jawab?.trim() || 'Belum diisi';
+    const kontak_penanggung_jawab = fields.kontak_penanggung_jawab?.trim() || no_hp_mahasiswa;
+    const latitude = fields.latitude?.trim() || null;
+    const longitude = fields.longitude?.trim() || null;
+    const rencana_magang = fields.rencana_magang?.trim();
+    const tgl_mulai = fields.tgl_mulai;
+    const tgl_berakhir = fields.tgl_berakhir;
 
-    const perusahaan = body.perusahaan?.trim();
-    const posisi = body.posisi?.trim() || 'Peserta Magang';
-    const link_loa = body.link_loa?.trim() || bukti_penerimaan || null;
-
-    const alamat_tempat_magang = body.alamat_tempat_magang?.trim();
-    const nama_penanggung_jawab =
-      body.nama_penanggung_jawab?.trim() || 'Belum diisi';
-    const kontak_penanggung_jawab =
-      body.kontak_penanggung_jawab?.trim() || no_hp_mahasiswa;
-
-    const latitude = body.latitude?.trim() || null;
-    const longitude = body.longitude?.trim() || null;
-    const rencana_magang = body.rencana_magang?.trim();
-
-    const tgl_mulai = body.tgl_mulai;
-    const tgl_berakhir = body.tgl_berakhir;
-
+    // Validasi field mandatory
     if (
       !nama_mahasiswa ||
       !npm ||
       !program_studi ||
       !jenis_magang ||
       !no_hp_mahasiswa ||
-      !bukti_penerimaan ||
       !perusahaan ||
       !alamat_tempat_magang ||
       !tgl_mulai ||
@@ -232,18 +277,46 @@ export async function POST(request: Request) {
         {
           success: false,
           message:
-            'Nama, NPM, program studi, jenis magang, nomor HP, bukti penerimaan, tempat magang, alamat, tanggal, dan rencana magang wajib diisi.',
+            'Nama, NPM, program studi, jenis magang, nomor HP, tempat magang, alamat, tanggal, dan rencana magang wajib diisi.',
         },
         { status: 400 }
       );
     }
 
+    // Validasi file PDF
+    const buktiFile = files['bukti_penerimaan'];
+    const fotoFile = files['foto_diri'];
+
+    if (!buktiFile || buktiFile.type !== 'application/pdf') {
+      return NextResponse.json(
+        { success: false, message: 'File bukti penerimaan (PDF) wajib diunggah.' },
+        { status: 400 }
+      );
+    }
+    if (!fotoFile || fotoFile.type !== 'application/pdf') {
+      return NextResponse.json(
+        { success: false, message: 'File foto diri (PDF) wajib diunggah.' },
+        { status: 400 }
+      );
+    }
+
+    // Upload files
+    let buktiUrl: string, fotoUrl: string;
+    try {
+      buktiUrl = await saveFile(buktiFile, 'bukti');
+      fotoUrl = await saveFile(fotoFile, 'foto');
+    } catch (err) {
+      console.error('Upload file error:', err);
+      return NextResponse.json(
+        { success: false, message: 'Gagal menyimpan file. Coba lagi.' },
+        { status: 500 }
+      );
+    }
+
+    // Validasi jenis magang
     if (!allowedJenisMagang.includes(jenis_magang)) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Jenis magang tidak valid.',
-        },
+        { success: false, message: 'Jenis magang tidak valid.' },
         { status: 400 }
       );
     }
@@ -252,55 +325,28 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            'Magang 2 SKS Khusus SI hanya tersedia untuk mahasiswa Sistem Informasi.',
+          message: 'Magang 2 SKS Khusus SI hanya tersedia untuk mahasiswa Sistem Informasi.',
         },
         { status: 400 }
       );
     }
 
     const phoneRegex = /^62\d{8,15}$/;
-
     if (!phoneRegex.test(no_hp_mahasiswa)) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            'Nomor HP mahasiswa harus diawali 62 dan hanya berisi angka. Contoh: 6285456123.',
+          message: 'Nomor HP mahasiswa harus diawali 62 dan hanya berisi angka. Contoh: 6285456123.',
         },
         { status: 400 }
       );
     }
 
-    if (
-      kontak_penanggung_jawab &&
-      !phoneRegex.test(kontak_penanggung_jawab)
-    ) {
+    if (kontak_penanggung_jawab && !phoneRegex.test(kontak_penanggung_jawab)) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            'Nomor kontak penanggung jawab harus diawali 62 dan hanya berisi angka. Contoh: 6285456123.',
-        },
-        { status: 400 }
-      );
-    }
-
-    if (link_loa && !isValidUrl(link_loa)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Format link bukti penerimaan tidak valid.',
-        },
-        { status: 400 }
-      );
-    }
-
-    if (foto_diri && !isValidUrl(foto_diri)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Format link foto diri tidak valid.',
+          message: 'Nomor kontak penanggung jawab harus diawali 62 dan hanya berisi angka. Contoh: 6285456123.',
         },
         { status: 400 }
       );
@@ -308,28 +354,24 @@ export async function POST(request: Request) {
 
     if (!isValidDate(tgl_mulai) || !isValidDate(tgl_berakhir)) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Format tanggal mulai atau tanggal berakhir tidak valid.',
-        },
+        { success: false, message: 'Format tanggal mulai atau tanggal berakhir tidak valid.' },
         { status: 400 }
       );
     }
 
     const tanggalMulai = normalizeDate(tgl_mulai);
     const tanggalBerakhir = normalizeDate(tgl_berakhir);
-
     if (tanggalBerakhir < tanggalMulai) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            'Tanggal berakhir magang tidak boleh lebih awal dari tanggal mulai.',
+          message: 'Tanggal berakhir magang tidak boleh lebih awal dari tanggal mulai.',
         },
         { status: 400 }
       );
     }
 
+    // Cek pengajuan aktif yang sudah ada
     const existingPengajuan = await Pengajuan.findOne({
       where: {
         user_id: user.id,
@@ -349,6 +391,7 @@ export async function POST(request: Request) {
       );
     }
 
+    // Buat pengajuan baru
     const newPengajuan = await Pengajuan.create({
       user_id: user.id,
       nama_mahasiswa,
@@ -357,43 +400,35 @@ export async function POST(request: Request) {
       angkatan,
       semester,
       kelas,
-
       jenis_magang,
       no_hp_mahasiswa,
-      foto_diri,
-      bukti_penerimaan,
-
+      foto_diri: fotoUrl,
+      bukti_penerimaan: buktiUrl,
       perusahaan,
       posisi,
-      link_loa,
-
+      link_loa: buktiUrl,
       alamat_tempat_magang,
       nama_penanggung_jawab,
       kontak_penanggung_jawab,
       latitude,
       longitude,
       rencana_magang,
-
       tipeKonversi: jenis_magang,
       tgl_mulai,
       tgl_berakhir,
       status: 'Menunggu_Verifikasi',
     });
 
-    
-
     return NextResponse.json(
       {
         success: true,
-        message:
-          'Pengajuan magang berhasil dikirim dan akan diperiksa oleh staff.',
+        message: 'Pengajuan magang berhasil dikirim dan akan diperiksa oleh staff.',
         data: newPengajuan,
       },
       { status: 201 }
     );
   } catch (error) {
     console.error('CREATE_PENGAJUAN_ERROR:', error);
-
     return NextResponse.json(
       {
         success: false,
@@ -404,6 +439,7 @@ export async function POST(request: Request) {
   }
 }
 
+// ==================== PUT ====================
 export async function PUT(request: Request) {
   try {
     await connectDB();
@@ -506,8 +542,6 @@ export async function PUT(request: Request) {
             jenisMagang === 'Konversi 20 SKS' ? link_output_magang : null,
         });
 
-        
-
         return NextResponse.json(
           {
             success: true,
@@ -537,12 +571,7 @@ export async function PUT(request: Request) {
           );
         }
 
-        const pengajuanId = pengajuan.getDataValue('id');
-        const perusahaanPengajuan = pengajuan.getDataValue('perusahaan');
-
         await pengajuan.destroy();
-
-       
 
         return NextResponse.json(
           {
@@ -595,25 +624,19 @@ export async function PUT(request: Request) {
             ? JSON.stringify(body.matkulKonversi)
             : null,
           semester_konversi: body.semester_konversi || null,
-
           dosenId: body.dosenId,
           nama_dosen: body.nama_dosen,
           status_dosen: 'Disetujui',
-
           dosenPengujiId: body.dosenPengujiId || null,
           nama_dosen_penguji: body.nama_dosen_penguji || null,
-
           status: 'Aktif',
           alasan_penolakan: null,
         });
 
-       
-
         return NextResponse.json(
           {
             success: true,
-            message:
-              'Pengajuan disetujui dan dosen pembimbing berhasil ditentukan.',
+            message: 'Pengajuan disetujui dan dosen pembimbing berhasil ditentukan.',
           },
           { status: 200 }
         );
@@ -636,8 +659,6 @@ export async function PUT(request: Request) {
           status: 'Ditolak',
           alasan_penolakan: alasan,
         });
-
-       
 
         return NextResponse.json(
           {
@@ -698,8 +719,7 @@ export async function PUT(request: Request) {
           return NextResponse.json(
             {
               success: false,
-              message:
-                'Nilai dosen dan nilai mitra wajib lengkap pada rentang 0-100.',
+              message: 'Nilai dosen dan nilai mitra wajib lengkap pada rentang 0-100.',
             },
             { status: 400 }
           );
@@ -728,8 +748,7 @@ export async function PUT(request: Request) {
             return NextResponse.json(
               {
                 success: false,
-                message:
-                  'Mahasiswa belum mengunggah output magang. Penilaian akhir belum dapat diproses.',
+                message: 'Mahasiswa belum mengunggah output magang. Penilaian akhir belum dapat diproses.',
               },
               { status: 400 }
             );
@@ -743,8 +762,7 @@ export async function PUT(request: Request) {
           return NextResponse.json(
             {
               success: false,
-              message:
-                'Penilaian akhir hanya dapat diproses untuk mahasiswa dengan status magang aktif atau selesai.',
+              message: 'Penilaian akhir hanya dapat diproses untuk mahasiswa dengan status magang aktif atau selesai.',
             },
             { status: 400 }
           );
@@ -759,8 +777,6 @@ export async function PUT(request: Request) {
           nilai_mitra,
           status: 'Selesai',
         });
-
-       
 
         return NextResponse.json(
           {
@@ -781,7 +797,6 @@ export async function PUT(request: Request) {
     );
   } catch (error) {
     console.error('UPDATE_PENGAJUAN_ERROR:', error);
-
     return NextResponse.json(
       {
         success: false,
