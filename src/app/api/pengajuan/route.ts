@@ -60,45 +60,58 @@ function isStaffRole(role?: string | null) {
   return role === 'Admin' || role === 'Super Admin';
 }
 
+// src/app/api/pengajuan/route.ts (bagian GET yang diperbaiki)
+
 export async function GET(request: Request) {
   try {
+    // Pastikan koneksi DB berhasil
     await connectDB();
+
+    // Cek apakah model Pengajuan sudah terdefinisi
+    if (!Pengajuan) {
+      console.error('Model Pengajuan tidak ditemukan');
+      return NextResponse.json(
+        { success: false, message: 'Konfigurasi server error: model tidak tersedia.' },
+        { status: 500 }
+      );
+    }
 
     const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Akses ditolak.',
-        },
+        { success: false, message: 'Akses ditolak.' },
         { status: 401 }
       );
     }
 
     if (!['Super Admin', 'Admin', 'Dosen', 'Mahasiswa'].includes(user.role)) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Role tidak valid.',
-        },
+        { success: false, message: 'Role tidak valid.' },
         { status: 403 }
       );
     }
 
     const { searchParams } = new URL(request.url);
-
     const page = parsePositiveNumber(searchParams.get('page'), 1);
     const requestedLimit = parsePositiveNumber(searchParams.get('limit'), 10);
     const limit = Math.min(requestedLimit, 50);
     const offset = (page - 1) * limit;
 
-    const where =
-      user.role === 'Mahasiswa'
-        ? { user_id: user.id }
-        : user.role === 'Dosen'
-          ? { dosenId: user.id }
-          : undefined;
+    // Build where clause berdasarkan role
+    let where: any = undefined;
+    if (user.role === 'Mahasiswa') {
+      where = { user_id: user.id };
+    } else if (user.role === 'Dosen') {
+      // Pastikan kolom dosenId ada di model, jika tidak -> fallback ke kondisi kosong
+      const attributes = Object.keys(Pengajuan.getAttributes());
+      if (attributes.includes('dosenId')) {
+        where = { dosenId: user.id };
+      } else {
+        console.warn('Kolom dosenId tidak ditemukan di model Pengajuan');
+        where = { id: null }; // tidak akan mengembalikan data
+      }
+    }
 
     const result = await Pengajuan.findAndCountAll({
       where,
@@ -124,12 +137,21 @@ export async function GET(request: Request) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('GET_PENGAJUAN_ERROR:', error);
+    // Log error secara mendetail untuk debugging
+    console.error('GET_PENGAJUAN_ERROR DETAIL:', error);
+
+    // Kirim pesan error yang lebih jelas (untuk development)
+    const errorMessage =
+      process.env.NODE_ENV === 'development'
+        ? error instanceof Error
+          ? error.message
+          : 'Unknown error'
+        : 'Terjadi kesalahan server.';
 
     return NextResponse.json(
       {
         success: false,
-        message: 'Terjadi kesalahan server.',
+        message: errorMessage,
       },
       { status: 500 }
     );

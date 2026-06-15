@@ -655,91 +655,86 @@ export default function PengajuanMahasiswaPage() {
             eyebrow="Pendataan Magang"
             title="Pengajuan Magang"
             description="Isi data magang, tempat magang, bukti penerimaan, periode, dan rencana kegiatan."
-            action={
-              <Link href="/dashboard" className="app-btn-secondary">
-                Kembali ke Dashboard
-              </Link>
-            }
           />
 
           {message && <Alert variant="success">{message}</Alert>}
           {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
 
-<section className="mt-8">
-  <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-    <div>
-      <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
-        Dokumen Magang
-      </p>
+          <section className="mt-8">
+            <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.18em] text-[#1e3a8a] dark:text-blue-300">
+                  Dokumen Magang
+                </p>
 
-      <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
-        Template Dokumen Magang
-      </h2>
+                <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+                  Template Dokumen Magang
+                </h2>
 
-      <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-        Unduh template dokumen yang dibutuhkan untuk pengajuan, pendataan,
-        pelaksanaan, bimbingan, penilaian, dan pelaporan magang.
-      </p>
-    </div>
-  </div>
-
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-    {documentTemplates.map((item) => {
-      const isManualProcess = item.href === '#';
-
-      if (isManualProcess) {
-        return (
-          <div
-            key={item.title}
-            className="app-panel p-5 opacity-90"
-          >
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-lg font-black text-amber-700 dark:bg-amber-400/10 dark:text-amber-300">
-              !
+                <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  Unduh template dokumen yang dibutuhkan untuk pengajuan, pendataan,
+                  pelaksanaan, bimbingan, penilaian, dan pelaporan magang.
+                </p>
+              </div>
             </div>
 
-            <h3 className="mt-4 text-lg font-black leading-snug text-slate-950 dark:text-white">
-              {item.title}
-            </h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {documentTemplates.map((item) => {
+                const isManualProcess = item.href === '#';
 
-            <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-              {item.description}
-            </p>
+                if (isManualProcess) {
+                  return (
+                    <div
+                      key={item.title}
+                      className="app-panel p-5 opacity-90"
+                    >
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-lg font-black text-amber-700 dark:bg-amber-400/10 dark:text-amber-300">
+                        !
+                      </div>
 
-            <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-800 dark:bg-amber-400/10 dark:text-amber-200">
-              {item.note}
-            </p>
-          </div>
-        );
-      }
+                      <h3 className="mt-4 text-lg font-black leading-snug text-slate-950 dark:text-white">
+                        {item.title}
+                      </h3>
 
-      return (
-       <a
-  key={item.title}
-  href={item.href}
-  target="_blank"
-  rel="noopener noreferrer"
-  className="app-panel app-card-hover p-5"
->
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-lg font-black text-[#1e3a8a] dark:bg-blue-400/10 dark:text-blue-300">
-            ↓
-          </div>
+                      <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                        {item.description}
+                      </p>
 
-          <h3 className="mt-4 text-lg font-black leading-snug text-slate-950 dark:text-white">
-            {item.title}
-          </h3>
+                      <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-800 dark:bg-amber-400/10 dark:text-amber-200">
+                        {item.note}
+                      </p>
+                    </div>
+                  );
+                }
 
-          <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            {item.description}
-          </p>
+                return (
+                  <a
+                    key={item.title}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="app-panel app-card-hover p-5"
+                  >
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-lg font-black text-[#1e3a8a] dark:bg-blue-400/10 dark:text-blue-300">
+                      ↓
+                    </div>
 
-          <span className="mt-4 inline-flex text-sm font-black text-[#1e3a8a] dark:text-blue-300">
-            Buka Dokumen →
-          </span>
-        </a>
-      );
-    })}
-  </div>
-</section>
+                    <h3 className="mt-4 text-lg font-black leading-snug text-slate-950 dark:text-white">
+                      {item.title}
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                      {item.description}
+                    </p>
+
+                    <span className="mt-4 inline-flex text-sm font-black text-[#1e3a8a] dark:text-blue-300">
+                      Buka Dokumen →
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          </section>
 
           <section className="mb-8">
             <ProgressStepper steps={getMagangSteps(pengajuan?.status)} />

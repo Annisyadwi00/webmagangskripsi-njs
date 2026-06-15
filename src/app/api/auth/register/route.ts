@@ -88,13 +88,13 @@ function getRawMahasiswaData(result: unknown) {
   return result;
 }
 
+// ========== MODIFIKASI DI SINI ==========
+// Fungsi buildKampusUrl diubah menjadi path parameter, bukan query string
 function buildKampusUrl(apiUrl: string, npm: string) {
-  if (apiUrl.includes('{npm}')) {
-    return apiUrl.replace('{npm}', encodeURIComponent(npm));
-  }
-
-  return `${apiUrl}${apiUrl.includes('?') ? '&' : '?'}npm=${encodeURIComponent(npm)}`;
+  // Contoh hasil: https://siska.unsika.ac.id/api/mahasiswa/nim/2210631170074
+  return `${apiUrl}/${encodeURIComponent(npm)}`;
 }
+// =======================================
 
 async function getMahasiswaKampusByNpm(npm: string) {
   const apiUrl = process.env.SISKA_MAHASISWA_API_URL;
@@ -107,6 +107,7 @@ async function getMahasiswaKampusByNpm(npm: string) {
     );
   }
 
+  // Menggunakan fetch dengan method GET, body kosong, dan header sesuai
   const response = await fetch(buildKampusUrl(apiUrl, npm), {
     method: 'GET',
     headers: {

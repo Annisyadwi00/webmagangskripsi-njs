@@ -1,222 +1,234 @@
 "use client";
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-// Tambahkan import Variants dari framer-motion di sini
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { motion } from 'framer-motion';
 
-export default function PilihDosenPage() {
-  const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [dosenList, setDosenList] = useState<any[]>([]);
-  const [magangInfo, setMagangInfo] = useState({ perusahaan: "Memuat...", posisi: "Memuat..." });
- 
-  // Custom Toast Notification State
-  const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Fetch Data Dosen & Data Magang Mahasiswa saat halaman dimuat
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        // 1. Ambil list Dosen dari Database
-        const resDosen = await fetch('/api/dosen');
-        if (resDosen.ok) setDosenList((await resDosen.json()).data);
-
-        // 2. Ambil data Pengajuan Magang milik user ini
-        const resMagang = await fetch('/api/pengajuan');
-        if (resMagang.ok) {
-          const magang = (await resMagang.json()).data;
-          if (magang) setMagangInfo({ perusahaan: magang.perusahaan, posisi: magang.posisi });
-        }
-      } catch (error) {
-        console.error("Gagal mengambil data", error);
-      }
-    };
-    fetchInitialData();
-  }, []);
-
-  const showToast = (msg: string, type: 'success' | 'error') => {
-    setToast({ show: true, msg, type });
-    setTimeout(() => setToast({ show: false, msg: '', type: 'success' }), 3000);
-  };
-
-  // Fungsi saat tombol "Pilih Dosen" diklik
-  const handlePilihDosen = async (dosenId: number, namaDosen: string) => {
-    if (!confirm(`Yakin ingin memilih ${namaDosen} sebagai dosen pembimbing Anda?`)) return;
-    setIsSubmitting(true);
-
-    try {
-      const res = await fetch('/api/pengajuan', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'pilih_dosen',
-          dosenId: dosenId,
-          nama_dosen: namaDosen
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-
-      showToast("Berhasil! Mengalihkan ke dashboard...", "success");
-     
-      // Tunggu animasi toast selesai, lalu lempar ke dashboard
-      setTimeout(() => router.push('/dashboard'), 2000);
-    } catch (error: any) {
-      showToast(error.message, "error");
-    } finally {
-      setIsSubmitting(false);
+export default function StatusPendaftaranPage() {
+  // Variasi animasi
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
     }
   };
 
-  const filteredDosen = dosenList.filter(dosen =>
-    dosen.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Berikan tipe Variants di sini agar TypeScript mengenali konfigurasi framer-motion
-  const containerVariants: Variants = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } };
-  const cardVariants: Variants = { hidden: { opacity: 0, scale: 0.95, y: 20 }, show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 100 } } };
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    show: { opacity: 1, y: 0 }
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-16 relative">
-     
-      {/* CUSTOM TOAST NOTIFICATION */}
-      <AnimatePresence>
-        {toast.show && (
-          <motion.div initial={{ opacity: 0, y: -50, x: '-50%' }} animate={{ opacity: 1, y: 20, x: '-50%' }} exit={{ opacity: 0, y: -50, x: '-50%' }} className="fixed top-0 left-1/2 z-50">
-            <div className={`px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 text-white ${toast.type === 'error' ? 'bg-red-500 shadow-red-500/30' : 'bg-emerald-500 shadow-emerald-500/30'}`}>
-              {toast.type === 'success' ? <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg> : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-              {toast.msg}
+    <div className="min-h-screen bg-gray-50 flex font-sans">
+      
+      {/* SIDEBAR (Disederhanakan untuk preview, idealnya pakai layout.tsx yang sama dengan Dashboard) */}
+      <aside className="w-64 bg-[#1e3a8a] text-white flex flex-col hidden md:flex">
+        <div className="p-6 border-b border-blue-800">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-white/20 p-2 rounded-lg">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 21.5V14M5.4 17.5l-3.4-1.9M18.6 17.5l3.4-1.9" />
+              </svg>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <header className="bg-white/80 backdrop-blur-xl shadow-sm border-b border-gray-200 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
-          <Link href="/dashboard" className="p-2 text-gray-400 hover:text-[#1e3a8a] hover:bg-blue-50 rounded-full transition-colors group">
-            <svg className="w-6 h-6 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-          </Link>
-          <div className="w-px h-6 bg-gray-200"></div>
-          <h1 className="font-extrabold text-gray-900 text-lg">Pilih Dosen Pembimbing</h1>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-10 text-center max-w-2xl mx-auto">
-          <h2 className="text-3xl font-black text-gray-900 mb-3 tracking-tight">Temukan Pembimbing Magangmu</h2>
-          <p className="text-gray-500 text-lg font-medium">Pilih dosen dari Fasilkom UNSIKA yang keahliannya sejalan dengan peran magang Anda saat ini.</p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         
-          {/* KOLOM KIRI */}
-          <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="space-y-6">
-           
-            {/* Kartu Info Magang Dinamis */}
-            <div className="bg-linear-to-br from-[#1e3a8a] to-blue-700 rounded-3xl shadow-xl shadow-blue-900/10 p-8 text-white relative overflow-hidden">
-              <div className="absolute -right-10 -top-10 w-48 h-48 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
-             
-              <div className="flex items-center gap-3 mb-6 pb-6 border-b border-white/20 relative z-10">
-                <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md border border-white/20">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                </div>
-                <div>
-                  <h3 className="font-black text-lg">Informasi Magang</h3>
-                  <p className="text-blue-200 text-xs">Target Penempatan</p>
-                </div>
-              </div>
-
-              <div className="space-y-6 relative z-10">
-                <div>
-                  <p className="text-blue-200 text-xs font-bold uppercase tracking-wider mb-1">Perusahaan</p>
-                  <p className="font-black text-xl leading-tight">{magangInfo.perusahaan}</p>
-                </div>
-                <div>
-                  <p className="text-blue-200 text-xs font-bold uppercase tracking-wider mb-1">Posisi / Role</p>
-                  <p className="font-bold text-lg leading-tight">{magangInfo.posisi}</p>
-                </div>
-              </div>
+            <div>
+              <h1 className="font-bold text-lg leading-tight">UNSIKA</h1>
+              <p className="text-xs text-blue-200">Sistem Informasi Magang</p>
             </div>
-
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-              <label className="block text-sm font-black text-gray-800 mb-3">Cari Nama Dosen</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Ketik nama dosen..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full pl-5 pr-4 py-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent text-sm bg-gray-50 focus:bg-white transition-all outline-none"
-                />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* KOLOM KANAN (DAFTAR DOSEN) */}
-          <div className="lg:col-span-2">
-            {dosenList.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center bg-white rounded-3xl border border-gray-100 p-12 text-center">
-                <svg className="w-16 h-16 text-gray-300 mb-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
-                <p className="text-gray-500 font-bold text-lg">Memuat data dosen...</p>
-              </div>
-            ) : (
-              <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredDosen.map((dosen) => (
-                  <motion.div key={dosen.id} variants={cardVariants} className="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-blue-100 transition-all duration-300 flex flex-col h-full overflow-hidden group">
-                    <div className="p-6 flex-1 flex flex-col">
-                      <div className="flex items-start gap-4 mb-5">
-                        <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-50 border border-blue-100 flex-shrink-0 overflow-hidden shadow-inner group-hover:scale-105 transition-transform">
-                          <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(dosen.name)}&background=1e3a8a&color=fff&bold=true`} alt={dosen.name} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="pt-1 flex-1">
-                          <h4 className="font-black text-gray-900 leading-tight mb-1">{dosen.name}</h4>
-                          <span className="inline-block px-2.5 py-1 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-lg border border-gray-200">
-                            NIDN: {dosen.nim_nidn || '-'}
-                          </span>
-                        </div>
-                        {dosen.kategori_dosen && (
-                            <span className="inline-block ml-2 px-2.5 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-lg border border-indigo-100">
-                              {dosen.kategori_dosen}
-                            </span>
-                          )}
-                      </div>
-
-                      <div className="flex items-center gap-2 text-xs text-gray-500 font-medium mb-auto mt-2 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
-                        <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                        <span className="truncate">{dosen.email}</span>
-                      </div>
-                    </div>
-
-                    <div className="px-6 py-5 bg-gray-50/50 mt-auto border-t border-gray-50">
-                      {/* TAMPILAN SISA KUOTA */}
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="text-xs font-bold text-gray-500">Kuota Bimbingan:</span>
-                        <span className={`text-xs font-black px-2 py-1 rounded ${dosen.current_load >= (dosen.kuota_bimbingan || 5) ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'}`}>
-                          {dosen.current_load || 0} / {dosen.kuota_bimbingan || 5} Terisi
-                        </span>
-                      </div>
-
-                      <button
-                        onClick={() => handlePilihDosen(dosen.id, dosen.name)}
-                        disabled={isSubmitting || dosen.current_load >= (dosen.kuota_bimbingan || 5)} // BLOKIR JIKA PENUH
-                        className="w-full py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm bg-white border-2 border-[#1e3a8a] text-[#1e3a8a] hover:bg-[#1e3a8a] hover:text-white hover:shadow-lg hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-white disabled:hover:text-[#1e3a8a] disabled:cursor-not-allowed"
-                      >
-                        {dosen.current_load >= (dosen.kuota_bimbingan || 5) ? 'Kuota Penuh' : 'Pilih Dosen Ini'}
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            )}
           </div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden border-2 border-white/20">
+              <svg className="w-full h-full text-gray-500 bg-white" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+            </div>
+            <div>
+              <h2 className="font-semibold text-sm">Ahmad Fauzi</h2>
+              <span className="inline-block px-2 py-0.5 mt-0.5 bg-blue-800 text-xs rounded-full">Mahasiswa</span>
+            </div>
+          </div>
+        </div>
+        <nav className="flex-1 py-4 px-3 space-y-1">
+          <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2.5 text-blue-100 hover:bg-blue-800 hover:text-white rounded-lg transition-colors">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+            Dashboard
+          </Link>
+          <Link href="#" className="flex items-center gap-3 px-3 py-2.5 bg-white text-[#1e3a8a] rounded-lg font-medium shadow-sm">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            Status Pendaftaran
+          </Link>
+        </nav>
+      </aside>
 
+      {/* MAIN CONTENT */}
+      <main className="flex-1 flex flex-col h-screen overflow-y-auto">
+        <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-4 flex justify-between items-center sticky top-0 z-10">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Status Pendaftaran Magang</h2>
+            <p className="text-sm text-gray-500 mt-1">Pantau proses pendaftaran magang Anda di sini</p>
+          </div>
+        </header>
+
+        <div className="p-8 max-w-5xl mx-auto w-full">
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+          >
+            
+            {/* Kolom Kiri: Status & Timeline */}
+            <div className="lg:col-span-2 space-y-6">
+              
+              {/* Alert Status */}
+              <motion.div variants={itemVariants} className="bg-orange-50 border border-orange-200 rounded-xl p-6 flex items-start gap-4">
+                <div className="p-3 bg-orange-100 rounded-full text-orange-600 flex-shrink-0">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-orange-800">Pendaftaran Sedang Diproses</h3>
+                  <p className="mt-1 text-sm text-orange-700">Staff sedang mereview pendaftaran magang Anda. Proses review biasanya memakan waktu 1-3 hari kerja.</p>
+                  <p className="mt-2 text-sm text-orange-700 font-medium">Anda akan menerima notifikasi melalui email setelah staff memberikan keputusan.</p>
+                </div>
+              </motion.div>
+
+              {/* Timeline Card */}
+              <motion.div variants={itemVariants} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  Timeline Proses
+                </h3>
+                
+                <div className="relative border-l-2 border-gray-100 ml-3 space-y-8 pb-4">
+                  {/* Step 1: Diterima */}
+                  <div className="relative pl-8">
+                    <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-green-500 ring-4 ring-green-100"></div>
+                    <h4 className="font-semibold text-gray-900">Pendaftaran Diterima</h4>
+                    <p className="text-sm text-gray-500 mt-1">2026-04-10 (1 hari yang lalu)</p>
+                  </div>
+
+                  {/* Step 2: Review (Current) */}
+                  <div className="relative pl-8">
+                    <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-orange-400 ring-4 ring-orange-50 animate-pulse"></div>
+                    <h4 className="font-bold text-[#1e3a8a]">Review Staff</h4>
+                    <p className="text-sm text-orange-600 font-medium mt-1">Sedang diproses...</p>
+                  </div>
+
+                  {/* Step 3: Dosen */}
+                  <div className="relative pl-8 opacity-50">
+                    <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-gray-300 border-2 border-white"></div>
+                    <h4 className="font-medium text-gray-600">Pilih Dosen Pembimbing</h4>
+                    <p className="text-sm text-gray-500 mt-1">Menunggu approval staff</p>
+                  </div>
+
+                  {/* Step 4: Mulai */}
+                  <div className="relative pl-8 opacity-50">
+                    <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-gray-300 border-2 border-white"></div>
+                    <h4 className="font-medium text-gray-600">Mulai Magang</h4>
+                    <p className="text-sm text-gray-500 mt-1">Setelah dosen disetujui</p>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Kolom Kanan: Detail & Kontak */}
+            <div className="space-y-6">
+              
+              {/* Detail Pendaftaran */}
+              <motion.div variants={itemVariants} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 className="font-bold text-gray-900 mb-4 border-b pb-2">Detail Pendaftaran</h3>
+                <dl className="space-y-4">
+                  <div>
+                    <dt className="text-xs font-medium text-gray-500">Perusahaan</dt>
+                    <dd className="mt-1 text-sm font-semibold text-gray-900">PT Digital Teknologi Indonesia</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium text-gray-500">Posisi</dt>
+                    <dd className="mt-1 text-sm font-semibold text-gray-900">Full Stack Developer Intern</dd>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <dt className="text-xs font-medium text-gray-500">Lokasi</dt>
+                      <dd className="mt-1 text-sm text-gray-900">Jakarta Selatan</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs font-medium text-gray-500">Durasi</dt>
+                      <dd className="mt-1 text-sm text-gray-900">6 bulan</dd>
+                    </div>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium text-gray-500">Periode Magang</dt>
+                    <dd className="mt-1 text-sm text-gray-900">2026-05-01 s/d 2026-10-31</dd>
+                  </div>
+                  <div className="pt-2 border-t border-gray-50">
+                    <dt className="text-xs font-medium text-gray-500 mb-2">Jenis Magang</dt>
+                    <dd>
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-[#1e3a8a] border border-blue-100">
+                        Konversi SKS
+                      </span>
+                    </dd>
+                  </div>
+                </dl>
+
+                {/* Info Konversi SKS */}
+                <div className="mt-4 bg-gray-50 rounded-lg p-3 border border-gray-100">
+                  <h4 className="text-xs font-semibold text-gray-700 mb-2">Mata Kuliah untuk Konversi (7 SKS)</h4>
+                  <ul className="text-xs text-gray-600 space-y-1.5">
+                    <li className="flex justify-between">
+                      <span>TIF401 Kerja Praktek</span>
+                      <span className="font-medium">4 SKS</span>
+                    </li>
+                    <li className="flex justify-between">
+                      <span>TIF402 Proyek Perangkat Lunak</span>
+                      <span className="font-medium">3 SKS</span>
+                    </li>
+                  </ul>
+                  <div className="mt-3 text-right">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded uppercase tracking-wider">
+                      Pending
+                    </span>
+                  </div>
+                </div>
+
+                {/* Dokumen */}
+                <div className="mt-4 pt-4 border-t border-gray-50">
+                  <h4 className="text-xs font-medium text-gray-500 mb-2">Dokumen yang Diupload</h4>
+                  <ul className="space-y-2">
+                    {['Surat Penerimaan Magang', 'Surat Perjanjian/MoU', 'Proposal Magang'].map((doc, idx) => (
+                      <li key={idx} className="flex items-center gap-2 text-sm text-[#1e3a8a] hover:underline cursor-pointer">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                        {doc}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </motion.div>
+
+              {/* Bantuan Card */}
+              <motion.div variants={itemVariants} className="bg-blue-50 rounded-xl border border-blue-100 p-6">
+                <h3 className="font-bold text-[#1e3a8a] mb-2 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  Butuh Bantuan?
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">Jika ada pertanyaan seputar pendaftaran magang Anda, silakan hubungi:</p>
+                <ul className="text-sm text-gray-700 space-y-2">
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                    admin.magang@fasilkom.unsika.ac.id
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                    (0264) 123-4567
+                  </li>
+                  <li className="flex items-center gap-2 mt-2 pt-2 border-t border-blue-100">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Senin - Jumat, 08:00 - 16:00 WIB
+                  </li>
+                </ul>
+              </motion.div>
+
+            </div>
+          </motion.div>
         </div>
       </main>
     </div>
   );
 }
-

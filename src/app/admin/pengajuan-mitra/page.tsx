@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import DashboardShell from '@/components/dashboard/DashboardShell';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import Alert from '@/components/ui/Alert';
@@ -246,7 +245,6 @@ export default function AdminPengajuanMitraPage() {
 
   if (isLoading) {
     return (
-      <DashboardShell role="Admin">
         <main className="min-h-screen py-8">
           <div className="app-container">
             <div className="app-card p-8">
@@ -264,32 +262,31 @@ export default function AdminPengajuanMitraPage() {
             </div>
           </div>
         </main>
-      </DashboardShell>
     );
   }
 
   if (errorMsg && !message && !selectedMitra && !detailMitra) {
     return (
-      <DashboardShell role="Admin">
         <main className="min-h-screen py-8">
           <div className="app-container">
             <Alert variant="error">{errorMsg}</Alert>
           </div>
         </main>
-      </DashboardShell>
     );
   }
 
   return (
-    <DashboardShell role="Admin">
       <main className="min-h-screen py-8">
         <div className="app-container">
           <PageHeader
-            eyebrow="Admin Mitra"
-            title={`Verifikasi Pengajuan Mitra ${currentUser?.name || ''}`}
+            eyebrow="Admin"
+            title={`Pengajuan Mitra ${currentUser?.name || ''}`}
             description="Periksa pengajuan mitra dari mahasiswa, lalu setujui atau tolak berdasarkan kelayakan data mitra."
             action={
-              <Link href="/admin/dashboard" className="app-btn-secondary">
+              <Link
+                href="/admin/dashboard"
+                className="app-btn-secondary"
+              >
                 Kembali ke Dashboard
               </Link>
             }
@@ -431,17 +428,30 @@ export default function AdminPengajuanMitraPage() {
                           </button>
                         </>
                       )}
+
+                      {item.status !== 'Menunggu' && (
+                        <button
+                          type="button"
+                          onClick={() => openStatusModal(item, item.status)}
+                          className="app-btn-secondary px-4 py-2 text-sm"
+                        >
+                          Ubah Status
+                        </button>
+                      )}
                     </div>
                   </div>
 
                   <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-4">
-                    <DetailItem label="Lokasi" value={item.lokasi} />
-                    <DetailItem label="Sistem Kerja" value={item.sistem_kerja} />
-                    <DetailItem label="Kuota" value={item.kuota} />
                     <DetailItem
-                      label="Tanggal Pengajuan"
-                      value={formatDate(item.createdAt)}
+                      label="Program Studi"
+                      value={item.program_studi_mahasiswa}
                     />
+                    <DetailItem label="Lokasi" value={item.lokasi} />
+                    <DetailItem
+                      label="Sistem Kerja"
+                      value={item.sistem_kerja}
+                    />
+                    <DetailItem label="Kuota" value={item.kuota} />
                   </div>
 
                   {item.catatan_admin && (
@@ -666,6 +676,5 @@ export default function AdminPengajuanMitraPage() {
           </div>
         )}
       </main>
-    </DashboardShell>
   );
 }

@@ -17,6 +17,7 @@ type RegisterFormData = {
   confirmPassword: string;
   nim_nidn: string;
   name: string;
+  prodi: string; // tambahan field prodi
 };
 
 // Helper: konversi nomor HP ke format 62
@@ -42,6 +43,7 @@ export default function RegisterPage() {
     confirmPassword: '',
     nim_nidn: '',
     name: '',
+    prodi: '',
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -53,14 +55,21 @@ export default function RegisterPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const [mahasiswa, setMahasiswa] = useState<KampusMahasiswa | null>(null);
+  // Tidak perlu state mahasiswa dan checkedNpm karena box hijau sudah dihapus
+  // Tapi kita masih butuh untuk menyimpan data yang sudah dicek saat validasi akhir
   const [checkedNpm, setCheckedNpm] = useState('');
+  const [kampusEmail, setKampusEmail] = useState(''); // untuk validasi email
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.id]: e.target.value,
-    });
+    // Hanya field phone, password, confirmPassword, nim_nidn yang bisa diubah manual
+    // name, email, prodi bersifat readOnly, jadi tidak perlu handleChange untuk itu
+    const { id, value } = e.target;
+    if (id === 'phone' || id === 'password' || id === 'confirmPassword' || id === 'nim_nidn') {
+      setFormData({
+        ...formData,
+        [id]: value,
+      });
+    }
   };
 
   const handleNumberInput = (field: 'nim_nidn' | 'phone', value: string) => {
@@ -72,10 +81,16 @@ export default function RegisterPage() {
     });
 
     if (field === 'nim_nidn') {
-      setMahasiswa(null);
+      // Reset data otomatis saat NPM berubah
+      setFormData((prev) => ({
+        ...prev,
+        name: '',
+        email: '',
+        prodi: '',
+      }));
       setCheckedNpm('');
       setSuccessMsg('');
-      setFormData((prev) => ({ ...prev, name: '' }));
+      setErrorMsg('');
     }
   };
 
@@ -100,14 +115,15 @@ export default function RegisterPage() {
 
       if (data.npm && data.npm !== formData.nim_nidn) {
         setErrorMsg('NPM/NIM tidak sesuai dengan data mahasiswa kampus.');
-        setMahasiswa(null);
+        setFormData((prev) => ({
+          ...prev,
+          name: '',
+          email: '',
+          prodi: '',
+        }));
         setCheckedNpm('');
         return null;
       }
-
-      setMahasiswa(data);
-      setCheckedNpm(formData.nim_nidn);
-      setSuccessMsg('Data mahasiswa berhasil ditemukan.');
 
       // Format nomor WhatsApp jika ada
       let formattedPhone = '';
@@ -115,12 +131,18 @@ export default function RegisterPage() {
         formattedPhone = formatPhoneNumber(data.no_hp);
       }
 
+      // Isi otomatis field yang readonly
       setFormData((prev) => ({
         ...prev,
         email: data.email || prev.email,
-        phone: formattedPhone || prev.phone,
         name: data.nama || prev.name,
+        prodi: data.prodi || prev.prodi,
+        phone: formattedPhone || prev.phone,
       }));
+
+      setCheckedNpm(formData.nim_nidn);
+      setKampusEmail(data.email || '');
+      setSuccessMsg('Data mahasiswa berhasil ditemukan.');
 
       return data;
     } catch (error) {
@@ -130,7 +152,12 @@ export default function RegisterPage() {
           : 'Data mahasiswa tidak ditemukan.';
 
       setErrorMsg(message);
-      setMahasiswa(null);
+      setFormData((prev) => ({
+        ...prev,
+        name: '',
+        email: '',
+        prodi: '',
+      }));
       setCheckedNpm('');
       return null;
     } finally {
@@ -155,7 +182,12 @@ export default function RegisterPage() {
     }
 
     if (!formData.name.trim()) {
-      setErrorMsg('Nama lengkap wajib diisi.');
+      setErrorMsg('Nama lengkap wajib diisi. Silakan cek data terlebih dahulu.');
+      return;
+    }
+
+    if (!formData.prodi.trim()) {
+      setErrorMsg('Prodi tidak ditemukan. Silakan cek data NPM Anda.');
       return;
     }
 
@@ -190,22 +222,23 @@ export default function RegisterPage() {
       return;
     }
 
-    let mahasiswaKampus = mahasiswa;
-
-    if (!mahasiswaKampus || checkedNpm !== formData.nim_nidn) {
-      mahasiswaKampus = await handleCheckMahasiswa();
-
-      if (!mahasiswaKampus) {
+    // Jika NPM belum dicek atau data berubah, cek ulang
+    if (checkedNpm !== formData.nim_nidn) {
+      const mahasiswaData = await handleCheckMahasiswa();
+      if (!mahasiswaData) {
         return;
       }
-    }
-
-    if (
-      mahasiswaKampus.email &&
-      mahasiswaKampus.email.toLowerCase() !== formData.email.trim().toLowerCase()
-    ) {
-      setErrorMsg('Email kampus tidak sesuai dengan data akademik mahasiswa.');
-      return;
+      // Validasi email dari API (jika ada)
+      if (mahasiswaData.email && mahasiswaData.email.toLowerCase() !== formData.email.trim().toLowerCase()) {
+        setErrorMsg('Email kampus tidak sesuai dengan data akademik mahasiswa.');
+        return;
+      }
+    } else {
+      // Sudah dicek, validasi email dengan yang tersimpan
+      if (kampusEmail && kampusEmail.toLowerCase() !== formData.email.trim().toLowerCase()) {
+        setErrorMsg('Email kampus tidak sesuai dengan data akademik mahasiswa.');
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -219,6 +252,7 @@ export default function RegisterPage() {
           phone: formData.phone,
           password: formData.password,
           name: formData.name,
+          prodi: formData.prodi, // kirim prodi juga jika diperlukan backend
         },
       });
 
@@ -269,6 +303,7 @@ export default function RegisterPage() {
                   <li>Email wajib menggunakan domain UNSIKA.</li>
                   <li>Nomor WhatsApp menggunakan format 62.</li>
                   <li>Nama lengkap akan diisi otomatis dari data kampus.</li>
+                  <li>Prodi akan diisi otomatis dari data kampus.</li>
                   <li>
                     Password minimal 8 karakter, memiliki huruf kapital dan
                     angka.
@@ -313,7 +348,7 @@ export default function RegisterPage() {
                         handleNumberInput('nim_nidn', e.target.value)
                       }
                       className="app-input"
-                      placeholder="2210631170001"
+                      placeholder="masukkan npm anda"
                     />
 
                     <button
@@ -335,15 +370,11 @@ export default function RegisterPage() {
                     id="name"
                     type="text"
                     required
+                    readOnly
                     value={formData.name}
-                    onChange={handleChange}
-                    className="app-input"
-                    placeholder="Nama sesuai KTP"
+                    className="app-input bg-slate-50 dark:bg-slate-800/50"
+                    placeholder="Akan terisi otomatis setelah cek data"
                   />
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    Akan terisi otomatis setelah cek data. Bisa diedit jika
-                    perlu.
-                  </p>
                 </div>
 
                 <div>
@@ -354,65 +385,28 @@ export default function RegisterPage() {
                     id="email"
                     type="email"
                     required
+                    readOnly
                     value={formData.email}
-                    onChange={handleChange}
-                    className="app-input"
+                    className="app-input bg-slate-50 dark:bg-slate-800/50"
                     placeholder="npm@student.unsika.ac.id"
                   />
                 </div>
-              </div>
 
-              {mahasiswa && checkedNpm === formData.nim_nidn && (
-                <div className="rounded-2xl border border-green-100 bg-green-50 p-4 text-sm dark:border-green-400/20 dark:bg-green-400/10">
-                  <p className="font-black text-green-700 dark:text-green-300">
-                    Data Mahasiswa Ditemukan
-                  </p>
-
-                  <div className="mt-3 grid grid-cols-1 gap-3 text-slate-600 dark:text-slate-300 md:grid-cols-2">
-                    <p>
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        Nama:
-                      </span>{' '}
-                      {mahasiswa.nama || '-'}
-                    </p>
-
-                    <p>
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        NPM:
-                      </span>{' '}
-                      {mahasiswa.npm || formData.nim_nidn}
-                    </p>
-
-                    <p>
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        Prodi:
-                      </span>{' '}
-                      {mahasiswa.prodi || '-'}
-                    </p>
-
-                    <p>
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        Kelas:
-                      </span>{' '}
-                      {mahasiswa.kelas || '-'}
-                    </p>
-
-                    <p>
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        Semester:
-                      </span>{' '}
-                      {mahasiswa.semester || '-'}
-                    </p>
-
-                    <p>
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        Angkatan:
-                      </span>{' '}
-                      {mahasiswa.angkatan || '-'}
-                    </p>
-                  </div>
+                <div>
+                  <label htmlFor="prodi" className="app-label">
+                    Program Studi
+                  </label>
+                  <input
+                    id="prodi"
+                    type="text"
+                    required
+                    readOnly
+                    value={formData.prodi}
+                    className="app-input bg-slate-50 dark:bg-slate-800/50"
+                    placeholder="Akan terisi otomatis setelah cek data"
+                  />
                 </div>
-              )}
+              </div>
 
               <div>
                 <label htmlFor="phone" className="app-label">
