@@ -314,8 +314,8 @@ export default function PengajuanMahasiswaPage() {
     setForm((prev) => ({
       ...prev,
       perusahaan: selected.nama_mitra,
-      alamat_tempat_magang: selected.alamat || prev.alamat_tempat_magang,
-      kontak_penanggung_jawab: selected.kontak_wa || prev.kontak_penanggung_jawab,
+      alamat_tempat_magang: selected.alamat_kantor_mitra || prev.alamat_tempat_magang,
+      kontak_penanggung_jawab: selected.kontak_narahubung_mitra || prev.kontak_penanggung_jawab,
     }));
   };
 
@@ -359,9 +359,9 @@ export default function PengajuanMahasiswaPage() {
     if (!form.tgl_mulai.trim() || !form.tgl_berakhir.trim() || !form.rencana_magang.trim()) {
       return 'Periode dan rencana magang wajib diisi.';
     }
-    if (!buktiFile && !form.bukti_penerimaan) {
-      return 'File bukti penerimaan magang wajib diupload.';
-    }
+   if (!buktiFile && !form.bukti_penerimaan && !pengajuan?.bukti_penerimaan) {
+  return 'File bukti penerimaan magang wajib diupload.';
+}
     if (form.tgl_mulai && form.tgl_berakhir) {
       const start = new Date(form.tgl_mulai);
       const end = new Date(form.tgl_berakhir);
@@ -492,11 +492,6 @@ export default function PengajuanMahasiswaPage() {
             eyebrow="Pendataan Magang"
             title="Pengajuan Magang"
             description="Isi data magang, bukti penerimaan (PDF), periode, dan rencana kegiatan."
-            action={
-              <Link href="/dashboard" className="app-btn-secondary">
-                Kembali ke Dashboard
-              </Link>
-            }
           />
 
           {message && <Alert variant="success">{message}</Alert>}

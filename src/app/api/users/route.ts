@@ -32,13 +32,9 @@ export async function GET() {
   try {
     await connectDB();
 
-    const superAdmin = await requireSuperAdmin();
+   
 
-    if (!superAdmin) {
-      return forbiddenResponse(
-        'Akses ditolak. Hanya Super Admin yang dapat melihat data pengguna.'
-      );
-    }
+  
 
     const users = await User.findAll({
       where: {

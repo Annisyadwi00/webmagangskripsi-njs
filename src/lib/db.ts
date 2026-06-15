@@ -35,6 +35,7 @@ export const connectDB = async () => {
 
 export const syncDatabase = async () => {
   await import('@/models/User');
+  await import('@/models/Upload');
   await import('@/models/Job');
   await import('@/models/Pengajuan');
   await import('@/models/PengajuanMitra');
