@@ -48,13 +48,6 @@ function isSistemInformasi(prodi?: string | null) {
   return String(prodi || '').toLowerCase().includes('sistem informasi');
 }
 
-function getJenisMagangLabel(value?: string | null) {
-  if (value === 'Konversi 20 SKS') return 'Konversi Maksimal 20 SKS';
-  if (value === 'Konversi 2 SKS') return 'Magang 2 SKS Khusus SI';
-  if (value === 'Tidak Konversi') return 'Tidak Konversi';
-  return value || '-';
-}
-
 function isStaffRole(role?: string | null) {
   return role === 'Admin' || role === 'Super Admin';
 }
@@ -115,6 +108,17 @@ async function saveFile(file: File, prefix: string): Promise<string> {
   return `/uploads/pengajuan/${safeName}`;
 }
 
+async function saveLaporanFile(file: File, prefix: string): Promise<string> {
+  const uploadDir = path.join(process.cwd(), 'public/uploads/laporan');
+  await mkdir(uploadDir, { recursive: true });
+  const timestamp = Date.now();
+  const safeName = `${prefix}_${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+  const filePath = path.join(uploadDir, safeName);
+  const buffer = Buffer.from(await file.arrayBuffer());
+  await writeFile(filePath, buffer);
+  return `/uploads/laporan/${safeName}`;
+}
+
 // ==================== GET ====================
 export async function GET(request: Request) {
   try {
@@ -129,19 +133,11 @@ export async function GET(request: Request) {
     }
 
     const user = await getCurrentUser();
-
     if (!user) {
-      return NextResponse.json(
-        { success: false, message: 'Akses ditolak.' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, message: 'Akses ditolak.' }, { status: 401 });
     }
-
     if (!['Super Admin', 'Admin', 'Dosen', 'Mahasiswa'].includes(user.role)) {
-      return NextResponse.json(
-        { success: false, message: 'Role tidak valid.' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, message: 'Role tidak valid.' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -194,31 +190,21 @@ export async function GET(request: Request) {
           ? error.message
           : 'Unknown error'
         : 'Terjadi kesalahan server.';
-
-    return NextResponse.json(
-      {
-        success: false,
-        message: errorMessage,
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: errorMessage }, { status: 500 });
   }
 }
 
 // ==================== POST ====================
 export async function POST(request: Request) {
+  console.log('===== POST /api/pengajuan =====');
+  console.log('Content-Type:', request.headers.get('content-type'));
   try {
     await connectDB();
 
     const user = await getCurrentUser();
-
     if (!user) {
-      return NextResponse.json(
-        { success: false, message: 'Akses ditolak.' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, message: 'Akses ditolak.' }, { status: 401 });
     }
-
     if (user.role !== 'Mahasiswa') {
       return NextResponse.json(
         { success: false, message: 'Hanya mahasiswa yang dapat mengajukan magang.' },
@@ -246,7 +232,6 @@ export async function POST(request: Request) {
     const angkatan = fields.angkatan?.trim() || null;
     const semester = fields.semester?.trim() || null;
     const kelas = fields.kelas?.trim() || null;
-
     const jenis_magang = fields.jenis_magang?.trim();
     const no_hp_mahasiswa = fields.no_hp_mahasiswa?.trim();
     const perusahaan = fields.perusahaan?.trim();
@@ -286,7 +271,6 @@ export async function POST(request: Request) {
     // Validasi file PDF
     const buktiFile = files['bukti_penerimaan'];
     const fotoFile = files['foto_diri'];
-
     if (!buktiFile || buktiFile.type !== 'application/pdf') {
       return NextResponse.json(
         { success: false, message: 'File bukti penerimaan (PDF) wajib diunggah.' },
@@ -313,14 +297,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validasi jenis magang
     if (!allowedJenisMagang.includes(jenis_magang)) {
       return NextResponse.json(
         { success: false, message: 'Jenis magang tidak valid.' },
         { status: 400 }
       );
     }
-
     if (jenis_magang === 'Konversi 2 SKS' && !isSistemInformasi(program_studi)) {
       return NextResponse.json(
         {
@@ -341,7 +323,6 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
     if (kontak_penanggung_jawab && !phoneRegex.test(kontak_penanggung_jawab)) {
       return NextResponse.json(
         {
@@ -358,40 +339,28 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
     const tanggalMulai = normalizeDate(tgl_mulai);
     const tanggalBerakhir = normalizeDate(tgl_berakhir);
     if (tanggalBerakhir < tanggalMulai) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Tanggal berakhir magang tidak boleh lebih awal dari tanggal mulai.',
-        },
+        { success: false, message: 'Tanggal berakhir magang tidak boleh lebih awal dari tanggal mulai.' },
         { status: 400 }
       );
     }
 
-    // Cek pengajuan aktif yang sudah ada
     const existingPengajuan = await Pengajuan.findOne({
       where: {
         user_id: user.id,
-        status: {
-          [Op.in]: ['Menunggu_Verifikasi', 'Aktif'],
-        },
+        status: { [Op.in]: ['Menunggu_Verifikasi', 'Aktif'] },
       },
     });
-
     if (existingPengajuan) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Anda sudah memiliki proses magang yang sedang berjalan.',
-        },
+        { success: false, message: 'Anda sudah memiliki proses magang yang sedang berjalan.' },
         { status: 409 }
       );
     }
 
-    // Buat pengajuan baru
     const newPengajuan = await Pengajuan.create({
       user_id: user.id,
       nama_mahasiswa,
@@ -429,13 +398,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error('CREATE_PENGAJUAN_ERROR:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Terjadi kesalahan server.',
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: 'Terjadi kesalahan server.' }, { status: 500 });
   }
 }
 
@@ -445,108 +408,92 @@ export async function PUT(request: Request) {
     await connectDB();
 
     const user = await getCurrentUser();
-
     if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Akses ditolak.',
-        },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, message: 'Akses ditolak.' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const contentType = request.headers.get('content-type') || '';
+    let body: any = {};
+    let files: Record<string, File> = {};
+
+    // Deteksi tipe request (form-data atau JSON)
+    if (contentType.includes('multipart/form-data')) {
+      try {
+        const parsed = await parseFormData(request);
+        body = parsed.fields;
+        files = parsed.files;
+      } catch (err) {
+        return NextResponse.json(
+          { success: false, message: 'Gagal memproses form data.' },
+          { status: 400 }
+        );
+      }
+    } else {
+      try {
+        body = await request.json();
+      } catch (err) {
+        return NextResponse.json(
+          { success: false, message: 'Format request tidak valid.' },
+          { status: 400 }
+        );
+      }
+    }
+
     const action = body.action;
-
     if (!action) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Aksi wajib dikirim.',
-        },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: 'Aksi wajib dikirim.' }, { status: 400 });
     }
 
+    // ========== MAHASISWA ==========
     if (user.role === 'Mahasiswa') {
       if (action === 'upload_laporan_akhir') {
-        const link_laporan_akhir = body.link_laporan_akhir?.trim();
-        const link_output_magang = body.link_output_magang?.trim() || null;
-
-        if (!link_laporan_akhir || !isValidUrl(link_laporan_akhir)) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: 'Link laporan tidak valid.',
-            },
-            { status: 400 }
-          );
-        }
-
-        if (link_output_magang && !isValidUrl(link_output_magang)) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: 'Link output magang tidak valid.',
-            },
-            { status: 400 }
-          );
-        }
+        const laporanFile = files['laporan_file'];
+        const outputFile = files['output_file'];
 
         const pengajuan = await Pengajuan.findOne({
-          where: {
-            user_id: user.id,
-            status: 'Aktif',
-          },
+          where: { user_id: user.id, status: 'Aktif' },
         });
-
         if (!pengajuan) {
           return NextResponse.json(
-            {
-              success: false,
-              message:
-                'Pengajuan aktif tidak ditemukan. Dokumen dapat diunggah setelah pengajuan disetujui oleh staff.',
-            },
+            { success: false, message: 'Pengajuan aktif tidak ditemukan.' },
             { status: 404 }
           );
         }
 
         const jenisMagang = pengajuan.getDataValue('jenis_magang');
-
         if (jenisMagang === 'Tidak Konversi') {
           return NextResponse.json(
-            {
-              success: false,
-              message:
-                'Jenis magang Tidak Konversi tidak mewajibkan upload laporan melalui sistem.',
-            },
+            { success: false, message: 'Jenis magang Tidak Konversi tidak mewajibkan upload laporan.' },
             { status: 400 }
           );
         }
 
-        if (jenisMagang === 'Konversi 20 SKS' && !link_output_magang) {
+        if (!laporanFile || laporanFile.type !== 'application/pdf') {
           return NextResponse.json(
-            {
-              success: false,
-              message:
-                'Output magang wajib diisi untuk Konversi Maksimal 20 SKS.',
-            },
+            { success: false, message: 'File laporan (PDF) wajib diunggah.' },
             { status: 400 }
           );
         }
+        if (jenisMagang === 'Konversi 20 SKS') {
+          if (!outputFile || outputFile.type !== 'application/pdf') {
+            return NextResponse.json(
+              { success: false, message: 'File output magang (PDF) wajib diunggah.' },
+              { status: 400 }
+            );
+          }
+        }
+
+        const laporanUrl = await saveLaporanFile(laporanFile, 'laporan');
+        let outputUrl = null;
+        if (outputFile) outputUrl = await saveLaporanFile(outputFile, 'output');
 
         await pengajuan.update({
-          link_laporan_akhir,
-          link_output_magang:
-            jenisMagang === 'Konversi 20 SKS' ? link_output_magang : null,
+          link_laporan_akhir: laporanUrl,
+          link_output_magang: outputUrl,
         });
 
         return NextResponse.json(
-          {
-            success: true,
-            message: 'Dokumen magang berhasil disimpan.',
-          },
+          { success: true, message: 'Dokumen magang berhasil disimpan.' },
           { status: 200 }
         );
       }
@@ -555,74 +502,37 @@ export async function PUT(request: Request) {
         const pengajuan = await Pengajuan.findOne({
           where: {
             user_id: user.id,
-            status: {
-              [Op.in]: ['Menunggu_Verifikasi', 'Ditolak'],
-            },
+            status: { [Op.in]: ['Menunggu_Verifikasi', 'Ditolak'] },
           },
         });
-
         if (!pengajuan) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: 'Pengajuan tidak dapat dibatalkan.',
-            },
-            { status: 400 }
-          );
+          return NextResponse.json({ success: false, message: 'Pengajuan tidak dapat dibatalkan.' }, { status: 400 });
         }
-
         await pengajuan.destroy();
-
-        return NextResponse.json(
-          {
-            success: true,
-            message: 'Pengajuan dibatalkan.',
-          },
-          { status: 200 }
-        );
+        return NextResponse.json({ success: true, message: 'Pengajuan dibatalkan.' }, { status: 200 });
       }
     }
 
+    // ========== STAFF (Admin/Super Admin) ==========
     if (isStaffRole(user.role)) {
       if (!body.id) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: 'ID pengajuan wajib dikirim.',
-          },
-          { status: 400 }
-        );
+        return NextResponse.json({ success: false, message: 'ID pengajuan wajib dikirim.' }, { status: 400 });
       }
-
       const pengajuan = await Pengajuan.findByPk(body.id);
-
       if (!pengajuan) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: 'Pengajuan tidak ditemukan.',
-          },
-          { status: 404 }
-        );
+        return NextResponse.json({ success: false, message: 'Pengajuan tidak ditemukan.' }, { status: 404 });
       }
 
       if (action === 'setujui') {
         if (!body.dosenId || !body.nama_dosen) {
           return NextResponse.json(
-            {
-              success: false,
-              message: 'Dosen pembimbing wajib dipilih oleh staff.',
-            },
+            { success: false, message: 'Dosen pembimbing wajib dipilih oleh staff.' },
             { status: 400 }
           );
         }
-
         await pengajuan.update({
-          tipeKonversi:
-            body.tipeKonversi || pengajuan.getDataValue('jenis_magang'),
-          matkulKonversi: body.matkulKonversi
-            ? JSON.stringify(body.matkulKonversi)
-            : null,
+          tipeKonversi: body.tipeKonversi || pengajuan.getDataValue('jenis_magang'),
+          matkulKonversi: body.matkulKonversi ? JSON.stringify(body.matkulKonversi) : null,
           semester_konversi: body.semester_konversi || null,
           dosenId: body.dosenId,
           nama_dosen: body.nama_dosen,
@@ -632,68 +542,33 @@ export async function PUT(request: Request) {
           status: 'Aktif',
           alasan_penolakan: null,
         });
-
         return NextResponse.json(
-          {
-            success: true,
-            message: 'Pengajuan disetujui dan dosen pembimbing berhasil ditentukan.',
-          },
+          { success: true, message: 'Pengajuan disetujui dan dosen pembimbing berhasil ditentukan.' },
           { status: 200 }
         );
       }
 
       if (action === 'tolak') {
         const alasan = body.alasan?.trim();
-
         if (!alasan) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: 'Alasan penolakan wajib diisi.',
-            },
-            { status: 400 }
-          );
+          return NextResponse.json({ success: false, message: 'Alasan penolakan wajib diisi.' }, { status: 400 });
         }
-
-        await pengajuan.update({
-          status: 'Ditolak',
-          alasan_penolakan: alasan,
-        });
-
-        return NextResponse.json(
-          {
-            success: true,
-            message: 'Pengajuan ditolak.',
-          },
-          { status: 200 }
-        );
+        await pengajuan.update({ status: 'Ditolak', alasan_penolakan: alasan });
+        return NextResponse.json({ success: true, message: 'Pengajuan ditolak.' }, { status: 200 });
       }
     }
 
+    // ========== DOSEN ==========
     if (user.role === 'Dosen') {
       if (!body.id_pengajuan) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: 'ID pengajuan wajib dikirim.',
-          },
-          { status: 400 }
-        );
+        return NextResponse.json({ success: false, message: 'ID pengajuan wajib dikirim.' }, { status: 400 });
       }
-
       const pengajuan = await Pengajuan.findOne({
-        where: {
-          id: body.id_pengajuan,
-          dosenId: user.id,
-        },
+        where: { id: body.id_pengajuan, dosenId: user.id },
       });
-
       if (!pengajuan) {
         return NextResponse.json(
-          {
-            success: false,
-            message: 'Data mahasiswa bimbingan tidak ditemukan.',
-          },
+          { success: false, message: 'Data mahasiswa bimbingan tidak ditemukan.' },
           { status: 404 }
         );
       }
@@ -707,7 +582,6 @@ export async function PUT(request: Request) {
           nilai_laporan,
           nilai_mitra,
         } = body;
-
         if (
           !nilai_dari_dosen ||
           !isValidScore(nilai_kedisiplinan) ||
@@ -726,7 +600,6 @@ export async function PUT(request: Request) {
         }
 
         const jenisMagang = pengajuan.getDataValue('jenis_magang');
-
         if (jenisMagang !== 'Tidak Konversi') {
           if (!pengajuan.getDataValue('link_laporan_akhir')) {
             return NextResponse.json(
@@ -740,11 +613,7 @@ export async function PUT(request: Request) {
               { status: 400 }
             );
           }
-
-          if (
-            jenisMagang === 'Konversi 20 SKS' &&
-            !pengajuan.getDataValue('link_output_magang')
-          ) {
+          if (jenisMagang === 'Konversi 20 SKS' && !pengajuan.getDataValue('link_output_magang')) {
             return NextResponse.json(
               {
                 success: false,
@@ -754,11 +623,7 @@ export async function PUT(request: Request) {
             );
           }
         }
-
-        if (
-          pengajuan.getDataValue('status') !== 'Aktif' &&
-          pengajuan.getDataValue('status') !== 'Selesai'
-        ) {
+        if (!['Aktif', 'Selesai'].includes(pengajuan.getDataValue('status'))) {
           return NextResponse.json(
             {
               success: false,
@@ -767,7 +632,6 @@ export async function PUT(request: Request) {
             { status: 400 }
           );
         }
-
         await pengajuan.update({
           nilai_dari_dosen,
           nilai_kedisiplinan,
@@ -777,32 +641,19 @@ export async function PUT(request: Request) {
           nilai_mitra,
           status: 'Selesai',
         });
-
         return NextResponse.json(
-          {
-            success: true,
-            message: 'Nilai akhir mahasiswa berhasil disimpan.',
-          },
+          { success: true, message: 'Nilai akhir mahasiswa berhasil disimpan.' },
           { status: 200 }
         );
       }
     }
 
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Aksi tidak valid atau role tidak memiliki akses.',
-      },
+      { success: false, message: 'Aksi tidak valid atau role tidak memiliki akses.' },
       { status: 400 }
     );
   } catch (error) {
     console.error('UPDATE_PENGAJUAN_ERROR:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Terjadi kesalahan server.',
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: 'Terjadi kesalahan server.' }, { status: 500 });
   }
 }

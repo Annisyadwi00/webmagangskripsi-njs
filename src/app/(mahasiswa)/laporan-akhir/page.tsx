@@ -1,23 +1,18 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 import PageHeader from '@/components/ui/PageHeader';
 import Alert from '@/components/ui/Alert';
 import { getDashboardPathByRole } from '@/lib/role-redirect';
 import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
-import {
-  Pengajuan,
-  getPengajuanList,
-  uploadLaporanAkhir,
-} from '@/lib/pengajuan-client';
+import { Pengajuan, getPengajuanList } from '@/lib/pengajuan-client';
 
 function getJenisMagangLabel(value?: string | null) {
   if (value === 'Konversi 20 SKS') return 'Konversi Maksimal 20 SKS';
   if (value === 'Konversi 2 SKS') return 'Magang 2 SKS Khusus SI';
   if (value === 'Tidak Konversi') return 'Tidak Konversi';
-
   return value || '-';
 }
 
@@ -28,26 +23,22 @@ function getLaporanRequirement(jenisMagang?: string | null) {
       needLaporan: true,
       needOutput: true,
       title: 'Upload Laporan Akhir',
-      labelLaporan: 'Link Laporan Akhir PDF',
-      labelOutput: 'Link Output Magang PDF',
-      emptyMessage:
-        'Laporan akhir dan output magang wajib diunggah sebelum penilaian akhir diproses.',
+      labelLaporan: 'File Laporan Akhir (PDF)',
+      labelOutput: 'File Output Magang (PDF)',
+      emptyMessage: 'Laporan akhir dan output magang wajib diunggah sebelum penilaian akhir diproses.',
     };
   }
-
   if (jenisMagang === 'Konversi 2 SKS') {
     return {
       showForm: true,
       needLaporan: true,
       needOutput: false,
       title: 'Upload Laporan Magang',
-      labelLaporan: 'Link Laporan Magang PDF',
+      labelLaporan: 'File Laporan Magang (PDF)',
       labelOutput: '',
-      emptyMessage:
-        'Laporan magang wajib diunggah sebelum penilaian akhir diproses.',
+      emptyMessage: 'Laporan magang wajib diunggah sebelum penilaian akhir diproses.',
     };
   }
-
   return {
     showForm: false,
     needLaporan: false,
@@ -59,21 +50,11 @@ function getLaporanRequirement(jenisMagang?: string | null) {
   };
 }
 
-function isValidUrl(value: string) {
-  try {
-    new URL(value);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function getStatusLabel(status?: string | null) {
   if (status === 'Menunggu_Verifikasi') return 'Menunggu Pemeriksaan Staff';
   if (status === 'Aktif') return 'Aktif';
   if (status === 'Selesai') return 'Selesai';
   if (status === 'Ditolak') return 'Ditolak';
-
   return 'Belum Ada';
 }
 
@@ -84,15 +65,13 @@ function canUploadLaporan(status?: string | null) {
 export default function LaporanAkhirMahasiswaPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [pengajuan, setPengajuan] = useState<Pengajuan | null>(null);
-
-  const [linkLaporan, setLinkLaporan] = useState('');
-  const [linkOutputMagang, setLinkOutputMagang] = useState('');
-
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [message, setMessage] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  const laporanFileRef = useRef<HTMLInputElement>(null);
+  const outputFileRef = useRef<HTMLInputElement>(null);
 
   const requirement = getLaporanRequirement(pengajuan?.jenis_magang);
   const bolehUploadLaporan = canUploadLaporan(pengajuan?.status);
@@ -101,29 +80,19 @@ export default function LaporanAkhirMahasiswaPage() {
     try {
       setIsLoading(true);
       setErrorMsg('');
-
       const [currentUser, pengajuanData] = await Promise.all([
         getCurrentUserClient(),
         getPengajuanList(1, 10),
       ]);
-
       if (currentUser.role !== 'Mahasiswa') {
         window.location.href = getDashboardPathByRole(currentUser.role);
         return;
       }
-
       const currentPengajuan = pengajuanData.items?.[0] || null;
-
       setUser(currentUser);
       setPengajuan(currentPengajuan);
-      setLinkLaporan(currentPengajuan?.link_laporan_akhir || '');
-      setLinkOutputMagang(currentPengajuan?.link_output_magang || '');
     } catch (error) {
-      const msg =
-        error instanceof Error
-          ? error.message
-          : 'Gagal memuat data laporan.';
-
+      const msg = error instanceof Error ? error.message : 'Gagal memuat data laporan.';
       setErrorMsg(msg);
     } finally {
       setIsLoading(false);
@@ -136,7 +105,6 @@ export default function LaporanAkhirMahasiswaPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setMessage('');
     setErrorMsg('');
 
@@ -144,57 +112,45 @@ export default function LaporanAkhirMahasiswaPage() {
       setErrorMsg('Data pengajuan magang tidak ditemukan.');
       return;
     }
-
     if (!bolehUploadLaporan) {
-      setErrorMsg(
-        'Dokumen hanya dapat diunggah setelah pengajuan magang aktif.'
-      );
+      setErrorMsg('Dokumen hanya dapat diunggah setelah pengajuan magang aktif.');
       return;
     }
-
     if (!requirement.showForm) {
       setErrorMsg('Jenis magang ini tidak memerlukan upload laporan.');
       return;
     }
 
-    if (requirement.needLaporan && !linkLaporan.trim()) {
-      setErrorMsg(`${requirement.labelLaporan} wajib diisi.`);
+    const laporanFile = laporanFileRef.current?.files?.[0];
+    const outputFile = outputFileRef.current?.files?.[0];
+
+    if (requirement.needLaporan && (!laporanFile || laporanFile.type !== 'application/pdf')) {
+      setErrorMsg(`${requirement.labelLaporan} wajib diunggah dalam format PDF.`);
       return;
     }
-
-    if (linkLaporan.trim() && !isValidUrl(linkLaporan.trim())) {
-      setErrorMsg(`Format ${requirement.labelLaporan} tidak valid.`);
-      return;
-    }
-
-    if (requirement.needOutput && !linkOutputMagang.trim()) {
-      setErrorMsg(`${requirement.labelOutput} wajib diisi.`);
-      return;
-    }
-
-    if (linkOutputMagang.trim() && !isValidUrl(linkOutputMagang.trim())) {
-      setErrorMsg(`Format ${requirement.labelOutput} tidak valid.`);
+    if (requirement.needOutput && (!outputFile || outputFile.type !== 'application/pdf')) {
+      setErrorMsg(`${requirement.labelOutput} wajib diunggah dalam format PDF.`);
       return;
     }
 
     setIsSubmitting(true);
-
     try {
-      const result = await uploadLaporanAkhir({
-        link_laporan_akhir: linkLaporan.trim(),
-        link_output_magang: requirement.needOutput
-          ? linkOutputMagang.trim()
-          : null,
-      });
+      const formData = new FormData();
+      formData.append('action', 'upload_laporan_akhir');
+      if (laporanFile) formData.append('laporan_file', laporanFile);
+      if (outputFile) formData.append('output_file', outputFile);
 
-      setMessage(result.message || 'Dokumen magang berhasil disimpan.');
+      const res = await fetch('/api/pengajuan', { method: 'PUT', body: formData });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message || 'Gagal mengunggah dokumen.');
+
+      setMessage(result.message || 'Dokumen berhasil disimpan.');
       await fetchData();
+      // Reset file inputs
+      if (laporanFileRef.current) laporanFileRef.current.value = '';
+      if (outputFileRef.current) outputFileRef.current.value = '';
     } catch (error) {
-      const msg =
-        error instanceof Error
-          ? error.message
-          : 'Gagal menyimpan dokumen magang.';
-
+      const msg = error instanceof Error ? error.message : 'Gagal menyimpan dokumen.';
       setErrorMsg(msg);
     } finally {
       setIsSubmitting(false);
@@ -226,9 +182,7 @@ export default function LaporanAkhirMahasiswaPage() {
             title={requirement.title}
             description={
               pengajuan
-                ? `Jenis magang kamu: ${getJenisMagangLabel(
-                    pengajuan.jenis_magang
-                  )}.`
+                ? `Jenis magang kamu: ${getJenisMagangLabel(pengajuan.jenis_magang)}.`
                 : 'Lengkapi dokumen laporan magang sesuai status pengajuan.'
             }
             action={
@@ -243,168 +197,103 @@ export default function LaporanAkhirMahasiswaPage() {
 
           {!pengajuan && (
             <Alert variant="warning">
-              Kamu belum memiliki pengajuan magang. Silakan isi pendataan magang
-              terlebih dahulu.
+              Kamu belum memiliki pengajuan magang. Silakan isi pendataan magang terlebih dahulu.
             </Alert>
           )}
 
           {pengajuan && !bolehUploadLaporan && (
             <Alert variant="info">
-              Dokumen magang dapat diunggah setelah pengajuan magang aktif.
-              Saat ini staff masih memeriksa data pengajuan kamu.
+              Dokumen magang dapat diunggah setelah pengajuan magang aktif. Saat ini staff masih memeriksa data pengajuan kamu.
             </Alert>
           )}
 
           {pengajuan && pengajuan.jenis_magang === 'Tidak Konversi' && (
             <Alert variant="info">
-              Jenis magang Tidak Konversi tidak mewajibkan upload laporan
-              melalui sistem. Jika ada kebutuhan dokumen tambahan, ikuti arahan
-              dari program studi atau dosen pembimbing.
+              Jenis magang Tidak Konversi tidak mewajibkan upload laporan melalui sistem.
             </Alert>
           )}
 
           {pengajuan && bolehUploadLaporan && requirement.showForm && (
             <>
-              {!pengajuan.link_laporan_akhir && (
+              {(!pengajuan.link_laporan_akhir) && (
                 <Alert variant="warning">{requirement.emptyMessage}</Alert>
               )}
 
               <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 <div className="app-card p-6 lg:col-span-2">
-                  <h2 className="text-xl font-black text-slate-950 dark:text-white">
-                    Form Upload Dokumen
-                  </h2>
-
+                  <h2 className="text-xl font-black text-slate-950 dark:text-white">Form Upload Dokumen</h2>
                   <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Masukkan link dokumen PDF yang dapat diakses oleh dosen
-                    pembimbing dan staff.
+                    Unggah file PDF (maksimal 5MB).
                   </p>
-
                   <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-                    <div>
-                      <label className="app-label">
-                        {requirement.labelLaporan}
-                      </label>
-                      <input
-                        type="url"
-                        required={requirement.needLaporan}
-                        value={linkLaporan}
-                        onChange={(e) => setLinkLaporan(e.target.value)}
-                        className="app-input"
-                        placeholder={
-                          pengajuan.jenis_magang === 'Konversi 2 SKS'
-                            ? 'Masukkan link laporan magang PDF'
-                            : 'Masukkan link laporan akhir PDF'
-                        }
-                      />
-                    </div>
-
-                    {requirement.needOutput && (
+                    {requirement.needLaporan && (
                       <div>
-                        <label className="app-label">
-                          {requirement.labelOutput}
-                        </label>
+                        <label className="app-label">{requirement.labelLaporan}</label>
                         <input
-                          type="url"
-                          required
-                          value={linkOutputMagang}
-                          onChange={(e) =>
-                            setLinkOutputMagang(e.target.value)
-                          }
+                          type="file"
+                          accept="application/pdf"
+                          ref={laporanFileRef}
                           className="app-input"
-                          placeholder="Masukkan link output magang PDF"
+                          required={requirement.needLaporan}
                         />
-
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                          Wajib untuk Konversi Maksimal 20 SKS.
-                        </p>
                       </div>
                     )}
-
+                    {requirement.needOutput && (
+                      <div>
+                        <label className="app-label">{requirement.labelOutput}</label>
+                        <input
+                          type="file"
+                          accept="application/pdf"
+                          ref={outputFileRef}
+                          className="app-input"
+                          required
+                        />
+                      </div>
+                    )}
                     <button
                       type="submit"
                       disabled={isSubmitting}
                       className="app-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {isSubmitting ? 'Menyimpan...' : 'Simpan Dokumen'}
+                      {isSubmitting ? 'Mengunggah...' : 'Upload Dokumen'}
                     </button>
                   </form>
                 </div>
 
                 <div className="app-card p-6">
-                  <h2 className="text-xl font-black text-slate-950 dark:text-white">
-                    Status Dokumen
-                  </h2>
-
+                  <h2 className="text-xl font-black text-slate-950 dark:text-white">Status Dokumen</h2>
                   <div className="mt-5 space-y-4">
                     <div className="app-panel p-4">
-                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                        Status Pengajuan
-                      </p>
-                      <p className="mt-1 font-black text-slate-950 dark:text-white">
-                        {getStatusLabel(pengajuan.status)}
-                      </p>
+                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Status Pengajuan</p>
+                      <p className="mt-1 font-black text-slate-950 dark:text-white">{getStatusLabel(pengajuan.status)}</p>
                     </div>
-
                     <div className="app-panel p-4">
-                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                        Jenis Magang
-                      </p>
-                      <p className="mt-1 font-black text-slate-950 dark:text-white">
-                        {getJenisMagangLabel(pengajuan.jenis_magang)}
-                      </p>
+                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Jenis Magang</p>
+                      <p className="mt-1 font-black text-slate-950 dark:text-white">{getJenisMagangLabel(pengajuan.jenis_magang)}</p>
                     </div>
-
                     <div className="app-panel p-4">
-                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                        Periode Magang
-                      </p>
-                      <p className="mt-1 font-black text-slate-950 dark:text-white">
-                        {pengajuan.tgl_mulai || '-'} sampai{' '}
-                        {pengajuan.tgl_berakhir || '-'}
-                      </p>
+                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Periode Magang</p>
+                      <p className="mt-1 font-black text-slate-950 dark:text-white">{pengajuan.tgl_mulai || '-'} sampai {pengajuan.tgl_berakhir || '-'}</p>
                     </div>
-
                     <div className="app-panel p-4">
-                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                        {requirement.labelLaporan || 'Laporan'}
-                      </p>
-
+                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{requirement.labelLaporan || 'Laporan'}</p>
                       {pengajuan.link_laporan_akhir ? (
-                        <a
-                          href={pengajuan.link_laporan_akhir}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-2 inline-flex font-black text-[#1e3a8a] dark:text-blue-300"
-                        >
+                        <a href={pengajuan.link_laporan_akhir} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex font-black text-blue-800 dark:text-blue-300">
                           Buka Dokumen →
                         </a>
                       ) : (
-                        <p className="mt-1 font-black text-red-600 dark:text-red-400">
-                          Belum diunggah
-                        </p>
+                        <p className="mt-1 font-black text-red-600 dark:text-red-400">Belum diunggah</p>
                       )}
                     </div>
-
                     {requirement.needOutput && (
                       <div className="app-panel p-4">
-                        <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                          {requirement.labelOutput}
-                        </p>
-
+                        <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{requirement.labelOutput}</p>
                         {pengajuan.link_output_magang ? (
-                          <a
-                            href={pengajuan.link_output_magang}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-2 inline-flex font-black text-[#1e3a8a] dark:text-blue-300"
-                          >
+                          <a href={pengajuan.link_output_magang} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex font-black text-blue-800 dark:text-blue-300">
                             Buka Output →
                           </a>
                         ) : (
-                          <p className="mt-1 font-black text-red-600 dark:text-red-400">
-                            Belum diunggah
-                          </p>
+                          <p className="mt-1 font-black text-red-600 dark:text-red-400">Belum diunggah</p>
                         )}
                       </div>
                     )}

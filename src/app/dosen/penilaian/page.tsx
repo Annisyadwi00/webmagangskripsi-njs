@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import DashboardShell from '@/components/dashboard/DashboardShell';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import Alert from '@/components/ui/Alert';
@@ -313,7 +312,7 @@ export default function DosenPenilaianPage() {
 
   if (isLoading) {
     return (
-      <DashboardShell role="Dosen">
+
         <main className="min-h-screen py-8">
           <div className="app-container">
             <div className="app-card p-8">
@@ -330,24 +329,23 @@ export default function DosenPenilaianPage() {
             </div>
           </div>
         </main>
-      </DashboardShell>
     );
   }
 
   if (errorMsg && !selectedPengajuan) {
     return (
-      <DashboardShell role="Dosen">
+ 
         <main className="min-h-screen py-8">
           <div className="app-container">
             <Alert variant="error">{errorMsg}</Alert>
           </div>
         </main>
-      </DashboardShell>
+
     );
   }
 
   return (
-    <DashboardShell role="Dosen">
+ 
       <main className="min-h-screen py-8">
         <div className="app-container">
           <PageHeader
@@ -699,6 +697,6 @@ export default function DosenPenilaianPage() {
           </div>
         )}
       </main>
-    </DashboardShell>
+
   );
 }

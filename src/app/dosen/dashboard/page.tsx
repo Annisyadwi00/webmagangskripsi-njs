@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import DashboardShell from '@/components/dashboard/DashboardShell';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import Alert from '@/components/ui/Alert';
@@ -147,7 +146,6 @@ export default function DosenDashboardPage() {
 
   if (isLoading) {
     return (
-      <DashboardShell role="Dosen">
         <main className="min-h-screen py-8">
           <div className="app-container">
             <div className="app-card p-8">
@@ -165,24 +163,20 @@ export default function DosenDashboardPage() {
             </div>
           </div>
         </main>
-      </DashboardShell>
     );
   }
 
   if (errorMsg) {
     return (
-      <DashboardShell role="Dosen">
         <main className="min-h-screen py-8">
           <div className="app-container">
             <Alert variant="error">{errorMsg}</Alert>
           </div>
         </main>
-      </DashboardShell>
     );
   }
 
   return (
-    <DashboardShell role="Dosen">
       <main className="min-h-screen py-8">
         <div className="app-container">
           <PageHeader
@@ -503,6 +497,5 @@ export default function DosenDashboardPage() {
           </section>
         </div>
       </main>
-    </DashboardShell>
   );
 }

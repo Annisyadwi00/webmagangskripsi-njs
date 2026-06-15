@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import DashboardShell from '@/components/dashboard/DashboardShell';
 import PageHeader from '@/components/ui/PageHeader';
 import Alert from '@/components/ui/Alert';
 import { getDashboardPathByRole } from '@/lib/role-redirect';
@@ -174,7 +173,6 @@ export default function DosenLaporanAkhirPage() {
 
   if (isLoading) {
     return (
-      <DashboardShell role="Dosen">
         <main className="min-h-screen py-8">
           <div className="app-container">
             <div className="app-card p-8">
@@ -184,24 +182,22 @@ export default function DosenLaporanAkhirPage() {
             </div>
           </div>
         </main>
-      </DashboardShell>
     );
   }
 
   if (errorMsg) {
     return (
-      <DashboardShell role="Dosen">
         <main className="min-h-screen py-8">
           <div className="app-container">
             <Alert variant="error">{errorMsg}</Alert>
           </div>
         </main>
-      </DashboardShell>
+
     );
   }
 
   return (
-    <DashboardShell role="Dosen">
+
       <main className="min-h-screen py-8">
         <div className="app-container">
           <PageHeader
@@ -444,6 +440,5 @@ export default function DosenLaporanAkhirPage() {
           )}
         </div>
       </main>
-    </DashboardShell>
   );
 }
