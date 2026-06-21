@@ -1,3 +1,5 @@
+// src/lib/pengajuan-client.ts
+
 import { apiClient } from '@/lib/api-client';
 
 export type PengajuanStatus =
@@ -51,12 +53,21 @@ export type Pengajuan = {
   dosenPengujiId: number | null;
   nama_dosen_penguji: string | null;
 
+  // Kolom lama (masih dipertahankan untuk backward compatibility)
   nilai_dari_dosen: string | null;
   nilai_kedisiplinan: number | null;
   nilai_materi: number | null;
   nilai_koding: number | null;
   nilai_laporan: number | null;
   nilai_mitra: number | null;
+
+  // Kolom baru untuk penilaian terbaru
+  nilai_mitra_total?: number | null;
+  nilai_dosen_total?: number | null;
+  nilai_akhir_angka?: number | null;
+  nilai_akhir_grade?: string | null;
+  nilai_mitra_detail?: any; // JSON
+  nilai_dosen_detail?: any; // JSON
 
   status: PengajuanStatus;
   alasan_penolakan: string | null;
@@ -148,13 +159,10 @@ export async function getPengajuanList(page = 1, limit = 10) {
 
 export async function getPengajuanById(id: number) {
   const result = await getPengajuanList(1, 100);
-
   const pengajuan = result.items.find((item) => item.id === id);
-
   if (!pengajuan) {
     throw new Error('Data pengajuan tidak ditemukan.');
   }
-
   return pengajuan;
 }
 
@@ -220,14 +228,17 @@ export async function tolakPengajuan(payload: {
   });
 }
 
+// ============================================================
+// FUNGSI BARU UNTUK PENILAIAN DENGAN DUA TAHAP
+// ============================================================
 export async function beriNilaiPengajuan(payload: {
   id_pengajuan: number;
-  nilai_dari_dosen: string;
-  nilai_kedisiplinan: number;
-  nilai_materi: number;
-  nilai_koding: number;
-  nilai_laporan: number;
-  nilai_mitra: number;
+  nilai_mitra_total?: number;
+  nilai_dosen_total?: number;
+  nilai_akhir_angka?: number;
+  nilai_akhir_grade?: string;
+  nilai_mitra_detail?: Record<string, string>;
+  nilai_dosen_detail?: Record<string, string>;
 }) {
   return apiClient<null>('/api/pengajuan', {
     method: 'PUT',

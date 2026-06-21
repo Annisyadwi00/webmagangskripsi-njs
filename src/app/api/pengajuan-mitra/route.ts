@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
 import busboy from 'busboy';
+import { google } from 'googleapis';
+import { Readable } from 'stream';
 import PengajuanMitra from '@/models/PengajuanMitra';
 import { connectDB } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
@@ -10,7 +10,58 @@ type PengajuanMitraStatus = 'Menunggu' | 'Disetujui' | 'Ditolak';
 const allowedStatus: PengajuanMitraStatus[] = ['Menunggu', 'Disetujui', 'Ditolak'];
 const allowedSistemKerja = ['Onsite', 'Hybrid', 'Remote'];
 
+/* ========== Google Drive Auth & Upload ========== */
+const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 
+function getDriveClient() {
+  const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
+
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error('Google Drive credentials tidak lengkap.');
+  }
+
+  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
+
+  return google.drive({ version: 'v3', auth: oauth2Client });
+}
+
+async function uploadToDrive(file: File, fileName: string): Promise<string> {
+  const drive = getDriveClient();
+  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+
+  const fileBuffer = Buffer.from(await file.arrayBuffer());
+  const stream = Readable.from(fileBuffer);
+
+  const response = await drive.files.create({
+    requestBody: {
+      name: fileName,
+      parents: folderId ? [folderId] : undefined,
+    },
+    media: {
+      mimeType: file.type || 'application/pdf',
+      body: stream,
+    },
+    fields: 'id',
+  });
+
+  const fileId = response.data.id;
+  if (!fileId) throw new Error('Gagal mendapatkan file ID dari Google Drive.');
+
+  await drive.permissions.create({
+    fileId,
+    requestBody: {
+      type: 'anyone',
+      role: 'reader',
+    },
+  });
+
+  return `https://drive.google.com/file/d/${fileId}/view`;
+}
+
+/* ========== Form Parser ========== */
 async function parseFormData(request: Request): Promise<{
   fields: Record<string, string>;
   files: Record<string, File>;
@@ -53,19 +104,7 @@ async function parseFormData(request: Request): Promise<{
   });
 }
 
-async function saveFile(file: File, prefix: string): Promise<string> {
-  const uploadDir = path.join(process.cwd(), 'public/uploads/mitra');
-  await mkdir(uploadDir, { recursive: true });
-
-  const timestamp = Date.now();
-  const safeName = `${prefix}_${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-  const filePath = path.join(uploadDir, safeName);
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(filePath, buffer);
-
-  return `/uploads/mitra/${safeName}`;
-}
-
+/* ========== Validasi ========== */
 function isValidUrl(value: string | null) {
   if (!value) return true;
   try {
@@ -89,6 +128,7 @@ function isStaffRole(role?: string | null) {
   return role === 'Admin' || role === 'Super Admin';
 }
 
+/* ========== Route Handlers ========== */
 export async function GET() {
   try {
     await connectDB();
@@ -149,7 +189,6 @@ export async function POST(request: Request) {
     const kontak_mahasiswa = fields.kontak_mahasiswa?.trim();
     const kelas = fields.kelas?.trim();
 
-    // Latitude & Longitude
     const latitude = fields.latitude ? parseFloat(fields.latitude) : null;
     const longitude = fields.longitude ? parseFloat(fields.longitude) : null;
 
@@ -188,7 +227,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Nomor kontak mahasiswa harus diawali 62.' }, { status: 400 });
     }
 
-    // Validasi latitude/longitude (jika diisi)
     if (latitude !== null && (latitude < -90 || latitude > 90)) {
       return NextResponse.json({ success: false, message: 'Latitude harus antara -90 dan 90.' }, { status: 400 });
     }
@@ -207,12 +245,21 @@ export async function POST(request: Request) {
       }
     }
 
-    // Upload semua file
-    const link_akta_pendirian = await saveFile(files.akta_pendirian, 'akta_pendirian');
-    const link_akta_direksi = await saveFile(files.akta_direksi, 'akta_direksi');
-    const link_ktp_penandatangan = await saveFile(files.ktp_penandatangan, 'ktp');
-    const link_npwp = await saveFile(files.npwp_perusahaan, 'npwp');
-    const link_izin_usaha = await saveFile(files.izin_usaha, 'izin_usaha');
+    // Upload ke Google Drive dan dapatkan link publik
+    let link_akta_pendirian: string, link_akta_direksi: string, link_ktp_penandatangan: string, link_npwp: string, link_izin_usaha: string;
+    try {
+      const timestamp = Date.now();
+      const makeName = (prefix: string) => `${prefix}_${timestamp}_${user.id}.pdf`;
+
+      link_akta_pendirian = await uploadToDrive(files.akta_pendirian, makeName('akta_pendirian'));
+      link_akta_direksi = await uploadToDrive(files.akta_direksi, makeName('akta_direksi'));
+      link_ktp_penandatangan = await uploadToDrive(files.ktp_penandatangan, makeName('ktp'));
+      link_npwp = await uploadToDrive(files.npwp_perusahaan, makeName('npwp'));
+      link_izin_usaha = await uploadToDrive(files.izin_usaha, makeName('izin_usaha'));
+    } catch (uploadError) {
+      console.error('UPLOAD_TO_DRIVE_ERROR:', uploadError);
+      return NextResponse.json({ success: false, message: 'Gagal mengunggah file ke Google Drive.' }, { status: 500 });
+    }
 
     // Simpan ke database
     const newPengajuanMitra = await PengajuanMitra.create({

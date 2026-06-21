@@ -6,7 +6,8 @@ import busboy from 'busboy';
 import Pengajuan from '@/models/Pengajuan';
 import { connectDB } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
-
+import { google } from 'googleapis';
+import { Readable } from 'stream';
 const allowedJenisMagang = [
   'Konversi 20 SKS',
   'Tidak Konversi',
@@ -50,6 +51,54 @@ function isSistemInformasi(prodi?: string | null) {
 
 function isStaffRole(role?: string | null) {
   return role === 'Admin' || role === 'Super Admin';
+}
+
+async function uploadToGoogleDrive(file: File, folderId: string): Promise<string> {
+  const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
+
+  if (!clientId || !clientSecret || !refreshToken || !folderId) {
+    throw new Error('Google Drive credentials tidak lengkap di environment');
+  }
+
+  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
+
+  // Refresh token untuk mendapatkan access token baru
+  await oauth2Client.refreshAccessToken();
+  const drive = google.drive({ version: 'v3', auth: oauth2Client });
+
+  // Konversi File ke Buffer
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const stream = Readable.from(buffer);
+
+  const response = await drive.files.create({
+    requestBody: {
+      name: file.name,
+      parents: [folderId],
+    },
+    media: {
+      mimeType: file.type,
+      body: stream,
+    },
+    fields: 'id, webViewLink',
+  });
+
+  const fileId = response.data.id;
+  if (!fileId) throw new Error('Gagal mengupload file ke Google Drive');
+
+  // (Opsional) Set permission agar file bisa diakses publik
+  await drive.permissions.create({
+    fileId: fileId,
+    requestBody: {
+      role: 'reader',
+      type: 'anyone',
+    },
+  });
+
+  // Kembalikan webViewLink (bisa diakses semua orang)
+  return response.data.webViewLink!;
 }
 
 // ==================== FUNGSI PARSING FORM-DATA ====================
