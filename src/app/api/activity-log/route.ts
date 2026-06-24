@@ -17,4 +17,9 @@ export async function GET() {
     if (!user) {
       return unauthorizedResponse();
     }
+    
+    return successResponse({ items: [] }); // Placeholder return
+  } catch (error: any) {
+    return errorResponse(error.message);
   }
+}

@@ -14,6 +14,8 @@ import {
   createPengajuan,
   getPengajuanList,
 } from '@/lib/pengajuan-client';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 type PengajuanForm = {
   nama_mahasiswa: string;
@@ -166,8 +168,8 @@ const documentTemplates = [
   {
     title: 'Implementation of Arrangement (IA)',
     description: 'Dokumen kerja sama teknis antara pihak kampus/fakultas dengan mitra.',
-    href: '#',
-    note: 'Hubungi TU Fasilkom/Fasilkom Official untuk proses pembuatannya.',
+    href: 'https://docs.google.com/document/d/10EoaENFJmvfMyHPXa9lHsYXHTsppSFSY/edit',
+    note: '',
   },
   {
     title: 'Surat Perpanjangan Waktu Magang',
@@ -202,8 +204,8 @@ const documentTemplates = [
   {
     title: 'Laporan Pelaksanaan Kerja Sama',
     description: 'Dokumen laporan pelaksanaan kerja sama magang dengan mitra.',
-    href: '#',
-    note: 'Hubungi TU Fasilkom/Fasilkom Official untuk proses pembuatannya.',
+    href: 'https://docs.google.com/document/d/1q1HHClXevRnHGVfRbqNYdAVBy-aDFK-H/edit',
+    note: '',
   },
 ];
 
@@ -398,6 +400,36 @@ export default function PengajuanMahasiswaPage() {
     localStorage.removeItem(DRAFT_KEY);
   };
 
+  const handleExportPDF = () => {
+    if (!pengajuan) return;
+    const doc = new jsPDF('p', 'pt', 'a4');
+
+    doc.setFontSize(18);
+    doc.text('Transkrip Nilai Magang', 40, 40);
+
+    doc.setFontSize(12);
+    doc.text(`Nama Mahasiswa: ${pengajuan.nama_mahasiswa}`, 40, 70);
+    doc.text(`NPM: ${pengajuan.npm || '-'}`, 40, 90);
+    doc.text(`Program Studi: ${pengajuan.program_studi || '-'}`, 40, 110);
+    doc.text(`Perusahaan: ${pengajuan.perusahaan || '-'}`, 40, 130);
+
+    autoTable(doc, {
+      startY: 150,
+      head: [['Komponen Penilaian', 'Nilai (0-100)']],
+      body: [
+        ['Nilai dari Mitra / Pembimbing Lapangan', pengajuan.nilai_mitra_total || '0'],
+        ['Nilai dari Dosen Pembimbing', pengajuan.nilai_dosen_total || '0'],
+        ['Nilai dari Dosen Penguji', pengajuan.nilai_penguji_total || '0'],
+        ['Total Nilai Akhir', pengajuan.nilai_akhir_angka || '0'],
+        ['Grade', pengajuan.nilai_akhir_grade || '-'],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [30, 58, 138] },
+    });
+
+    doc.save(`Transkrip_Nilai_${pengajuan.npm || 'Magang'}.pdf`);
+  };
+
   if (isLoading) {
     return (
       <DashboardShell role="Mahasiswa">
@@ -493,14 +525,14 @@ export default function PengajuanMahasiswaPage() {
                       {pengajuan.posisi || 'Peserta Magang'} • {getJenisMagangLabel(pengajuan.jenis_magang)}
                     </p>
                   </div>
-                  {pengajuan.status === 'Menunggu_Verifikasi' && (
+                  {(pengajuan.status === 'Menunggu_Verifikasi' || pengajuan.status === 'Ditolak') && (
                     <button
                       type="button"
                       onClick={handleBatalPengajuan}
                       disabled={isSubmitting}
                       className="app-btn-danger disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {isSubmitting ? 'Memproses...' : 'Batalkan Pengajuan'}
+                      {isSubmitting ? 'Memproses...' : pengajuan.status === 'Ditolak' ? 'Ajukan Ulang / Hapus Data' : 'Batalkan Pengajuan'}
                     </button>
                   )}
                 </div>
@@ -537,6 +569,40 @@ export default function PengajuanMahasiswaPage() {
                     </Link>
                   )}
                 </div>
+
+                {pengajuan.status === 'Selesai' && (
+                  <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-900/50">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-5">
+                      <div>
+                        <h3 className="text-lg font-black text-slate-950 dark:text-white">Nilai Akhir Magang</h3>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Rincian nilai dari mitra, pembimbing, dan penguji.</p>
+                      </div>
+                      <button type="button" onClick={handleExportPDF} className="app-btn-primary">
+                        Download Transkrip (PDF)
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+                      <div className="app-panel p-4 text-center">
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Nilai Mitra</p>
+                        <p className="mt-2 text-2xl font-black text-slate-950 dark:text-white">{pengajuan.nilai_mitra_total || '-'}</p>
+                      </div>
+                      <div className="app-panel p-4 text-center">
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Nilai Dospem</p>
+                        <p className="mt-2 text-2xl font-black text-slate-950 dark:text-white">{pengajuan.nilai_dosen_total || '-'}</p>
+                      </div>
+                      <div className="app-panel p-4 text-center">
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Nilai Penguji</p>
+                        <p className="mt-2 text-2xl font-black text-slate-950 dark:text-white">{pengajuan.nilai_penguji_total || '-'}</p>
+                      </div>
+                      <div className="app-panel p-4 text-center bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800">
+                        <p className="text-xs font-bold uppercase tracking-wider text-[#1e3a8a] dark:text-blue-300">Total & Grade</p>
+                        <p className="mt-2 text-2xl font-black text-[#1e3a8a] dark:text-blue-200">
+                          {pengajuan.nilai_akhir_angka || '-'} ({pengajuan.nilai_akhir_grade || '-'})
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
           ) : (

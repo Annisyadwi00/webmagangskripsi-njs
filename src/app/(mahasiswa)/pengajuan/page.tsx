@@ -44,6 +44,7 @@ const initialForm: PengajuanForm = {
   angkatan: '',
   semester: '',
   kelas: '',
+  tahun_akademik: '',
   jenis_magang: 'Konversi 20 SKS',
   no_hp_mahasiswa: '',
   foto_diri: '',
@@ -169,6 +170,7 @@ export default function PengajuanMahasiswaPage() {
         angkatan: userData.angkatan || '',
         semester: userData.semester || '',
         kelas: userData.kelas || '',
+        tahun_akademik: '',
         no_hp_mahasiswa: userData.phone || '',
       }));
       const [pengajuanData, mitraData] = await Promise.all([getPengajuanList(1, 10), getMitraList()]);
@@ -235,38 +237,37 @@ export default function PengajuanMahasiswaPage() {
     setForm((prev) => ({ ...prev, jenis_magang: value }));
   };
 
-  // Perbaikan: ambil juga email_perusahaan dari data mitra (jika ada)
   const handleMitraChange = (value: string) => {
-    setSelectedMitraId(value);
-    const selected = mitraList.find((mitra) => String(mitra.id) === value);
-    if (!selected) {
-      setForm((prev) => ({
-        ...prev,
-        perusahaan: '',
-        alamat_tempat_magang: '',
-        nama_penanggung_jawab: '',
-        kontak_penanggung_jawab: '',
-        email_perusahaan: '',
-      }));
-      return;
-    }
-    // Menyesuaikan dengan field yang tersedia di objek mitra
-    // Asumsikan mitra memiliki properti: nama_mitra, alamat_kantor_mitra, penanggung_jawab, kontak_narahubung_mitra, email_perusahaan (atau email)
-    const email = (selected as any).email_perusahaan || (selected as any).email || '';
+  setSelectedMitraId(value);
+  const selected = mitraList.find((mitra) => String(mitra.id) === value);
+  if (!selected) {
     setForm((prev) => ({
       ...prev,
-      perusahaan: selected.nama_mitra,
-      alamat_tempat_magang: selected.alamat_kantor_mitra || '',
-      nama_penanggung_jawab: selected.penanggung_jawab || 'Belum diisi',
-      kontak_penanggung_jawab: selected.kontak_narahubung_mitra || '',
-      email_perusahaan: email,
+      perusahaan: '',
+      alamat_tempat_magang: '',
+      nama_penanggung_jawab: '',
+      kontak_penanggung_jawab: '',
+      email_perusahaan: '',
     }));
-  };
+    return;
+  }
+  setForm((prev) => ({
+    ...prev,
+    perusahaan: selected.nama_mitra,
+    alamat_tempat_magang: selected.alamat_kantor_mitra || '',
+       nama_penanggung_jawab: '',
+    kontak_penanggung_jawab: '',
+    email_perusahaan: selected.email_perusahaan || '',
+  }));
+};
 
   const validateForm = () => {
     if (!form.nama_mahasiswa.trim() || !form.npm.trim() || !form.program_studi.trim() || !form.semester.trim() || !form.no_hp_mahasiswa.trim()) {
       return 'Data mahasiswa belum lengkap.';
     }
+    if (!form.program_studi.trim()) return 'Program studi wajib diisi.';
+    if (!form.tahun_akademik.trim()) return 'Tahun akademik wajib diisi.';
+    if (!form.no_hp_mahasiswa.trim()) return 'Nomor handphone wajib diisi.';
     if (!/^62\d{8,15}$/.test(form.no_hp_mahasiswa)) {
       return 'Nomor HP mahasiswa harus diawali 62. Contoh: 6285456123.';
     }
@@ -287,8 +288,17 @@ export default function PengajuanMahasiswaPage() {
     if (!form.perusahaan.trim()) {
       return 'Nama perusahaan / tempat magang wajib diisi.';
     }
+   if (!form.posisi.trim()) {
+      return 'Posisi / Jabatan wajib diisi.';
+    }
     if (!form.alamat_tempat_magang.trim()) {
       return 'Alamat tempat magang wajib diisi.';
+    }
+   if (!form.nama_penanggung_jawab.trim()) {
+      return 'Nama penanggung jawab wajib diisi.';
+    }
+    if (!form.kontak_penanggung_jawab.trim()) {
+      return 'Kontak penanggung jawab wajib diisi.';
     }
     if (!form.tgl_mulai.trim() || !form.tgl_berakhir.trim() || !form.rencana_magang.trim()) {
       return 'Periode dan rencana magang wajib diisi.';
@@ -333,13 +343,14 @@ export default function PengajuanMahasiswaPage() {
       formData.append('angkatan', form.angkatan.trim() || '');
       formData.append('semester', form.semester.trim() || '');
       formData.append('kelas', form.kelas.trim() || '');
+      formData.append('tahun_akademik', form.tahun_akademik.trim());
       formData.append('jenis_magang', form.jenis_magang);
       formData.append('no_hp_mahasiswa', form.no_hp_mahasiswa.trim());
       formData.append('perusahaan', form.perusahaan.trim());
-      formData.append('posisi', form.posisi.trim() || 'Peserta Magang');
+      formData.append('posisi', form.posisi.trim());
       formData.append('alamat_tempat_magang', form.alamat_tempat_magang.trim());
-      formData.append('nama_penanggung_jawab', form.nama_penanggung_jawab.trim() || 'Belum diisi');
-      formData.append('kontak_penanggung_jawab', form.kontak_penanggung_jawab.trim() || form.no_hp_mahasiswa.trim());
+      formData.append('nama_penanggung_jawab', form.nama_penanggung_jawab.trim());
+      formData.append('kontak_penanggung_jawab', form.kontak_penanggung_jawab.trim());
       formData.append('email_perusahaan', form.email_perusahaan.trim());   // kirim email perusahaan
       formData.append('latitude', form.latitude.trim() || '');
       formData.append('longitude', form.longitude.trim() || '');
@@ -504,6 +515,7 @@ export default function PengajuanMahasiswaPage() {
                   <div><label className="app-label">Angkatan</label><input type="text" name="angkatan" value={form.angkatan} onChange={handleChange} className="app-input" /></div>
                   <div><label className="app-label">Semester</label><input type="text" name="semester" value={form.semester} onChange={handleChange} className="app-input" /></div>
                   <div><label className="app-label">Kelas</label><input type="text" name="kelas" value={form.kelas} onChange={handleChange} className="app-input" /></div>
+                  <div><label className="app-label">Tahun Akademik <span className="text-red-500">*</span></label><input type="text" name="tahun_akademik" value={form.tahun_akademik} onChange={handleChange} className="app-input" placeholder="Contoh: 2023/2024 Genap" /></div>
                   <div><label className="app-label">Nomor HP Mahasiswa</label><input type="text" name="no_hp_mahasiswa" value={form.no_hp_mahasiswa} onChange={(e) => setForm((prev) => ({ ...prev, no_hp_mahasiswa: e.target.value.replace(/[^0-9]/g, '') }))} className="app-input" placeholder="628xxxxxxxxxx" /></div>
                 </div>
               </section>
@@ -553,21 +565,21 @@ export default function PengajuanMahasiswaPage() {
                 <h2 className="text-xl font-black text-slate-950 dark:text-white">Data Perusahaan & Lokasi Magang</h2>
                 <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
                   <div><label className="app-label">Nama Perusahaan / Tempat Magang <span className="text-red-500">*</span></label>
-                    <input type="text" name="perusahaan" value={form.perusahaan} onChange={handleChange} className="app-input" placeholder="Masukkan nama perusahaan" />
+                    <input type="text" name="perusahaan" value={form.perusahaan} onChange={handleChange} className="app-input" placeholder="Masukkan nama perusahaan" readOnly={isMitraTerdaftar === 'ya'} />
                   </div>
                   <div><label className="app-label">Email Perusahaan</label>
-                    <input type="email" name="email_perusahaan" value={form.email_perusahaan} onChange={handleChange} className="app-input" placeholder="contoh@perusahaan.com" />
+                    <input type="email" name="email_perusahaan" value={form.email_perusahaan} onChange={handleChange} className="app-input" placeholder="contoh@perusahaan.com" readOnly={isMitraTerdaftar === 'ya'} />
                   </div>
-                  <div><label className="app-label">Posisi / Jabatan</label>
+                  <div><label className="app-label">Posisi / Jabatan <span className="text-red-500">*</span></label>
                     <input type="text" name="posisi" value={form.posisi} onChange={handleChange} className="app-input" placeholder="Contoh: Staff IT, Trainee, dll" />
                   </div>
                   <div className="md:col-span-2"><label className="app-label">Alamat Tempat Magang <span className="text-red-500">*</span></label>
-                    <textarea name="alamat_tempat_magang" value={form.alamat_tempat_magang} onChange={handleChange} className="app-input min-h-20" placeholder="Alamat lengkap tempat magang. cont: jl. HS Ronggowaluyo Desa Sinarbaya Kec. Teluk Jambe Kab. Karawang Prov. Jawa Barat. lattitude : -6.250, longitude : 107.450" />
+                    <textarea name="alamat_tempat_magang" value={form.alamat_tempat_magang} onChange={handleChange} className="app-input min-h-20" placeholder="Alamat lengkap tempat magang. cont: jl. HS Ronggowaluyo Desa Sinarbaya Kec. Teluk Jambe Kab. Karawang Prov. Jawa Barat. lattitude : -6.250, longitude : 107.450" readOnly={isMitraTerdaftar === 'ya'} />
                   </div>
-                  <div><label className="app-label">Nama Penanggung Jawab</label>
+                  <div><label className="app-label">Nama Penanggung Jawab <span className="text-red-500">*</span></label>
                     <input type="text" name="nama_penanggung_jawab" value={form.nama_penanggung_jawab} onChange={handleChange} className="app-input" />
                   </div>
-                  <div><label className="app-label">Kontak Penanggung Jawab</label>
+                  <div><label className="app-label">Kontak Penanggung Jawab <span className="text-red-500">*</span></label>
                     <input type="text" name="kontak_penanggung_jawab" value={form.kontak_penanggung_jawab} onChange={(e) => setForm((prev) => ({ ...prev, kontak_penanggung_jawab: e.target.value.replace(/[^0-9]/g, '') }))} className="app-input" placeholder="628xxxxxxxxxx" />
                   </div>
                 </div>

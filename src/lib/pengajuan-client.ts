@@ -20,6 +20,7 @@ export type Pengajuan = {
   angkatan: string | null;
   semester: string | null;
   kelas: string | null;
+  tahun_akademik: string | null;
 
   jenis_magang: string | null;
   no_hp_mahasiswa: string | null;
@@ -60,7 +61,9 @@ export type Pengajuan = {
   nilai_koding: number | null;
   nilai_laporan: number | null;
   nilai_mitra: number | null;
-
+nilai_penguji_total?: number | null;
+  nilai_penguji_grade?: string | null;
+  nilai_penguji_detail?: Record<string, any> | null;
   // Kolom baru untuk penilaian terbaru
   nilai_mitra_total?: number | null;
   nilai_dosen_total?: number | null;
@@ -244,6 +247,16 @@ export async function beriNilaiPengajuan(payload: {
     method: 'PUT',
     body: {
       action: 'beri_nilai',
+      ...payload,
+    },
+  });
+}
+
+export async function beriNilaiPenguji(payload: any) {
+  return apiClient<null>('/api/pengajuan', {
+    method: 'PUT',
+    body: {
+      action: 'beri_nilai_penguji',
       ...payload,
     },
   });

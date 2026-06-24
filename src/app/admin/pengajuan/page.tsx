@@ -622,6 +622,7 @@ export default function AdminPengajuanPage() {
                 value={detailPengajuan.program_studi}
               />
               <DetailItem label="Angkatan" value={detailPengajuan.angkatan} />
+              <DetailItem label="Tahun Akademik" value={detailPengajuan.tahun_akademik} />
               <DetailItem label="Kelas" value={detailPengajuan.kelas} />
               <DetailItem
                 label="Jenis Magang"

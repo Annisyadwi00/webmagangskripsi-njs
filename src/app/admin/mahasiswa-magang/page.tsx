@@ -117,6 +117,7 @@ export default function AdminMahasiswaMagangPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
   const [jenisFilter, setJenisFilter] = useState('Semua');
+  const [tahunFilter, setTahunFilter] = useState('Semua');
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -165,7 +166,7 @@ export default function AdminMahasiswaMagangPage() {
       const kelas = item.kelas || '';
       const perusahaan = item.perusahaan || '';
       const dosen = item.nama_dosen || '';
-      const penguji = item.nama_dosen_penguji || '';
+      const dosenPenguji = item.nama_dosen_penguji || '';
       const jenisLabel = getJenisMagangLabel(item.jenis_magang);
 
       const matchesKeyword =
@@ -174,20 +175,27 @@ export default function AdminMahasiswaMagangPage() {
         prodi.toLowerCase().includes(keyword) ||
         angkatan.toLowerCase().includes(keyword) ||
         semester.toLowerCase().includes(keyword) ||
+        angkatan.toLowerCase().includes(keyword) ||
         kelas.toLowerCase().includes(keyword) ||
         perusahaan.toLowerCase().includes(keyword) ||
         dosen.toLowerCase().includes(keyword) ||
-        penguji.toLowerCase().includes(keyword) ||
-        jenisLabel.toLowerCase().includes(keyword);
+        dosenPenguji.toLowerCase().includes(keyword) ||
+        (item.tahun_akademik || '').toLowerCase().includes(keyword);
 
       const matchesStatus =
         statusFilter === 'Semua' || item.status === statusFilter;
       const matchesJenis =
         jenisFilter === 'Semua' || item.jenis_magang === jenisFilter;
+      const matchesTahun = 
+        tahunFilter === 'Semua' || item.tahun_akademik === tahunFilter;
 
-      return matchesKeyword && matchesStatus && matchesJenis;
+      return matchesKeyword && matchesStatus && matchesJenis && matchesTahun;
     });
-  }, [pengajuans, search, statusFilter, jenisFilter]);
+  }, [pengajuans, search, statusFilter, jenisFilter, tahunFilter]);
+
+  const uniqueTahunAkademik = Array.from(
+    new Set(pengajuans.map((p) => p.tahun_akademik).filter(Boolean))
+  ).sort().reverse();
 
   const totalAktif = pengajuans.filter((item) => item.status === 'Aktif').length;
   const totalSelesai = pengajuans.filter((item) => item.status === 'Selesai').length;
@@ -414,7 +422,7 @@ export default function AdminMahasiswaMagangPage() {
           )}
 
           <section className="app-card mb-6 p-6">
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_220px_260px]">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_200px_220px_200px]">
               <div>
                 <label className="app-label">Cari Mahasiswa</label>
                 <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="app-input" placeholder="Cari nama, NPM, prodi, angkatan, kelas, perusahaan, dosen..." />
@@ -436,6 +444,15 @@ export default function AdminMahasiswaMagangPage() {
                   <option value="Konversi 20 SKS">Konversi Maksimal 20 SKS</option>
                   <option value="Tidak Konversi">Tidak Konversi</option>
                   <option value="Konversi 2 SKS">Magang 2 SKS Khusus SI</option>
+                </select>
+              </div>
+              <div>
+                <label className="app-label">Tahun Akademik</label>
+                <select value={tahunFilter} onChange={(e) => setTahunFilter(e.target.value)} className="app-input">
+                  <option value="Semua">Semua Tahun Akademik</option>
+                  {uniqueTahunAkademik.map((tahun) => (
+                    <option key={tahun} value={tahun}>{tahun}</option>
+                  ))}
                 </select>
               </div>
             </div>

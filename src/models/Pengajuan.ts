@@ -19,6 +19,7 @@ export type PengajuanAttributes = {
   angkatan: string | null;
   semester: string | null;
   kelas: string | null;
+  tahun_akademik: string | null;
 
   jenis_magang: string | null;
   no_hp_mahasiswa: string | null;
@@ -51,7 +52,9 @@ export type PengajuanAttributes = {
   nilai_koding: number | null;
   nilai_laporan: number | null;
   nilai_mitra: number | null;
-
+nilai_penguji_total?: number | null;
+  nilai_penguji_grade?: string | null;
+  nilai_penguji_detail?: any | null;
   dosenId: number | null;
   nama_dosen: string | null;
   status_dosen: StatusDosen | null;
@@ -74,6 +77,7 @@ export type PengajuanCreationAttributes = Optional<
   | 'angkatan'
   | 'semester'
   | 'kelas'
+  | 'tahun_akademik'
   | 'jenis_magang'
   | 'no_hp_mahasiswa'
   | 'foto_diri'
@@ -122,6 +126,7 @@ class Pengajuan
   declare angkatan: string | null;
   declare semester: string | null;
   declare kelas: string | null;
+  declare tahun_akademik: string | null;
 
   declare jenis_magang: string | null;
   declare no_hp_mahasiswa: string | null;
@@ -164,6 +169,10 @@ class Pengajuan
 
   declare status: PengajuanStatus;
   declare alasan_penolakan: string | null;
+
+declare nilai_penguji_total: number | null;
+declare nilai_penguji_grade: string | null;
+declare nilai_penguji_detail: any | null;
 
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
@@ -208,6 +217,11 @@ Pengajuan.init(
     },
 
     kelas: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    tahun_akademik: {
       type: DataTypes.STRING,
       allowNull: true,
     },
@@ -325,6 +339,19 @@ Pengajuan.init(
         max: 100,
       },
     },
+
+nilai_penguji_total: {
+  type: DataTypes.DECIMAL(5,2),
+  allowNull: true,
+},
+nilai_penguji_grade: {
+  type: DataTypes.STRING(2),
+  allowNull: true,
+},
+nilai_penguji_detail: {
+  type: DataTypes.JSON,
+  allowNull: true,
+},
 
     nilai_materi: {
       type: DataTypes.INTEGER,

@@ -194,6 +194,7 @@ export default function AdminPengajuanDetailPage() {
             <DetailItem label="NPM" value={pengajuan.npm} />
             <DetailItem label="Program Studi" value={pengajuan.program_studi} />
             <DetailItem label="Angkatan" value={pengajuan.angkatan} />
+            <DetailItem label="Tahun Akademik" value={pengajuan.tahun_akademik} />
             <DetailItem label="Kelas" value={pengajuan.kelas} />
             <DetailItem
               label="No HP Mahasiswa"

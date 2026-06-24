@@ -131,7 +131,7 @@ export default function AdminMahasiswaMagangPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
   const [jenisFilter, setJenisFilter] = useState('Semua');
-
+  const [tahunFilter, setTahunFilter] = useState('Semua');
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -193,17 +193,25 @@ export default function AdminMahasiswaMagangPage() {
         perusahaan.toLowerCase().includes(keyword) ||
         dosen.toLowerCase().includes(keyword) ||
         penguji.toLowerCase().includes(keyword) ||
-        jenisLabel.toLowerCase().includes(keyword);
+        jenisLabel.toLowerCase().includes(keyword) ||
+        (item.tahun_akademik || '').toLowerCase().includes(keyword);
 
       const matchesStatus =
         statusFilter === 'Semua' || item.status === statusFilter;
 
       const matchesJenis =
         jenisFilter === 'Semua' || item.jenis_magang === jenisFilter;
+        
+      const matchesTahun = 
+        tahunFilter === 'Semua' || item.tahun_akademik === tahunFilter;
 
-      return matchesKeyword && matchesStatus && matchesJenis;
+      return matchesKeyword && matchesStatus && matchesJenis && matchesTahun;
     });
-  }, [pengajuans, search, statusFilter, jenisFilter]);
+  }, [pengajuans, search, statusFilter, jenisFilter, tahunFilter]);
+
+  const uniqueTahunAkademik = Array.from(
+    new Set(pengajuans.map((p) => p.tahun_akademik).filter(Boolean))
+  ).sort().reverse();
 
   const totalAktif = pengajuans.filter((item) => item.status === 'Aktif').length;
 
@@ -582,7 +590,7 @@ export default function AdminMahasiswaMagangPage() {
           )}
 
           <section className="app-card mb-6 p-6">
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_220px_260px]">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_200px_220px_200px]">
               <div>
                 <label className="app-label">Cari Mahasiswa</label>
                 <input
@@ -626,6 +634,20 @@ export default function AdminMahasiswaMagangPage() {
                   <option value="Konversi 2 SKS">
                     Magang 2 SKS Khusus SI
                   </option>
+                </select>
+              </div>
+
+              <div>
+                <label className="app-label">Tahun Akademik</label>
+                <select
+                  value={tahunFilter}
+                  onChange={(e) => setTahunFilter(e.target.value)}
+                  className="app-input"
+                >
+                  <option value="Semua">Semua Tahun Akademik</option>
+                  {uniqueTahunAkademik.map((tahun) => (
+                    <option key={tahun} value={tahun}>{tahun}</option>
+                  ))}
                 </select>
               </div>
             </div>

@@ -5,36 +5,42 @@ import { Readable } from 'stream';
 import PengajuanMitra from '@/models/PengajuanMitra';
 import { connectDB } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
-
 type PengajuanMitraStatus = 'Menunggu' | 'Disetujui' | 'Ditolak';
 const allowedStatus: PengajuanMitraStatus[] = ['Menunggu', 'Disetujui', 'Ditolak'];
 const allowedSistemKerja = ['Onsite', 'Hybrid', 'Remote'];
-
 /* ========== Google Drive Auth & Upload ========== */
 const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
-
 function getDriveClient() {
+  const serviceAccountEmail = process.env.GOOGLE_DRIVE_CLIENT_EMAIL;
+  const privateKey = process.env.GOOGLE_DRIVE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  // Gunakan Service Account jika ada
+  if (serviceAccountEmail && privateKey) {
+    const auth = new google.auth.GoogleAuth({
+      credentials: {
+        client_email: serviceAccountEmail,
+        private_key: privateKey,
+      },
+      scopes: SCOPES,
+    });
+    return google.drive({ version: 'v3', auth });
+  }
+  // Fallback ke OAuth2 (Refresh Token)
   const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
   const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
-
   if (!clientId || !clientSecret || !refreshToken) {
     throw new Error('Google Drive credentials tidak lengkap.');
+    throw new Error('Google Drive credentials tidak lengkap (Service Account atau OAuth2 tidak ditemukan).');
   }
-
   const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
   oauth2Client.setCredentials({ refresh_token: refreshToken });
-
   return google.drive({ version: 'v3', auth: oauth2Client });
 }
-
 async function uploadToDrive(file: File, fileName: string): Promise<string> {
   const drive = getDriveClient();
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-
+  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID_MITRA;
   const fileBuffer = Buffer.from(await file.arrayBuffer());
   const stream = Readable.from(fileBuffer);
-
   const response = await drive.files.create({
     requestBody: {
       name: fileName,
@@ -46,10 +52,8 @@ async function uploadToDrive(file: File, fileName: string): Promise<string> {
     },
     fields: 'id',
   });
-
   const fileId = response.data.id;
   if (!fileId) throw new Error('Gagal mendapatkan file ID dari Google Drive.');
-
   await drive.permissions.create({
     fileId,
     requestBody: {
@@ -57,10 +61,8 @@ async function uploadToDrive(file: File, fileName: string): Promise<string> {
       role: 'reader',
     },
   });
-
   return `https://drive.google.com/file/d/${fileId}/view`;
 }
-
 /* ========== Form Parser ========== */
 async function parseFormData(request: Request): Promise<{
   fields: Record<string, string>;
@@ -70,19 +72,15 @@ async function parseFormData(request: Request): Promise<{
   if (!contentType.includes('multipart/form-data')) {
     throw new Error('Content-Type harus multipart/form-data');
   }
-
   const body = await request.arrayBuffer();
   const buffer = Buffer.from(body);
-
   return new Promise((resolve, reject) => {
     const bb = busboy({ headers: { 'content-type': contentType } });
     const fields: Record<string, string> = {};
     const files: Record<string, File> = {};
-
     bb.on('field', (name, value) => {
       fields[name] = value;
     });
-
     bb.on('file', (name, file, info) => {
       const chunks: Buffer[] = [];
       file.on('data', (chunk) => {
@@ -94,16 +92,13 @@ async function parseFormData(request: Request): Promise<{
         files[name] = fileObj;
       });
     });
-
     bb.on('close', () => {
       resolve({ fields, files });
     });
-
     bb.on('error', (err) => reject(err));
     bb.end(buffer);
   });
 }
-
 /* ========== Validasi ========== */
 function isValidUrl(value: string | null) {
   if (!value) return true;
@@ -114,61 +109,49 @@ function isValidUrl(value: string | null) {
     return false;
   }
 }
-
 function isValidEmail(value: string | null) {
   if (!value) return true;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
-
 function isValidPhone(value: string) {
   return /^62\d{8,15}$/.test(value);
 }
-
 function isStaffRole(role?: string | null) {
   return role === 'Admin' || role === 'Super Admin';
 }
-
 /* ========== Route Handlers ========== */
 export async function GET() {
   try {
     await connectDB();
     const user = await getCurrentUser();
-
     if (!user) {
       return NextResponse.json({ success: false, message: 'Akses ditolak.' }, { status: 401 });
     }
-
     if (isStaffRole(user.role)) {
       const data = await PengajuanMitra.findAll({ order: [['createdAt', 'DESC']] });
       return NextResponse.json({ success: true, message: 'Data berhasil diambil.', data }, { status: 200 });
     }
-
     if (user.role === 'Mahasiswa') {
       const data = await PengajuanMitra.findAll({ where: { user_id: user.id }, order: [['createdAt', 'DESC']] });
       return NextResponse.json({ success: true, message: 'Data berhasil diambil.', data }, { status: 200 });
     }
-
     return NextResponse.json({ success: false, message: 'Role tidak memiliki akses.' }, { status: 403 });
   } catch (error) {
     console.error('GET_PENGAJUAN_MITRA_ERROR:', error);
     return NextResponse.json({ success: false, message: 'Terjadi kesalahan server.' }, { status: 500 });
   }
 }
-
 export async function POST(request: Request) {
   try {
     await connectDB();
     const user = await getCurrentUser();
-
     if (!user) {
       return NextResponse.json({ success: false, message: 'Akses ditolak. Silakan login.' }, { status: 401 });
     }
     if (user.role !== 'Mahasiswa') {
       return NextResponse.json({ success: false, message: 'Hanya mahasiswa yang dapat mengajukan mitra.' }, { status: 403 });
     }
-
     const { fields, files } = await parseFormData(request);
-
     // Ambil field yang diperlukan
     const nama_mitra = fields.nama_mitra?.trim();
     const alamat_kantor_mitra = fields.alamat_kantor_mitra?.trim();
@@ -188,10 +171,8 @@ export async function POST(request: Request) {
     const angkatan_mahasiswa = fields.angkatan_mahasiswa?.trim();
     const kontak_mahasiswa = fields.kontak_mahasiswa?.trim();
     const kelas = fields.kelas?.trim();
-
     const latitude = fields.latitude ? parseFloat(fields.latitude) : null;
     const longitude = fields.longitude ? parseFloat(fields.longitude) : null;
-
     // Validasi mandatory fields
     if (
       !nama_mitra || !alamat_kantor_mitra || !nama_narahubung_mitra ||
@@ -202,15 +183,12 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json({ success: false, message: 'Semua field wajib diisi.' }, { status: 400 });
     }
-
     if (!allowedSistemKerja.includes(sistem_kerja)) {
       return NextResponse.json({ success: false, message: 'Sistem kerja tidak valid.' }, { status: 400 });
     }
-
     if (!Number.isInteger(kuota) || kuota < 1) {
       return NextResponse.json({ success: false, message: 'Kuota harus angka minimal 1.' }, { status: 400 });
     }
-
     if (url_mitra && !isValidUrl(url_mitra)) {
       return NextResponse.json({ success: false, message: 'Format URL mitra tidak valid.' }, { status: 400 });
     }
@@ -226,14 +204,12 @@ export async function POST(request: Request) {
     if (!isValidPhone(kontak_mahasiswa)) {
       return NextResponse.json({ success: false, message: 'Nomor kontak mahasiswa harus diawali 62.' }, { status: 400 });
     }
-
     if (latitude !== null && (latitude < -90 || latitude > 90)) {
       return NextResponse.json({ success: false, message: 'Latitude harus antara -90 dan 90.' }, { status: 400 });
     }
     if (longitude !== null && (longitude < -180 || longitude > 180)) {
       return NextResponse.json({ success: false, message: 'Longitude harus antara -180 dan 180.' }, { status: 400 });
     }
-
     // Validasi file PDF (semua harus ada)
     const requiredFiles = ['akta_pendirian', 'akta_direksi', 'ktp_penandatangan', 'npwp_perusahaan', 'izin_usaha'];
     for (const fileKey of requiredFiles) {
@@ -244,13 +220,11 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: `Dokumen ${fileKey} harus PDF.` }, { status: 400 });
       }
     }
-
     // Upload ke Google Drive dan dapatkan link publik
     let link_akta_pendirian: string, link_akta_direksi: string, link_ktp_penandatangan: string, link_npwp: string, link_izin_usaha: string;
     try {
       const timestamp = Date.now();
       const makeName = (prefix: string) => `${prefix}_${timestamp}_${user.id}.pdf`;
-
       link_akta_pendirian = await uploadToDrive(files.akta_pendirian, makeName('akta_pendirian'));
       link_akta_direksi = await uploadToDrive(files.akta_direksi, makeName('akta_direksi'));
       link_ktp_penandatangan = await uploadToDrive(files.ktp_penandatangan, makeName('ktp'));
@@ -260,7 +234,6 @@ export async function POST(request: Request) {
       console.error('UPLOAD_TO_DRIVE_ERROR:', uploadError);
       return NextResponse.json({ success: false, message: 'Gagal mengunggah file ke Google Drive.' }, { status: 500 });
     }
-
     // Simpan ke database
     const newPengajuanMitra = await PengajuanMitra.create({
       user_id: user.id,
@@ -292,36 +265,30 @@ export async function POST(request: Request) {
       status: 'Menunggu',
       catatan_admin: null,
     });
-
     return NextResponse.json({
       success: true,
       message: 'Pengajuan mitra berhasil dikirim dan akan diperiksa oleh staff.',
       data: newPengajuanMitra,
     }, { status: 201 });
-
   } catch (error) {
     console.error('CREATE_PENGAJUAN_MITRA_ERROR:', error);
     return NextResponse.json({ success: false, message: 'Terjadi kesalahan server.' }, { status: 500 });
   }
 }
-
 export async function PUT(request: Request) {
   try {
     await connectDB();
     const user = await getCurrentUser();
-
     if (!user) {
       return NextResponse.json({ success: false, message: 'Akses ditolak.' }, { status: 401 });
     }
     if (!isStaffRole(user.role)) {
       return NextResponse.json({ success: false, message: 'Hanya staff yang dapat memverifikasi.' }, { status: 403 });
     }
-
     const body = await request.json();
     const id = Number(body.id);
     const status = body.status as PengajuanMitraStatus;
     const catatan_admin = body.catatan_admin?.trim() || null;
-
     if (!id || Number.isNaN(id) || !status) {
       return NextResponse.json({ success: false, message: 'ID dan status wajib dikirim.' }, { status: 400 });
     }
@@ -331,14 +298,11 @@ export async function PUT(request: Request) {
     if (status === 'Ditolak' && !catatan_admin) {
       return NextResponse.json({ success: false, message: 'Catatan staff wajib diisi jika ditolak.' }, { status: 400 });
     }
-
     const pengajuanMitra = await PengajuanMitra.findByPk(id);
     if (!pengajuanMitra) {
       return NextResponse.json({ success: false, message: 'Pengajuan tidak ditemukan.' }, { status: 404 });
     }
-
     await pengajuanMitra.update({ status, catatan_admin });
-
     return NextResponse.json({ success: true, message: 'Status berhasil diperbarui.' }, { status: 200 });
   } catch (error) {
     console.error('UPDATE_PENGAJUAN_MITRA_ERROR:', error);

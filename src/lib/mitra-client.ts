@@ -23,12 +23,19 @@ export type Mitra = {
 
 function normalizeMitraData(data: unknown): Mitra[] {
   if (!data) return [];
-  if (Array.isArray(data)) return data as Mitra[];
-  // jika data berbentuk { data: Mitra[] }
-  if (typeof data === 'object' && 'data' in data && Array.isArray((data as any).data)) {
-    return (data as any).data as Mitra[];
+  let items: any[] = [];
+  if (Array.isArray(data)) items = data;
+  else if (typeof data === 'object' && 'data' in data && Array.isArray((data as any).data)) {
+    items = (data as any).data;
   }
-  return [];
+  
+  return items.map(item => ({
+    ...item,
+    alamat_kantor_mitra: item.alamat_kantor_mitra || item.alamat || null,
+    url_mitra: item.url_mitra || item.website || null,
+    email_perusahaan: item.email_perusahaan || item.email || null,
+    kontak_narahubung_mitra: item.kontak_narahubung_mitra || item.kontak_wa || null,
+  })) as Mitra[];
 }
 
 export async function getMitraList(limit?: number): Promise<Mitra[]> {

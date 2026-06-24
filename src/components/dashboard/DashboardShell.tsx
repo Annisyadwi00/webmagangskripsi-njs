@@ -50,6 +50,7 @@ const navItems: Record<DashboardRole, NavItem[]> = {
   Dosen: [
     { label: 'Dashboard', href: '/dosen/dashboard' },
     { label: 'Laporan Magang', href: '/dosen/laporan-akhir' },
+    {label: 'Penguji', href: '/dosen/dosen-penguji'},
     { label: 'Penilaian Akhir', href: '/dosen/penilaian' },
     { label: 'Settings', href: '/settings' },
   ],
