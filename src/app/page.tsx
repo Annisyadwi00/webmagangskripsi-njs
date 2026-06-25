@@ -67,7 +67,7 @@ const faqs: FAQ[] = [
   {
     tanya: 'Siapa saja yang bisa menggunakan SI Magang?',
     jawab:
-      'Sistem ini digunakan oleh mahasiswa, dosen pembimbing, staff, dan super admin sesuai kebutuhan proses magang.',
+      'Sistem ini digunakan oleh mahasiswa, dosen pembimbing, dan staff sesuai kebutuhan proses magang.',
   },
   {
     tanya: 'Bagaimana alur pengajuan magang?',
