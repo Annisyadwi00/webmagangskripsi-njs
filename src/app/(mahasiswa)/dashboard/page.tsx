@@ -451,9 +451,9 @@ export default function PengajuanMahasiswaPage() {
       <main className="min-h-screen py-8">
         <div className="app-container">
           <PageHeader
-            eyebrow="Pendataan Magang"
-            title="Pengajuan Magang"
-            description="Isi data mahasiswa untuk memulai pengajuan magang."
+            eyebrow="Mahasiswa"
+            title="Dashboard"
+            description="Ringkasan aktivitas dan informasi magang Anda."
           />
 
           {message && <Alert variant="success">{message}</Alert>}
@@ -606,78 +606,18 @@ export default function PengajuanMahasiswaPage() {
               </div>
             </section>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <section className="app-card p-6">
-                <h2 className="text-xl font-black text-slate-950 dark:text-white">Data Mahasiswa</h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Data mahasiswa diambil dari akun. Lengkapi bagian yang masih kosong.
-                </p>
-
-                <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div>
-                    <label className="app-label">Nama Mahasiswa</label>
-                    <input type="text" name="nama_mahasiswa" value={form.nama_mahasiswa} onChange={handleChange} className="app-input" placeholder="Nama lengkap" />
-                  </div>
-                  <div>
-                    <label className="app-label">NPM</label>
-                    <input type="text" name="npm" value={form.npm} onChange={handleChange} className="app-input" placeholder="NPM" />
-                  </div>
-                  <div>
-                    <label className="app-label">Program Studi</label>
-                    <input type="text" name="program_studi" value={form.program_studi} onChange={handleChange} className="app-input" placeholder="Informatika / Sistem Informasi" />
-                  </div>
-                  <div>
-                    <label className="app-label">Angkatan</label>
-                    <input type="text" name="angkatan" value={form.angkatan} onChange={handleChange} className="app-input" placeholder="2022" />
-                  </div>
-                  <div>
-                    <label className="app-label">Semester</label>
-                    <input type="text" name="semester" value={form.semester} onChange={handleChange} className="app-input" placeholder="7" />
-                  </div>
-                  <div>
-                    <label className="app-label">Kelas</label>
-                    <input type="text" name="kelas" value={form.kelas} onChange={handleChange} className="app-input" placeholder="7C" />
-                  </div>
-                  <div>
-                    <label className="app-label">Nomor HP Mahasiswa</label>
-                    <input
-                      type="text"
-                      name="no_hp_mahasiswa"
-                      value={form.no_hp_mahasiswa}
-                      onChange={(e) => setForm((prev) => ({ ...prev, no_hp_mahasiswa: e.target.value.replace(/[^0-9]/g, '') }))}
-                      className="app-input"
-                      placeholder="628xxxxxxxxxx"
-                    />
-                  </div>
-                  <div>
-                    <label className="app-label">Jenis Magang</label>
-                    <select name="jenis_magang" value={form.jenis_magang} onChange={handleChange} className="app-input">
-                      <option value="Konversi 20 SKS">Konversi Maksimal 20 SKS</option>
-                      <option value="Konversi 2 SKS">Magang 2 SKS Khusus SI</option>
-                      <option value="Tidak Konversi">Tidak Konversi</option>
-                    </select>
-                  </div>
-                </div>
-              </section>
-
-              <div className="flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={resetDraft}
-                  disabled={isSubmitting}
-                  className="app-btn-secondary"
-                >
-                  Reset Form
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="app-btn-primary"
-                >
-                  {isSubmitting ? 'Mengirim...' : 'Kirim Pengajuan'}
-                </button>
+            <div className="app-card flex flex-col items-center justify-center p-12 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-3xl dark:bg-blue-900/20">
+                📄
               </div>
-            </form>
+              <h2 className="mt-4 text-xl font-black text-slate-950 dark:text-white">Anda belum melakukan pengajuan</h2>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                Silakan lakukan pengajuan magang melalui halaman Pengajuan Magang.
+              </p>
+              <Link href="/pengajuan" className="mt-6 app-btn-primary">
+                Ke Halaman Pengajuan
+              </Link>
+            </div>
           )}
         </div>
       </main>
