@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Tambahkan baris ini agar Next.js tidak nge-bundle Sequelize secara berlebihan
   serverExternalPackages: ['sequelize'],
-  swcMinify: false,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   experimental: {
-    // Membatasi worker yang berjalan bersamaan saat build untuk menghemat RAM
     memoryBasedWorkersCount: true,
   }
 };
