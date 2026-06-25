@@ -649,8 +649,34 @@ export default function PengajuanMahasiswaPage() {
                       placeholder="628xxxxxxxxxx"
                     />
                   </div>
+                  <div>
+                    <label className="app-label">Jenis Magang</label>
+                    <select name="jenis_magang" value={form.jenis_magang} onChange={handleChange} className="app-input">
+                      <option value="Konversi 20 SKS">Konversi Maksimal 20 SKS</option>
+                      <option value="Konversi 2 SKS">Magang 2 SKS Khusus SI</option>
+                      <option value="Tidak Konversi">Tidak Konversi</option>
+                    </select>
+                  </div>
                 </div>
               </section>
+
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={resetDraft}
+                  disabled={isSubmitting}
+                  className="app-btn-secondary"
+                >
+                  Reset Form
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="app-btn-primary"
+                >
+                  {isSubmitting ? 'Mengirim...' : 'Kirim Pengajuan'}
+                </button>
+              </div>
             </form>
           )}
         </div>
