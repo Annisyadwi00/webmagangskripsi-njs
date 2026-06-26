@@ -84,6 +84,11 @@ const faqs: FAQ[] = [
     jawab:
       'Dosen pembimbing melihat dokumen laporan mahasiswa lalu menginput komponen penilaian akhir, termasuk nilai mitra atau tempat magang.',
   },
+  {
+    tanya: 'Apakah saya bisa mengajukan mitra magang baru?',
+    jawab:
+      'Tentu saja, jika perusahaan atau instansi tujuan Anda belum terdaftar di sistem, Anda dapat mengajukannya melalui fitur Ajukan Mitra.',
+  },
 ];
 
 function getInitial(name?: string | null) {
@@ -340,17 +345,31 @@ export default function LandingPage() {
                     <span className="font-black text-slate-950 dark:text-white">
                       {faq.tanya}
                     </span>
-                    <span className="text-xl font-black text-[#1e3a8a] dark:text-blue-300">
-                      {openFaq === index ? '−' : '+'}
+                    <span
+                      className={`text-[#1e3a8a] transition-transform duration-300 dark:text-blue-300 ${
+                        openFaq === index ? 'rotate-180' : ''
+                      }`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m6 9 6 6 6-6"/>
+                      </svg>
                     </span>
                   </button>
-                  {openFaq === index && (
-                    <div className="border-t border-slate-100 px-5 pb-5 pt-4 dark:border-slate-800">
-                      <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">
-                        {faq.jawab}
-                      </p>
+                  <div
+                    className={`grid transition-all duration-300 ease-in-out ${
+                      openFaq === index
+                        ? 'grid-rows-[1fr] opacity-100'
+                        : 'grid-rows-[0fr] opacity-0'
+                    }`}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="border-t border-slate-100 px-5 pb-5 pt-4 dark:border-slate-800">
+                        <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">
+                          {faq.jawab}
+                        </p>
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
