@@ -97,6 +97,46 @@ export default function DashboardShell({ role, children }: DashboardShellProps) 
     setIsOpen(false);
   }, [pathname]);
 
+  // Auto logout setelah 10 menit tidak ada aktivitas
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    const doLogout = async () => {
+      alert('Sesi Anda telah berakhir secara otomatis karena tidak ada aktivitas selama 10 menit.');
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+      } catch (e) {
+        // ignore errors on auto logout
+      }
+      window.location.href = '/';
+    };
+
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      // 10 menit = 600000 milidetik
+      timeoutId = setTimeout(doLogout, 600000);
+    };
+
+    // Jalankan pertama kali
+    resetTimer();
+
+    // Daftar event yang menandakan pengguna aktif
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    
+    // Pasang event listener
+    events.forEach((event) => {
+      window.addEventListener(event, resetTimer);
+    });
+
+    // Bersihkan saat komponen di-unmount
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach((event) => {
+        window.removeEventListener(event, resetTimer);
+      });
+    };
+  }, []);
+
   const toggleDarkMode = () => {
     const nextMode = !isDarkMode;
     document.documentElement.classList.toggle('dark', nextMode);
