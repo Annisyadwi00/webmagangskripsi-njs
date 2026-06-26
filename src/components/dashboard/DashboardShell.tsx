@@ -267,7 +267,7 @@ export default function DashboardShell({ role, children }: DashboardShellProps) 
       </header>
 
       <div className="min-w-0 lg:pl-72">
-        <main className="animate-fade-slide min-w-0">{children}</main>
+        <main className="min-w-0">{children}</main>
       </div>
     </div>
   );
