@@ -497,7 +497,7 @@ export default function PengajuanMahasiswaPage() {
                     className="app-panel app-card-hover p-5"
                   >
                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-lg font-black text-[#1e3a8a] dark:bg-blue-400/10 dark:text-blue-300">
-                      ↓
+                      📄
                     </div>
                     <h3 className="mt-4 text-lg font-black leading-snug text-slate-950 dark:text-white">{item.title}</h3>
                     <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{item.description}</p>
