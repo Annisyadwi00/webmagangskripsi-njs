@@ -165,7 +165,14 @@ export async function GET(request: Request) {
       where = { user_id: user.id };
     } else if (user.role === 'Dosen') {
       const attributes = Object.keys(Pengajuan.getAttributes());
-      if (attributes.includes('dosenId')) {
+      if (attributes.includes('dosenId') && attributes.includes('dosenPengujiId')) {
+        where = {
+          [Op.or]: [
+            { dosenId: user.id },
+            { dosenPengujiId: user.id }
+          ]
+        };
+      } else if (attributes.includes('dosenId')) {
         where = { dosenId: user.id };
       } else {
         console.warn('Kolom dosenId tidak ditemukan di model Pengajuan');
