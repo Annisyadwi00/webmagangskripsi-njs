@@ -5,7 +5,7 @@ import { mkdir } from 'fs/promises';
 import path from 'path';
 import busboy from 'busboy';
 import Pengajuan from '@/models/Pengajuan';
-import { connectDB } from '@/lib/db';
+import { connectDB, syncDatabase } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 import { google } from 'googleapis';
 import { Readable } from 'stream';
@@ -656,6 +656,7 @@ export async function PUT(request: Request) {
           );
         }
 
+        await syncDatabase();
         await pengajuan.update({
           nilai_mitra_total,
           nilai_dosen_total,

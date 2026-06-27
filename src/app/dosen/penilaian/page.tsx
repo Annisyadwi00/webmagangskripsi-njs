@@ -604,6 +604,8 @@ export default function DosenPenilaianPage() {
                 {selectedPengajuan.nama_mahasiswa} • {selectedPengajuan.perusahaan}
               </p>
             </div>
+            
+            {errorMsg && <Alert variant="error" className="mb-4">{errorMsg}</Alert>}
 
             <form onSubmit={handleNextToDosen} className="space-y-5">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -679,6 +681,8 @@ export default function DosenPenilaianPage() {
                 {selectedPengajuan.nama_mahasiswa} • {selectedPengajuan.perusahaan}
               </p>
             </div>
+
+            {errorMsg && <Alert variant="error" className="mb-4">{errorMsg}</Alert>}
 
             <form onSubmit={handleSubmitNilai} className="space-y-5">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
