@@ -52,9 +52,17 @@ export type PengajuanAttributes = {
   nilai_koding: number | null;
   nilai_laporan: number | null;
   nilai_mitra: number | null;
-nilai_penguji_total?: number | null;
+  nilai_penguji_total?: number | null;
   nilai_penguji_grade?: string | null;
   nilai_penguji_detail?: any | null;
+
+  nilai_mitra_total?: number | null;
+  nilai_dosen_total?: number | null;
+  nilai_akhir_angka?: number | null;
+  nilai_akhir_grade?: string | null;
+  nilai_mitra_detail?: any | null;
+  nilai_dosen_detail?: any | null;
+  
   dosenId: number | null;
   nama_dosen: string | null;
   status_dosen: StatusDosen | null;
@@ -102,6 +110,12 @@ export type PengajuanCreationAttributes = Optional<
   | 'nilai_koding'
   | 'nilai_laporan'
   | 'nilai_mitra'
+  | 'nilai_mitra_total'
+  | 'nilai_dosen_total'
+  | 'nilai_akhir_angka'
+  | 'nilai_akhir_grade'
+  | 'nilai_mitra_detail'
+  | 'nilai_dosen_detail'
   | 'dosenId'
   | 'nama_dosen'
   | 'status_dosen'
@@ -173,6 +187,13 @@ class Pengajuan
 declare nilai_penguji_total: number | null;
 declare nilai_penguji_grade: string | null;
 declare nilai_penguji_detail: any | null;
+
+declare nilai_mitra_total: number | null;
+declare nilai_dosen_total: number | null;
+declare nilai_akhir_angka: number | null;
+declare nilai_akhir_grade: string | null;
+declare nilai_mitra_detail: any | null;
+declare nilai_dosen_detail: any | null;
 
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
@@ -387,6 +408,31 @@ nilai_penguji_detail: {
         min: 0,
         max: 100,
       },
+    },
+
+    nilai_mitra_total: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: true,
+    },
+    nilai_dosen_total: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: true,
+    },
+    nilai_akhir_angka: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: true,
+    },
+    nilai_akhir_grade: {
+      type: DataTypes.STRING(2),
+      allowNull: true,
+    },
+    nilai_mitra_detail: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    nilai_dosen_detail: {
+      type: DataTypes.JSON,
+      allowNull: true,
     },
 
     dosenId: {

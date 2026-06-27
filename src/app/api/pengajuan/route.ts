@@ -597,31 +597,30 @@ export async function PUT(request: Request) {
       }
       // --- Aksi: beri nilai akhir (dosen pembimbing) ---
       if (action === 'beri_nilai') {
-        // (kode yang sudah ada, tetap dipertahankan)
         const {
-          nilai_dari_dosen,
-          nilai_kedisiplinan,
-          nilai_materi,
-          nilai_koding,
-          nilai_laporan,
-          nilai_mitra,
+          nilai_mitra_total,
+          nilai_dosen_total,
+          nilai_akhir_angka,
+          nilai_akhir_grade,
+          nilai_mitra_detail,
+          nilai_dosen_detail,
         } = body;
+
         if (
-          !nilai_dari_dosen ||
-          !isValidScore(nilai_kedisiplinan) ||
-          !isValidScore(nilai_materi) ||
-          !isValidScore(nilai_koding) ||
-          !isValidScore(nilai_laporan) ||
-          !isValidScore(nilai_mitra)
+          nilai_mitra_total === undefined ||
+          nilai_dosen_total === undefined ||
+          nilai_akhir_angka === undefined ||
+          !nilai_akhir_grade
         ) {
           return NextResponse.json(
             {
               success: false,
-              message: 'Nilai dosen dan nilai mitra wajib lengkap pada rentang 0-100.',
+              message: 'Data nilai mitra dan dosen wajib lengkap.',
             },
             { status: 400 }
           );
         }
+
         const jenisMagang = pengajuan.getDataValue('jenis_magang');
         if (jenisMagang !== 'Tidak Konversi') {
           if (!pengajuan.getDataValue('link_laporan_akhir')) {
@@ -646,6 +645,7 @@ export async function PUT(request: Request) {
             );
           }
         }
+
         if (!['Aktif', 'Selesai'].includes(pengajuan.getDataValue('status'))) {
           return NextResponse.json(
             {
@@ -655,15 +655,18 @@ export async function PUT(request: Request) {
             { status: 400 }
           );
         }
+
         await pengajuan.update({
-          nilai_dari_dosen,
-          nilai_kedisiplinan,
-          nilai_materi,
-          nilai_koding,
-          nilai_laporan,
-          nilai_mitra,
+          nilai_mitra_total,
+          nilai_dosen_total,
+          nilai_akhir_angka,
+          nilai_akhir_grade,
+          nilai_mitra_detail,
+          nilai_dosen_detail,
+          nilai_dari_dosen: String(nilai_akhir_grade),
           status: 'Selesai',
         });
+
         return NextResponse.json(
           { success: true, message: 'Nilai akhir mahasiswa berhasil disimpan.' },
           { status: 200 }

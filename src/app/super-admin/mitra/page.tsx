@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 import PageHeader from '@/components/ui/PageHeader';
@@ -473,7 +474,7 @@ export default function SuperAdminMitraPage() {
           )}
         </div>
 
-        {showForm && (
+        {showForm && typeof document !== 'undefined' && createPortal(
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
             <div
               className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
@@ -623,7 +624,8 @@ export default function SuperAdminMitraPage() {
                 </div>
               </form>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </main>
     </DashboardShell>

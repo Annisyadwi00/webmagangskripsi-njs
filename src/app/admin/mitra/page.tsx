@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import PageHeader from '@/components/ui/PageHeader';
 import Alert from '@/components/ui/Alert';
 import StatCard from '@/components/ui/StatCard';
@@ -384,7 +385,7 @@ export default function AdminMitraPage() {
       </div>
 
       {/* Modal Form dengan upload file (sama seperti ajukan mitra) */}
-      {showForm && (
+      {showForm && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={closeForm} />
           <div className="relative z-10 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
@@ -611,7 +612,8 @@ export default function AdminMitraPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </main>
   );
