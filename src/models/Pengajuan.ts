@@ -54,14 +54,14 @@ export type PengajuanAttributes = {
   nilai_mitra: number | null;
   nilai_penguji_total?: number | null;
   nilai_penguji_grade?: string | null;
-  nilai_penguji_detail?: any | null;
+  nilai_penguji_detail?: Record<string, unknown> | null;
 
   nilai_mitra_total?: number | null;
   nilai_dosen_total?: number | null;
   nilai_akhir_angka?: number | null;
   nilai_akhir_grade?: string | null;
-  nilai_mitra_detail?: any | null;
-  nilai_dosen_detail?: any | null;
+  nilai_mitra_detail?: Record<string, unknown> | null;
+  nilai_dosen_detail?: Record<string, unknown> | null;
   
   dosenId: number | null;
   nama_dosen: string | null;
@@ -186,14 +186,14 @@ class Pengajuan
 
 declare nilai_penguji_total: number | null;
 declare nilai_penguji_grade: string | null;
-declare nilai_penguji_detail: any | null;
+declare nilai_penguji_detail: Record<string, unknown> | null;
 
 declare nilai_mitra_total: number | null;
 declare nilai_dosen_total: number | null;
 declare nilai_akhir_angka: number | null;
 declare nilai_akhir_grade: string | null;
-declare nilai_mitra_detail: any | null;
-declare nilai_dosen_detail: any | null;
+declare nilai_mitra_detail: Record<string, unknown> | null;
+declare nilai_dosen_detail: Record<string, unknown> | null;
 
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;

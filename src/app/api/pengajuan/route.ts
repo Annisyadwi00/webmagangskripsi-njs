@@ -141,6 +141,7 @@ async function parseFormData(request: Request): Promise<{
 export async function GET(request: Request) {
   try {
     await connectDB();
+    await syncDatabase();
     if (!Pengajuan) {
       console.error('Model Pengajuan tidak ditemukan');
       return NextResponse.json(
