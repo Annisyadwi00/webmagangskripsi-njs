@@ -605,7 +605,9 @@ export default function DosenPenilaianPage() {
               </p>
             </div>
             
-            {errorMsg && <Alert variant="error" className="mb-4">{errorMsg}</Alert>}
+            <div className="mb-4">
+              {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
+            </div>
 
             <form onSubmit={handleNextToDosen} className="space-y-5">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -682,7 +684,9 @@ export default function DosenPenilaianPage() {
               </p>
             </div>
 
-            {errorMsg && <Alert variant="error" className="mb-4">{errorMsg}</Alert>}
+            <div className="mb-4">
+              {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
+            </div>
 
             <form onSubmit={handleSubmitNilai} className="space-y-5">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
