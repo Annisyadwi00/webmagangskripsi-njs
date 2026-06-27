@@ -5,6 +5,7 @@ import Link from 'next/link';
 import DashboardShell from '@/components/dashboard/DashboardShell';
 import PageHeader from '@/components/ui/PageHeader';
 import Alert from '@/components/ui/Alert';
+import LoadingAnimation from '@/components/ui/LoadingAnimation';
 import ProgressStepper from '@/components/ui/ProgressStepper';
 import { getDashboardPathByRole } from '@/lib/role-redirect';
 import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
@@ -436,9 +437,7 @@ export default function PengajuanMahasiswaPage() {
         <main className="min-h-screen py-8">
           <div className="app-container">
             <div className="app-card p-8">
-              <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
-              <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
-              <div className="mt-8 h-96 animate-pulse rounded-3xl bg-slate-100 dark:bg-slate-800" />
+              <LoadingAnimation />
             </div>
           </div>
         </main>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import Alert from '@/components/ui/Alert';
+import LoadingAnimation from '@/components/ui/LoadingAnimation';
 import { getDashboardPathByRole } from '@/lib/role-redirect';
 import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
 import { Pengajuan, getPengajuanList } from '@/lib/pengajuan-client';
@@ -149,17 +150,7 @@ export default function DosenDashboardPage() {
         <main className="min-h-screen py-8">
           <div className="app-container">
             <div className="app-card p-8">
-              <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
-              <div className="mt-4 h-8 w-80 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
-
-              <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-4">
-                {[1, 2, 3, 4].map((item) => (
-                  <div
-                    key={item}
-                    className="h-36 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800"
-                  />
-                ))}
-              </div>
+              <LoadingAnimation />
             </div>
           </div>
         </main>
