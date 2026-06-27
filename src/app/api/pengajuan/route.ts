@@ -5,7 +5,7 @@ import { mkdir } from 'fs/promises';
 import path from 'path';
 import busboy from 'busboy';
 import Pengajuan from '@/models/Pengajuan';
-import { connectDB, syncDatabase } from '@/lib/db';
+import { connectDB } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 import { google } from 'googleapis';
 import { Readable } from 'stream';
@@ -141,7 +141,6 @@ async function parseFormData(request: Request): Promise<{
 export async function GET(request: Request) {
   try {
     await connectDB();
-    await syncDatabase();
     if (!Pengajuan) {
       console.error('Model Pengajuan tidak ditemukan');
       return NextResponse.json(
@@ -657,7 +656,6 @@ export async function PUT(request: Request) {
           );
         }
 
-        await syncDatabase();
         await pengajuan.update({
           nilai_mitra_total,
           nilai_dosen_total,
