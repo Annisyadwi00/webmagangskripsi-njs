@@ -120,21 +120,24 @@ export default function DosenDashboardPage() {
     fetchDashboard();
   }, []);
 
-  const mahasiswaAktif = pengajuans.filter((item) => item.status === 'Aktif');
+  const mahasiswaAktif = pengajuans.filter(
+    (item) => item.dosenId === user?.id && item.status === 'Aktif'
+  );
   const mahasiswaSelesai = pengajuans.filter(
-    (item) => item.status === 'Selesai'
+    (item) => item.dosenId === user?.id && item.status === 'Selesai'
   );
 
   const laporanMasuk = pengajuans.filter(
-    (item) => wajibLaporan(item.jenis_magang) && item.link_laporan_akhir
+    (item) => item.dosenId === user?.id && wajibLaporan(item.jenis_magang) && item.link_laporan_akhir
   );
 
   const dokumenBelumLengkap = pengajuans.filter(
-    (item) => item.status === 'Aktif' && !sudahLengkapDokumen(item)
+    (item) => item.dosenId === user?.id && item.status === 'Aktif' && !sudahLengkapDokumen(item)
   );
 
   const belumDinilai = pengajuans.filter(
     (item) =>
+      item.dosenId === user?.id &&
       item.status === 'Aktif' &&
       !item.nilai_dari_dosen &&
       sudahLengkapDokumen(item)
@@ -142,7 +145,7 @@ export default function DosenDashboardPage() {
 
   const latestBimbingan = mahasiswaAktif.slice(0, 5);
   const latestLaporan = pengajuans
-    .filter((item) => item.link_laporan_akhir)
+    .filter((item) => item.dosenId === user?.id && item.link_laporan_akhir)
     .slice(0, 5);
 
   if (isLoading) {

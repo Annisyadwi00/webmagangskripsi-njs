@@ -195,7 +195,7 @@ export default function DosenPenilaianPage() {
   // ------------------------------------------------------------
 
   const mahasiswaAktif = pengajuans.filter(
-    (item) => item.status === 'Aktif' || item.status === 'Selesai'
+    (item) => item.dosenId === user?.id && (item.status === 'Aktif' || item.status === 'Selesai')
   );
 
   const mahasiswaSiapDinilai = mahasiswaAktif.filter((item) =>
@@ -207,11 +207,11 @@ export default function DosenPenilaianPage() {
   );
 
   const mahasiswaSelesai = pengajuans.filter(
-    (item) => item.status === 'Selesai'
+    (item) => item.dosenId === user?.id && item.status === 'Selesai'
   );
 
   const mahasiswaSudahDinilai = pengajuans.filter(
-    (item) => item.nilai_akhir_grade // menggunakan kolom baru
+    (item) => item.dosenId === user?.id && (item.status === 'Selesai Dinilai' || !!item.nilai_dari_dosen)
   );
 
   const filteredMahasiswaSiapDinilai = useMemo(() => {

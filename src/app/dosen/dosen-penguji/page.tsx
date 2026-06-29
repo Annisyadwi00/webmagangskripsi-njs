@@ -131,7 +131,7 @@ export default function DosenPengujiPage() {
   // FILTER
   // ------------------------------------------------------------
   const mahasiswaAktif = pengajuans.filter(
-    (item) => item.status === 'Aktif' || item.status === 'Selesai'
+    (item) => item.dosenPengujiId === user?.id && (item.status === 'Aktif' || item.status === 'Selesai')
   );
 
   const mahasiswaSiapUji = mahasiswaAktif.filter((item) =>
@@ -139,7 +139,7 @@ export default function DosenPengujiPage() {
   );
 
   const mahasiswaSudahDinilaiPenguji = pengajuans.filter(
-    (item) => item.nilai_penguji_grade // asumsikan ada field ini
+    (item) => item.dosenPengujiId === user?.id && (item.status === 'Selesai Dinilai' || !!item.nilai_sidang)
   );
 
   const filteredMahasiswaSiapUji = useMemo(() => {

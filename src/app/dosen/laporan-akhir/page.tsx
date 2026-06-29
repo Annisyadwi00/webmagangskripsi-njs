@@ -114,7 +114,7 @@ export default function DosenLaporanAkhirPage() {
   }, []);
 
   const mahasiswaBimbingan = pengajuans.filter(
-    (item) => item.status === 'Aktif' || item.status === 'Selesai'
+    (item) => item.dosenId === user?.id && (item.status === 'Aktif' || item.status === 'Selesai')
   );
 
   const totalWajibLaporan = mahasiswaBimbingan.filter((item) =>
