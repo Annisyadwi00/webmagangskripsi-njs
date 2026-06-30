@@ -26,6 +26,7 @@ export type PengajuanMitra = {
   link_ktp_penandatangan: string | null;
   link_npwp: string | null;
   link_izin_usaha: string | null;
+  link_logo: string | null;
 
   nama_mahasiswa_pengusul: string;
   npm_mahasiswa_pengusul: string;

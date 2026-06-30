@@ -549,26 +549,29 @@ export async function PUT(request: Request) {
         return NextResponse.json({ success: false, message: 'Pengajuan tidak ditemukan.' }, { status: 404 });
       }
       if (action === 'setujui') {
-        if (!body.dosenId || !body.nama_dosen) {
-          return NextResponse.json(
-            { success: false, message: 'Dosen pembimbing wajib dipilih oleh staff.' },
-            { status: 400 }
-          );
-        }
         await pengajuan.update({
           tipeKonversi: body.tipeKonversi || pengajuan.getDataValue('jenis_magang'),
           matkulKonversi: body.matkulKonversi ? JSON.stringify(body.matkulKonversi) : null,
           semester_konversi: body.semester_konversi || null,
-          dosenId: body.dosenId,
-          nama_dosen: body.nama_dosen,
-          status_dosen: 'Disetujui',
-          dosenPengujiId: body.dosenPengujiId || null,
-          nama_dosen_penguji: body.nama_dosen_penguji || null,
           status: 'Aktif',
           alasan_penolakan: null,
         });
         return NextResponse.json(
-          { success: true, message: 'Pengajuan disetujui dan dosen pembimbing berhasil ditentukan.' },
+          { success: true, message: 'Pengajuan disetujui.' },
+          { status: 200 }
+        );
+      }
+
+      if (action === 'update_dosen') {
+        await pengajuan.update({
+          dosenId: body.dosenId || pengajuan.getDataValue('dosenId'),
+          nama_dosen: body.nama_dosen || pengajuan.getDataValue('nama_dosen'),
+          status_dosen: body.dosenId ? 'Disetujui' : pengajuan.getDataValue('status_dosen'),
+          dosenPengujiId: body.dosenPengujiId || pengajuan.getDataValue('dosenPengujiId'),
+          nama_dosen_penguji: body.nama_dosen_penguji || pengajuan.getDataValue('nama_dosen_penguji'),
+        });
+        return NextResponse.json(
+          { success: true, message: 'Plotting dosen berhasil diperbarui.' },
           { status: 200 }
         );
       }

@@ -504,19 +504,19 @@ export default function PengajuanMahasiswaPage() {
             </section>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Data Mahasiswa (sama seperti sebelumnya) */}
+              {/* Data Mahasiswa */}
               <section className="app-card p-6">
                 <h2 className="text-xl font-black text-slate-950 dark:text-white">Data Mahasiswa</h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Data mahasiswa diambil dari akun. Lengkapi bagian yang masih kosong.</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Beberapa data di bawah ini telah diisi otomatis berdasarkan profil Anda. Lengkapi field yang masih kosong.</p>
                 <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div><label className="app-label">Nama Mahasiswa</label><input type="text" name="nama_mahasiswa" value={form.nama_mahasiswa} onChange={handleChange} className="app-input" readOnly={!!user?.name} /></div>
-                  <div><label className="app-label">NPM</label><input type="text" name="npm" value={form.npm} onChange={handleChange} className="app-input" readOnly={!!user?.nim_nidn} /></div>
-                  <div><label className="app-label">Program Studi</label><input type="text" name="program_studi" value={form.program_studi} onChange={handleChange} className="app-input" readOnly={!!user?.prodi} /></div>
+                  <div><label className="app-label">Nama Mahasiswa <span className="text-red-500">*</span></label><input type="text" name="nama_mahasiswa" value={form.nama_mahasiswa} onChange={handleChange} className="app-input read-only:bg-slate-100 read-only:text-slate-500 read-only:cursor-not-allowed dark:read-only:bg-slate-800 dark:read-only:text-slate-400" readOnly={!!user?.name} required /></div>
+                  <div><label className="app-label">NPM <span className="text-red-500">*</span></label><input type="text" name="npm" value={form.npm} onChange={handleChange} className="app-input read-only:bg-slate-100 read-only:text-slate-500 read-only:cursor-not-allowed dark:read-only:bg-slate-800 dark:read-only:text-slate-400" readOnly={!!user?.nim_nidn} required /></div>
+                  <div><label className="app-label">Program Studi <span className="text-red-500">*</span></label><input type="text" name="program_studi" value={form.program_studi} onChange={handleChange} className="app-input read-only:bg-slate-100 read-only:text-slate-500 read-only:cursor-not-allowed dark:read-only:bg-slate-800 dark:read-only:text-slate-400" readOnly={!!user?.prodi} required /></div>
                   <div><label className="app-label">Angkatan</label><input type="text" name="angkatan" value={form.angkatan} onChange={handleChange} className="app-input" /></div>
                   <div><label className="app-label">Semester</label><input type="text" name="semester" value={form.semester} onChange={handleChange} className="app-input" /></div>
                   <div><label className="app-label">Kelas</label><input type="text" name="kelas" value={form.kelas} onChange={handleChange} className="app-input" /></div>
-                  <div><label className="app-label">Tahun Akademik <span className="text-red-500">*</span></label><input type="text" name="tahun_akademik" value={form.tahun_akademik} onChange={handleChange} className="app-input" placeholder="Contoh: 2023/2024 Genap" /></div>
-                  <div><label className="app-label">Nomor HP Mahasiswa</label><input type="text" name="no_hp_mahasiswa" value={form.no_hp_mahasiswa} onChange={(e) => setForm((prev) => ({ ...prev, no_hp_mahasiswa: e.target.value.replace(/[^0-9]/g, '') }))} className="app-input" placeholder="628xxxxxxxxxx" /></div>
+                  <div><label className="app-label">Tahun Akademik <span className="text-red-500">*</span></label><input type="text" name="tahun_akademik" value={form.tahun_akademik} onChange={handleChange} className="app-input" placeholder="Contoh: 2023/2024 Genap" required /></div>
+                  <div><label className="app-label">Nomor HP Mahasiswa <span className="text-red-500">*</span></label><input type="text" name="no_hp_mahasiswa" value={form.no_hp_mahasiswa} onChange={(e) => setForm((prev) => ({ ...prev, no_hp_mahasiswa: e.target.value.replace(/[^0-9]/g, '') }))} className="app-input" placeholder="628xxxxxxxxxx" required /></div>
                 </div>
               </section>
 
@@ -563,24 +563,27 @@ export default function PengajuanMahasiswaPage() {
               {/* Data Perusahaan & Lokasi Magang - sekarang dengan field email */}
               <section className="app-card p-6">
                 <h2 className="text-xl font-black text-slate-950 dark:text-white">Data Perusahaan & Lokasi Magang</h2>
+                {isMitraTerdaftar === 'ya' && (
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Beberapa data di bawah ini telah diisi otomatis berdasarkan Mitra Perusahaan yang Anda pilih.</p>
+                )}
                 <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
                   <div><label className="app-label">Nama Perusahaan / Tempat Magang <span className="text-red-500">*</span></label>
-                    <input type="text" name="perusahaan" value={form.perusahaan} onChange={handleChange} className="app-input" placeholder="Masukkan nama perusahaan" readOnly={isMitraTerdaftar === 'ya'} />
+                    <input type="text" name="perusahaan" value={form.perusahaan} onChange={handleChange} className="app-input read-only:bg-slate-100 read-only:text-slate-500 read-only:cursor-not-allowed dark:read-only:bg-slate-800 dark:read-only:text-slate-400" placeholder="Masukkan nama perusahaan" readOnly={isMitraTerdaftar === 'ya'} required />
                   </div>
                   <div><label className="app-label">Email Perusahaan</label>
-                    <input type="email" name="email_perusahaan" value={form.email_perusahaan} onChange={handleChange} className="app-input" placeholder="contoh@perusahaan.com" readOnly={isMitraTerdaftar === 'ya'} />
+                    <input type="email" name="email_perusahaan" value={form.email_perusahaan} onChange={handleChange} className="app-input read-only:bg-slate-100 read-only:text-slate-500 read-only:cursor-not-allowed dark:read-only:bg-slate-800 dark:read-only:text-slate-400" placeholder="contoh@perusahaan.com" readOnly={isMitraTerdaftar === 'ya'} />
                   </div>
                   <div><label className="app-label">Posisi / Jabatan <span className="text-red-500">*</span></label>
-                    <input type="text" name="posisi" value={form.posisi} onChange={handleChange} className="app-input" placeholder="Contoh: Staff IT, Trainee, dll" />
+                    <input type="text" name="posisi" value={form.posisi} onChange={handleChange} className="app-input" placeholder="Contoh: Staff IT, Trainee, dll" required />
                   </div>
                   <div className="md:col-span-2"><label className="app-label">Alamat Tempat Magang <span className="text-red-500">*</span></label>
-                    <textarea name="alamat_tempat_magang" value={form.alamat_tempat_magang} onChange={handleChange} className="app-input min-h-20" placeholder="Alamat lengkap tempat magang. cont: jl. HS Ronggowaluyo Desa Sinarbaya Kec. Teluk Jambe Kab. Karawang Prov. Jawa Barat. lattitude : -6.250, longitude : 107.450" readOnly={isMitraTerdaftar === 'ya'} />
+                    <textarea name="alamat_tempat_magang" value={form.alamat_tempat_magang} onChange={handleChange} className="app-input min-h-20 read-only:bg-slate-100 read-only:text-slate-500 read-only:cursor-not-allowed dark:read-only:bg-slate-800 dark:read-only:text-slate-400" placeholder="Alamat lengkap tempat magang. cont: jl. HS Ronggowaluyo Desa Sinarbaya Kec. Teluk Jambe Kab. Karawang Prov. Jawa Barat. lattitude : -6.250, longitude : 107.450" readOnly={isMitraTerdaftar === 'ya'} required />
                   </div>
                   <div><label className="app-label">Nama Penanggung Jawab <span className="text-red-500">*</span></label>
-                    <input type="text" name="nama_penanggung_jawab" value={form.nama_penanggung_jawab} onChange={handleChange} className="app-input" />
+                    <input type="text" name="nama_penanggung_jawab" value={form.nama_penanggung_jawab} onChange={handleChange} className="app-input read-only:bg-slate-100 read-only:text-slate-500 read-only:cursor-not-allowed dark:read-only:bg-slate-800 dark:read-only:text-slate-400" readOnly={isMitraTerdaftar === 'ya'} required />
                   </div>
                   <div><label className="app-label">Kontak Penanggung Jawab <span className="text-red-500">*</span></label>
-                    <input type="text" name="kontak_penanggung_jawab" value={form.kontak_penanggung_jawab} onChange={(e) => setForm((prev) => ({ ...prev, kontak_penanggung_jawab: e.target.value.replace(/[^0-9]/g, '') }))} className="app-input" placeholder="628xxxxxxxxxx" />
+                    <input type="text" name="kontak_penanggung_jawab" value={form.kontak_penanggung_jawab} onChange={(e) => setForm((prev) => ({ ...prev, kontak_penanggung_jawab: e.target.value.replace(/[^0-9]/g, '') }))} className="app-input read-only:bg-slate-100 read-only:text-slate-500 read-only:cursor-not-allowed dark:read-only:bg-slate-800 dark:read-only:text-slate-400" placeholder="628xxxxxxxxxx" readOnly={isMitraTerdaftar === 'ya'} required />
                   </div>
                 </div>
               </section>
@@ -589,11 +592,11 @@ export default function PengajuanMahasiswaPage() {
               <section className="app-card p-6">
                 <h2 className="text-xl font-black text-slate-950 dark:text-white">Periode dan Dokumen</h2>
                 <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div><label className="app-label">Tanggal Mulai</label><input type="date" name="tgl_mulai" value={form.tgl_mulai} onChange={handleChange} className="app-input" /></div>
-                  <div><label className="app-label">Tanggal Berakhir</label><input type="date" name="tgl_berakhir" value={form.tgl_berakhir} onChange={handleChange} className="app-input" /></div>
-                  <div><label className="app-label">Upload Bukti Penerimaan Magang (PDF)</label><input type="file" name="bukti_penerimaan" accept="application/pdf" ref={buktiRef} className="app-input" /></div>
-                  <div><label className="app-label">Upload Foto Diri (PDF)</label><input type="file" name="foto_diri" accept="application/pdf" ref={fotoRef} className="app-input" /></div>
-                  <div className="md:col-span-2"><label className="app-label">Rencana Magang</label><textarea name="rencana_magang" value={form.rencana_magang} onChange={handleChange} className="app-input min-h-32" placeholder="Tuliskan rencana kegiatan selama magang" /></div>
+                  <div><label className="app-label">Tanggal Mulai <span className="text-red-500">*</span></label><input type="date" name="tgl_mulai" value={form.tgl_mulai} onChange={handleChange} className="app-input" required /></div>
+                  <div><label className="app-label">Tanggal Berakhir <span className="text-red-500">*</span></label><input type="date" name="tgl_berakhir" value={form.tgl_berakhir} onChange={handleChange} className="app-input" required /></div>
+                  <div><label className="app-label">Upload Bukti Penerimaan Magang (PDF) <span className="text-red-500">*</span></label><input type="file" name="bukti_penerimaan" accept="application/pdf" ref={buktiRef} className="app-input" required /></div>
+                  <div><label className="app-label">Upload Foto Diri (PDF) <span className="text-red-500">*</span></label><input type="file" name="foto_diri" accept="application/pdf" ref={fotoRef} className="app-input" required /></div>
+                  <div className="md:col-span-2"><label className="app-label">Rencana Magang <span className="text-red-500">*</span></label><textarea name="rencana_magang" value={form.rencana_magang} onChange={handleChange} className="app-input min-h-32" placeholder="Tuliskan rencana kegiatan selama magang" required /></div>
                 </div>
               </section>
 

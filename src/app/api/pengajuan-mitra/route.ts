@@ -211,25 +211,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Longitude harus antara -180 dan 180.' }, { status: 400 });
     }
     // Validasi file PDF (semua harus ada)
-    const requiredFiles = ['akta_pendirian', 'akta_direksi', 'ktp_penandatangan', 'npwp_perusahaan', 'izin_usaha'];
+    const requiredFiles = ['akta_pendirian', 'akta_direksi', 'ktp_penandatangan', 'npwp_perusahaan', 'izin_usaha', 'logo_perusahaan'];
     for (const fileKey of requiredFiles) {
       if (!files[fileKey]) {
         return NextResponse.json({ success: false, message: `Dokumen ${fileKey} wajib diunggah.` }, { status: 400 });
       }
-      if (files[fileKey].type !== 'application/pdf') {
+      
+      if (fileKey === 'logo_perusahaan' && files[fileKey].type !== 'image/png') {
+        return NextResponse.json({ success: false, message: `Dokumen logo_perusahaan harus PNG.` }, { status: 400 });
+      } else if (fileKey !== 'logo_perusahaan' && files[fileKey].type !== 'application/pdf') {
         return NextResponse.json({ success: false, message: `Dokumen ${fileKey} harus PDF.` }, { status: 400 });
       }
     }
     // Upload ke Google Drive dan dapatkan link publik
-    let link_akta_pendirian: string, link_akta_direksi: string, link_ktp_penandatangan: string, link_npwp: string, link_izin_usaha: string;
+    let link_akta_pendirian: string, link_akta_direksi: string, link_ktp_penandatangan: string, link_npwp: string, link_izin_usaha: string, link_logo: string;
     try {
       const timestamp = Date.now();
       const makeName = (prefix: string) => `${prefix}_${timestamp}_${user.id}.pdf`;
+      const makePngName = (prefix: string) => `${prefix}_${timestamp}_${user.id}.png`;
       link_akta_pendirian = await uploadToDrive(files.akta_pendirian, makeName('akta_pendirian'));
       link_akta_direksi = await uploadToDrive(files.akta_direksi, makeName('akta_direksi'));
       link_ktp_penandatangan = await uploadToDrive(files.ktp_penandatangan, makeName('ktp'));
       link_npwp = await uploadToDrive(files.npwp_perusahaan, makeName('npwp'));
       link_izin_usaha = await uploadToDrive(files.izin_usaha, makeName('izin_usaha'));
+      link_logo = await uploadToDrive(files.logo_perusahaan, makePngName('logo'));
     } catch (uploadError) {
       console.error('UPLOAD_TO_DRIVE_ERROR:', uploadError);
       return NextResponse.json({ success: false, message: 'Gagal mengunggah file ke Google Drive.' }, { status: 500 });
@@ -243,6 +248,7 @@ export async function POST(request: Request) {
       nama_narahubung_mitra,
       kontak_narahubung_mitra,
       email_perusahaan,
+      link_logo,
       lokasi,
       sistem_kerja,
       kuota,

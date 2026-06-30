@@ -132,6 +132,7 @@ export default function SuperAdminMahasiswaMagangPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
   const [jenisFilter, setJenisFilter] = useState('Semua');
+  const [tahunFilter, setTahunFilter] = useState('Semua');
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -202,47 +203,57 @@ export default function SuperAdminMahasiswaMagangPage() {
       const matchesJenis =
         jenisFilter === 'Semua' || item.jenis_magang === jenisFilter;
 
-      return matchesKeyword && matchesStatus && matchesJenis;
+      const matchesTahun =
+        tahunFilter === 'Semua' || item.tahun_akademik === tahunFilter;
+
+      return matchesKeyword && matchesStatus && matchesJenis && matchesTahun;
     });
-  }, [pengajuans, search, statusFilter, jenisFilter]);
+  }, [pengajuans, search, statusFilter, jenisFilter, tahunFilter]);
 
-  const totalAktif = pengajuans.filter((item) => item.status === 'Aktif').length;
+  const pengajuanFilteredByTahun = useMemo(() => {
+    return pengajuans.filter(
+      (item) => tahunFilter === 'Semua' || item.tahun_akademik === tahunFilter
+    );
+  }, [pengajuans, tahunFilter]);
 
-  const totalSelesai = pengajuans.filter(
+  const totalAktif = pengajuanFilteredByTahun.filter((item) => item.status === 'Aktif').length;
+
+  const totalSelesai = pengajuanFilteredByTahun.filter(
     (item) => item.status === 'Selesai'
   ).length;
 
-  const totalMenunggu = pengajuans.filter(
+  const totalMenunggu = pengajuanFilteredByTahun.filter(
     (item) => item.status === 'Menunggu_Verifikasi'
   ).length;
 
-  const totalBelumLengkap = pengajuans.filter(
+  const totalBelumLengkap = pengajuanFilteredByTahun.filter(
     (item) =>
       item.jenis_magang !== 'Tidak Konversi' &&
       getDokumenStatus(item) === 'Belum Lengkap'
   ).length;
 
+  const exportHeaders = [
+    'Nama Mahasiswa',
+    'NPM',
+    'Program Studi',
+    'Angkatan',
+    'Semester',
+    'Kelas',
+    'Jenis Magang',
+    'Perusahaan',
+    'Posisi',
+    'Tanggal Mulai',
+    'Tanggal Berakhir',
+    'Dosen Pembimbing',
+    'Dosen Penguji',
+    'Status',
+    'Laporan',
+    'Output Magang',
+    'Dokumen',
+    'Nilai Akhir',
+  ];
+
   const handleExportCsv = () => {
-    const headers = [
-      'Nama Mahasiswa',
-      'NPM',
-      'Program Studi',
-      'Angkatan',
-      'Semester',
-      'Kelas',
-      'Jenis Magang',
-      'Perusahaan',
-      'Posisi',
-      'Tanggal Mulai',
-      'Tanggal Berakhir',
-      'Dosen Pembimbing',
-      'Dosen Penguji',
-      'Status',
-      'Laporan',
-      'Output Magang',
-      'Dokumen',
-      'Nilai Akhir',
-    ];
 
     const rows = getExportRows(filteredPengajuans).map((item) => [
       item.nama,
@@ -266,7 +277,7 @@ export default function SuperAdminMahasiswaMagangPage() {
     ]);
 
     const csvContent = [
-      headers.map(escapeCsv).join(','),
+      exportHeaders.map(escapeCsv).join(','),
       ...rows.map((row) => row.map(escapeCsv).join(',')),
     ].join('\n');
 
@@ -327,26 +338,7 @@ export default function SuperAdminMahasiswaMagangPage() {
         <body>
           <table border="1">
             <thead>
-              <tr>
-                <th>Nama Mahasiswa</th>
-                <th>NPM</th>
-                <th>Program Studi</th>
-                <th>Angkatan</th>
-                <th>Semester</th>
-                <th>Kelas</th>
-                <th>Jenis Magang</th>
-                <th>Perusahaan</th>
-                <th>Posisi</th>
-                <th>Tanggal Mulai</th>
-                <th>Tanggal Berakhir</th>
-                <th>Dosen Pembimbing</th>
-                <th>Dosen Penguji</th>
-                <th>Status</th>
-                <th>Laporan</th>
-                <th>Output Magang</th>
-                <th>Dokumen</th>
-                <th>Nilai Akhir</th>
-              </tr>
+              <tr>${exportHeaders.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr>
             </thead>
             <tbody>
               ${tableRows}
@@ -586,7 +578,7 @@ export default function SuperAdminMahasiswaMagangPage() {
           )}
 
           <section className="app-card mb-6 p-6">
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_220px_260px]">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_180px_180px_150px]">
               <div>
                 <label className="app-label">Cari Mahasiswa</label>
                 <input
@@ -630,6 +622,20 @@ export default function SuperAdminMahasiswaMagangPage() {
                   <option value="Konversi 2 SKS">
                     Magang 2 SKS Khusus SI
                   </option>
+                </select>
+              </div>
+
+              <div>
+                <label className="app-label">Tahun Akademik</label>
+                <select
+                  value={tahunFilter}
+                  onChange={(e) => setTahunFilter(e.target.value)}
+                  className="app-input"
+                >
+                  <option value="Semua">Semua Tahun</option>
+                  {uniqueTahunAkademik.map((thn) => (
+                    <option key={thn} value={thn}>{thn}</option>
+                  ))}
                 </select>
               </div>
             </div>

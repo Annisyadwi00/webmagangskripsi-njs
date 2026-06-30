@@ -76,6 +76,7 @@ export default function DosenLaporanAkhirPage() {
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('Semua');
+  const [tahunFilter, setTahunFilter] = useState('Semua');
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -113,8 +114,12 @@ export default function DosenLaporanAkhirPage() {
     fetchData();
   }, []);
 
+  const uniqueTahunAkademik = Array.from(
+    new Set(pengajuans.map((p) => p.tahun_akademik).filter(Boolean))
+  ).sort().reverse();
+
   const mahasiswaBimbingan = pengajuans.filter(
-    (item) => item.dosenId === user?.id && (item.status === 'Aktif' || item.status === 'Selesai')
+    (item) => item.dosenId === user?.id && (item.status === 'Aktif' || item.status === 'Selesai') && (tahunFilter === 'Semua' || item.tahun_akademik === tahunFilter)
   );
 
   const totalWajibLaporan = mahasiswaBimbingan.filter((item) =>
@@ -138,6 +143,7 @@ export default function DosenLaporanAkhirPage() {
 
     return pengajuans
       .filter((item) => item.status === 'Aktif' || item.status === 'Selesai')
+      .filter((item) => tahunFilter === 'Semua' || item.tahun_akademik === tahunFilter)
       .filter((item) => {
         const nama = item.nama_mahasiswa || '';
         const npm = item.npm || '';
@@ -169,7 +175,7 @@ export default function DosenLaporanAkhirPage() {
 
         return matchesKeyword && matchesFilter;
       });
-  }, [pengajuans, search, filter]);
+  }, [pengajuans, search, filter, tahunFilter]);
 
   if (isLoading) {
     return (
@@ -272,7 +278,7 @@ export default function DosenLaporanAkhirPage() {
           </section>
 
           <section className="app-card mb-6 p-6">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_240px]">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_240px_200px]">
               <div>
                 <label className="app-label">Cari Mahasiswa</label>
                 <input
@@ -296,6 +302,20 @@ export default function DosenLaporanAkhirPage() {
                   <option value="Belum Upload">Belum Upload</option>
                   <option value="Dokumen Lengkap">Dokumen Lengkap</option>
                   <option value="Tidak Wajib">Tidak Wajib</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="app-label">Tahun Akademik</label>
+                <select
+                  value={tahunFilter}
+                  onChange={(e) => setTahunFilter(e.target.value)}
+                  className="app-input"
+                >
+                  <option value="Semua">Semua Tahun</option>
+                  {uniqueTahunAkademik.map((thn) => (
+                    <option key={thn} value={thn}>{thn}</option>
+                  ))}
                 </select>
               </div>
             </div>

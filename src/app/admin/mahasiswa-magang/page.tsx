@@ -197,38 +197,45 @@ export default function AdminMahasiswaMagangPage() {
     new Set(pengajuans.map((p) => p.tahun_akademik).filter(Boolean))
   ).sort().reverse();
 
-  const totalAktif = pengajuans.filter((item) => item.status === 'Aktif').length;
-  const totalSelesai = pengajuans.filter((item) => item.status === 'Selesai').length;
-  const totalMenunggu = pengajuans.filter(
+  const pengajuanFilteredByTahun = useMemo(() => {
+    return pengajuans.filter(
+      (item) => tahunFilter === 'Semua' || item.tahun_akademik === tahunFilter
+    );
+  }, [pengajuans, tahunFilter]);
+
+  const totalAktif = pengajuanFilteredByTahun.filter((item) => item.status === 'Aktif').length;
+  const totalSelesai = pengajuanFilteredByTahun.filter((item) => item.status === 'Selesai').length;
+  const totalMenunggu = pengajuanFilteredByTahun.filter(
     (item) => item.status === 'Menunggu_Verifikasi'
   ).length;
-  const totalBelumLengkap = pengajuans.filter(
+  const totalBelumLengkap = pengajuanFilteredByTahun.filter(
     (item) =>
       item.jenis_magang !== 'Tidak Konversi' &&
       getDokumenStatus(item) === 'Belum Lengkap'
   ).length;
 
+  const exportHeaders = [
+    'Nama Mahasiswa',
+    'NPM',
+    'Program Studi',
+    'Angkatan',
+    'Semester',
+    'Kelas',
+    'Jenis Magang',
+    'Perusahaan',
+    'Posisi',
+    'Tanggal Mulai',
+    'Tanggal Berakhir',
+    'Dosen Pembimbing',
+    'Dosen Penguji',
+    'Status',
+    'Laporan',
+    'Output Magang',
+    'Dokumen',
+    'Nilai Akhir',
+  ];
+
   const handleExportCsv = () => {
-    const headers = [
-      'Nama Mahasiswa',
-      'NPM',
-      'Program Studi',
-      'Angkatan',
-      'Semester',
-      'Kelas',
-      'Jenis Magang',
-      'Perusahaan',
-      'Posisi',
-      'Tanggal Mulai',
-      'Tanggal Berakhir',
-      'Dosen Pembimbing',
-      'Dosen Penguji',
-      'Status',
-      'Laporan',
-      'Output Magang',
-      'Dokumen',
-      'Nilai Akhir',
-    ];
     const rows = getExportRows(filteredPengajuans).map((item) => [
       item.nama,
       item.npm,
@@ -250,7 +257,7 @@ export default function AdminMahasiswaMagangPage() {
       item.nilaiAkhir,
     ]);
     const csvContent = [
-      headers.map(escapeCsv).join(','),
+      exportHeaders.map(escapeCsv).join(','),
       ...rows.map((row) => row.map(escapeCsv).join(',')),
     ].join('\n');
     const blob = new Blob([`\uFEFF${csvContent}`], {
@@ -301,7 +308,7 @@ export default function AdminMahasiswaMagangPage() {
         <head><meta charset="UTF-8" /></head>
         <body>
           <table border="1">
-            <thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+            <thead><tr>${exportHeaders.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
             <tbody>${tableRows}</tbody>
           </table>
         </body>
@@ -411,7 +418,7 @@ export default function AdminMahasiswaMagangPage() {
           {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
 
           <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-4">
-            <StatCard title="Total Data" value={pengajuans.length} description="Seluruh pengajuan magang." icon="document" />
+            <StatCard title="Total Data" value={pengajuanFilteredByTahun.length} description="Seluruh pengajuan magang." icon="document" />
             <StatCard title="Aktif" value={totalAktif} description="Mahasiswa sedang magang." icon="briefcase" />
             <StatCard title="Selesai" value={totalSelesai} description="Sudah selesai dinilai." icon="check" />
             <StatCard title="Belum Lengkap" value={totalBelumLengkap} description="Dokumen laporan belum lengkap." icon="warning" />
@@ -422,7 +429,7 @@ export default function AdminMahasiswaMagangPage() {
           )}
 
           <section className="app-card mb-6 p-6">
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_200px_220px_200px]">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_180px_180px_180px_150px]">
               <div>
                 <label className="app-label">Cari Mahasiswa</label>
                 <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="app-input" placeholder="Cari nama, NPM, prodi, angkatan, kelas, perusahaan, dosen..." />
@@ -441,17 +448,17 @@ export default function AdminMahasiswaMagangPage() {
                 <label className="app-label">Jenis Magang</label>
                 <select value={jenisFilter} onChange={(e) => setJenisFilter(e.target.value)} className="app-input">
                   <option value="Semua">Semua Jenis</option>
-                  <option value="Konversi 20 SKS">Konversi Maksimal 20 SKS</option>
-                  <option value="Tidak Konversi">Tidak Konversi</option>
+                  <option value="Konversi 20 SKS">Konversi Maks 20 SKS</option>
                   <option value="Konversi 2 SKS">Magang 2 SKS Khusus SI</option>
+                  <option value="Tidak Konversi">Tidak Konversi</option>
                 </select>
               </div>
               <div>
                 <label className="app-label">Tahun Akademik</label>
                 <select value={tahunFilter} onChange={(e) => setTahunFilter(e.target.value)} className="app-input">
-                  <option value="Semua">Semua Tahun Akademik</option>
-                  {uniqueTahunAkademik.map((tahun) => (
-                    <option key={tahun} value={tahun}>{tahun}</option>
+                  <option value="Semua">Semua Tahun</option>
+                  {uniqueTahunAkademik.map((thn) => (
+                    <option key={thn} value={thn}>{thn}</option>
                   ))}
                 </select>
               </div>

@@ -74,6 +74,14 @@ function validatePdf(file: File | null, label: string) {
   return '';
 }
 
+function validatePng(file: File | null, label: string) {
+  if (!file) return `${label} wajib diunggah.`;
+  if (file.type !== 'image/png') {
+    return `${label} harus berupa file PNG.`;
+  }
+  return '';
+}
+
 export default function AjukanMitraPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(initialForm);
@@ -83,6 +91,8 @@ export default function AjukanMitraPage() {
   const [ktpPenandatangan, setKtpPenandatangan] = useState<File | null>(null);
   const [npwpPerusahaan, setNpwpPerusahaan] = useState<File | null>(null);
   const [izinUsaha, setIzinUsaha] = useState<File | null>(null);
+  const [logoPerusahaan, setLogoPerusahaan] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const [errorMsg, setErrorMsg] = useState('');
   const [message, setMessage] = useState('');
@@ -114,6 +124,8 @@ export default function AjukanMitraPage() {
     setKtpPenandatangan(null);
     setNpwpPerusahaan(null);
     setIzinUsaha(null);
+    setLogoPerusahaan(null);
+    setLogoPreview(null);
     setMessage('');
     setErrorMsg('');
     localStorage.removeItem(DRAFT_KEY);
@@ -177,6 +189,7 @@ export default function AjukanMitraPage() {
       validatePdf(ktpPenandatangan, 'KTP penandatangan'),
       validatePdf(npwpPerusahaan, 'NPWP perusahaan'),
       validatePdf(izinUsaha, 'Dokumen izin usaha terkait'),
+      validatePng(logoPerusahaan, 'Logo perusahaan'),
     ].filter(Boolean);
 
     if (fileErrors.length > 0) {
@@ -238,6 +251,7 @@ export default function AjukanMitraPage() {
       formData.append('ktp_penandatangan', ktpPenandatangan!);
       formData.append('npwp_perusahaan', npwpPerusahaan!);
       formData.append('izin_usaha', izinUsaha!);
+      formData.append('logo_perusahaan', logoPerusahaan!);
 
       const res = await fetch('/api/pengajuan-mitra', {
         method: 'POST',
@@ -579,6 +593,33 @@ export default function AjukanMitraPage() {
                         className="app-input"
                         required
                       />
+                    </div>
+                    <div className="md:col-span-2 border-t border-slate-100 pt-5 dark:border-slate-800">
+                      <label className="app-label">Logo Perusahaan (Wajib PNG)</label>
+                      <p className="mb-2 text-xs text-slate-500">Logo harus berformat PNG dengan aspek rasio direkomendasikan 1:1.</p>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <input
+                          type="file"
+                          accept="image/png"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null;
+                            setLogoPerusahaan(file);
+                            if (file) {
+                              setLogoPreview(URL.createObjectURL(file));
+                            } else {
+                              setLogoPreview(null);
+                            }
+                          }}
+                          className="app-input flex-1"
+                          required
+                        />
+                        {logoPreview && (
+                          <div className="flex-shrink-0 w-24 h-24 border rounded bg-white overflow-hidden shadow-sm flex items-center justify-center p-2 dark:bg-slate-900 dark:border-slate-700">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={logoPreview} alt="Preview Logo" className="max-w-full max-h-full object-contain" />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </section>

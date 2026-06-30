@@ -200,11 +200,6 @@ export async function batalPengajuan() {
 
 export async function setujuiPengajuan(payload: {
   id: number;
-  dosenId: number;
-  nama_dosen: string;
-  dosenPengujiId?: number | null;
-  nama_dosen_penguji?: string | null;
-
   tipeKonversi?: string | null;
   matkulKonversi?: unknown;
   semester_konversi?: string | null;
@@ -213,6 +208,22 @@ export async function setujuiPengajuan(payload: {
     method: 'PUT',
     body: {
       action: 'setujui',
+      ...payload,
+    },
+  });
+}
+
+export async function updateDosenPengajuan(payload: {
+  id: number;
+  dosenId?: number | null;
+  nama_dosen?: string | null;
+  dosenPengujiId?: number | null;
+  nama_dosen_penguji?: string | null;
+}) {
+  return apiClient<null>('/api/pengajuan', {
+    method: 'PUT',
+    body: {
+      action: 'update_dosen',
       ...payload,
     },
   });

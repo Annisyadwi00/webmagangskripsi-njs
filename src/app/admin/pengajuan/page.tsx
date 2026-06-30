@@ -12,6 +12,7 @@ import {
   getPengajuanList,
   setujuiPengajuan,
   tolakPengajuan,
+  updateDosenPengajuan,
 } from '@/lib/pengajuan-client';
 import { User, getUsers } from '@/lib/users-client';
 
@@ -131,6 +132,8 @@ export default function AdminPengajuanPage() {
 
   const [message, setMessage] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  
+  const [isUpdatingDosen, setIsUpdatingDosen] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -249,6 +252,16 @@ export default function AdminPengajuanPage() {
     setRejectId(null);
     setMessage('');
     setErrorMsg('');
+    
+    setVerifikasiForm({
+      id: pengajuan.id,
+      nama_mahasiswa: pengajuan.nama_mahasiswa,
+      perusahaan: pengajuan.perusahaan,
+      dosenId: pengajuan.dosenId ? String(pengajuan.dosenId) : '',
+      nama_dosen: pengajuan.nama_dosen || '',
+      dosenPengujiId: pengajuan.dosenPengujiId ? String(pengajuan.dosenPengujiId) : '',
+      nama_dosen_penguji: pengajuan.nama_dosen_penguji || '',
+    });
   };
 
   const closeDetailModal = () => {
@@ -282,26 +295,13 @@ export default function AdminPengajuanPage() {
     setMessage('');
     setErrorMsg('');
 
-    if (!verifikasiForm.dosenId || !verifikasiForm.nama_dosen) {
-      setErrorMsg('Dosen pembimbing wajib dipilih.');
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
       const result = await setujuiPengajuan({
         id: verifikasiForm.id,
-        dosenId: Number(verifikasiForm.dosenId),
-        nama_dosen: verifikasiForm.nama_dosen,
-        dosenPengujiId: verifikasiForm.dosenPengujiId
-          ? Number(verifikasiForm.dosenPengujiId)
-          : null,
-        nama_dosen_penguji: verifikasiForm.nama_dosen_penguji || null,
       });
 
       setMessage(
-        result.message ||
-          'Pengajuan berhasil disetujui dan dosen pembimbing berhasil ditentukan.'
+        result.message || 'Pengajuan berhasil disetujui.'
       );
 
       closeApproveModal();
@@ -317,6 +317,47 @@ export default function AdminPengajuanPage() {
       setIsSubmitting(false);
     }
   };
+
+  const handleUpdateDosen = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setIsUpdatingDosen(true);
+    setMessage('');
+    setErrorMsg('');
+
+    try {
+      const result = await updateDosenPengajuan({
+        id: verifikasiForm.id,
+        dosenId: verifikasiForm.dosenId ? Number(verifikasiForm.dosenId) : null,
+        nama_dosen: verifikasiForm.nama_dosen || null,
+        dosenPengujiId: verifikasiForm.dosenPengujiId ? Number(verifikasiForm.dosenPengujiId) : null,
+        nama_dosen_penguji: verifikasiForm.nama_dosen_penguji || null,
+      });
+
+      setMessage(
+        result.message || 'Plotting dosen berhasil diperbarui.'
+      );
+      
+      if (detailPengajuan) {
+        setDetailPengajuan({
+          ...detailPengajuan,
+          dosenId: verifikasiForm.dosenId ? Number(verifikasiForm.dosenId) : undefined,
+          nama_dosen: verifikasiForm.nama_dosen,
+          dosenPengujiId: verifikasiForm.dosenPengujiId ? Number(verifikasiForm.dosenPengujiId) : undefined,
+          nama_dosen_penguji: verifikasiForm.nama_dosen_penguji,
+        });
+      }
+
+      await fetchData();
+    } catch (error) {
+      const errMessage =
+        error instanceof Error ? error.message : 'Gagal memplot dosen.';
+      setErrorMsg(errMessage);
+    } finally {
+      setIsUpdatingDosen(false);
+    }
+  };
+
 
   const handleReject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -659,6 +700,57 @@ export default function AdminPengajuanPage() {
               />
             </div>
 
+            <div className="mt-5 app-panel p-4 lg:col-span-2">
+              <h3 className="text-lg font-black text-slate-950 dark:text-white mb-4 border-b border-slate-100 pb-2 dark:border-slate-800">
+                Plotting Dosen
+              </h3>
+              <form onSubmit={handleUpdateDosen} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="app-label text-sm">Dosen Pembimbing</label>
+                    <select
+                      value={verifikasiForm.dosenId}
+                      onChange={(e) => handleSelectDosenPembimbing(e.target.value)}
+                      className="app-input"
+                    >
+                      <option value="">Pilih dosen pembimbing</option>
+                      {dosens.map((dosen) => (
+                        <option key={dosen.id} value={dosen.id}>
+                          {dosen.name}
+                          {dosen.nim_nidn ? ` - ${dosen.nim_nidn}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="app-label text-sm">Dosen Penguji</label>
+                    <select
+                      value={verifikasiForm.dosenPengujiId}
+                      onChange={(e) => handleSelectDosenPenguji(e.target.value)}
+                      className="app-input"
+                    >
+                      <option value="">Pilih dosen penguji</option>
+                      {dosens.map((dosen) => (
+                        <option key={dosen.id} value={dosen.id}>
+                          {dosen.name}
+                          {dosen.nim_nidn ? ` - ${dosen.nim_nidn}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isUpdatingDosen}
+                    className="app-btn-primary px-6 disabled:opacity-60"
+                  >
+                    {isUpdatingDosen ? 'Menyimpan...' : 'Simpan Plotting Dosen'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
             <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div className="app-panel p-4">
                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
@@ -751,44 +843,6 @@ export default function AdminPengajuanPage() {
             </div>
 
             <form onSubmit={handleApprove} className="space-y-5">
-              <div>
-                <label className="app-label">Dosen Pembimbing</label>
-                <select
-                  value={verifikasiForm.dosenId}
-                  onChange={(e) => handleSelectDosenPembimbing(e.target.value)}
-                  className="app-input"
-                >
-                  <option value="">Pilih dosen pembimbing</option>
-                  {dosens.map((dosen) => (
-                    <option key={dosen.id} value={dosen.id}>
-                      {dosen.name}
-                      {dosen.nim_nidn ? ` - ${dosen.nim_nidn}` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="app-label">Dosen Penguji</label>
-                <select
-                  value={verifikasiForm.dosenPengujiId}
-                  onChange={(e) => handleSelectDosenPenguji(e.target.value)}
-                  className="app-input"
-                >
-                  <option value="">Pilih dosen penguji jika sudah ada</option>
-                  {dosens.map((dosen) => (
-                    <option key={dosen.id} value={dosen.id}>
-                      {dosen.name}
-                      {dosen.nim_nidn ? ` - ${dosen.nim_nidn}` : ''}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Dosen penguji hanya untuk kebutuhan internal staff dan tidak
-                  ditampilkan ke mahasiswa.
-                </p>
-              </div>
-
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
                   Ringkasan

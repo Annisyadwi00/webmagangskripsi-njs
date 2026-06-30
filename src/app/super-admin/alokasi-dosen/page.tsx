@@ -222,27 +222,28 @@ export default function SuperAdminMahasiswaMagangPage() {
       getDokumenStatus(item) === 'Belum Lengkap'
   ).length;
 
+  const exportHeaders = [
+    'Nama Mahasiswa',
+    'NPM',
+    'Program Studi',
+    'Angkatan',
+    'Semester',
+    'Kelas',
+    'Jenis Magang',
+    'Perusahaan',
+    'Posisi',
+    'Tanggal Mulai',
+    'Tanggal Berakhir',
+    'Dosen Pembimbing',
+    'Dosen Penguji',
+    'Status',
+    'Laporan',
+    'Output Magang',
+    'Dokumen',
+    'Nilai Akhir',
+  ];
+
   const handleExportCsv = () => {
-    const headers = [
-      'Nama Mahasiswa',
-      'NPM',
-      'Program Studi',
-      'Angkatan',
-      'Semester',
-      'Kelas',
-      'Jenis Magang',
-      'Perusahaan',
-      'Posisi',
-      'Tanggal Mulai',
-      'Tanggal Berakhir',
-      'Dosen Pembimbing',
-      'Dosen Penguji',
-      'Status',
-      'Laporan',
-      'Output Magang',
-      'Dokumen',
-      'Nilai Akhir',
-    ];
 
     const rows = getExportRows(filteredPengajuans).map((item) => [
       item.nama,
@@ -266,7 +267,7 @@ export default function SuperAdminMahasiswaMagangPage() {
     ]);
 
     const csvContent = [
-      headers.map(escapeCsv).join(','),
+      exportHeaders.map(escapeCsv).join(','),
       ...rows.map((row) => row.map(escapeCsv).join(',')),
     ].join('\n');
 
@@ -327,26 +328,7 @@ export default function SuperAdminMahasiswaMagangPage() {
         <body>
           <table border="1">
             <thead>
-              <tr>
-                <th>Nama Mahasiswa</th>
-                <th>NPM</th>
-                <th>Program Studi</th>
-                <th>Angkatan</th>
-                <th>Semester</th>
-                <th>Kelas</th>
-                <th>Jenis Magang</th>
-                <th>Perusahaan</th>
-                <th>Posisi</th>
-                <th>Tanggal Mulai</th>
-                <th>Tanggal Berakhir</th>
-                <th>Dosen Pembimbing</th>
-                <th>Dosen Penguji</th>
-                <th>Status</th>
-                <th>Laporan</th>
-                <th>Output Magang</th>
-                <th>Dokumen</th>
-                <th>Nilai Akhir</th>
-              </tr>
+              <tr>${exportHeaders.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr>
             </thead>
             <tbody>
               ${tableRows}

@@ -141,6 +141,7 @@ export default function DosenPenilaianPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [pengajuans, setPengajuans] = useState<Pengajuan[]>([]);
   const [search, setSearch] = useState('');
+  const [tahunFilter, setTahunFilter] = useState('Semua');
 
   // State untuk modal
   const [showModalMitra, setShowModalMitra] = useState(false);
@@ -194,7 +195,15 @@ export default function DosenPenilaianPage() {
   // FILTER / STATISTIK
   // ------------------------------------------------------------
 
-  const mahasiswaAktif = pengajuans.filter(
+  const uniqueTahunAkademik = Array.from(
+    new Set(pengajuans.map((p) => p.tahun_akademik).filter(Boolean))
+  ).sort().reverse();
+
+  const filteredPengajuans = pengajuans.filter((item) => {
+    return tahunFilter === 'Semua' || item.tahun_akademik === tahunFilter;
+  });
+
+  const mahasiswaAktif = filteredPengajuans.filter(
     (item) => item.dosenId === user?.id && (item.status === 'Aktif' || item.status === 'Selesai')
   );
 
@@ -206,11 +215,11 @@ export default function DosenPenilaianPage() {
     (item) => !sudahLengkapDokumen(item)
   );
 
-  const mahasiswaSelesai = pengajuans.filter(
+  const mahasiswaSelesai = filteredPengajuans.filter(
     (item) => item.dosenId === user?.id && item.status === 'Selesai'
   );
 
-  const mahasiswaSudahDinilai = pengajuans.filter(
+  const mahasiswaSudahDinilai = filteredPengajuans.filter(
     (item) => item.dosenId === user?.id && (item.status === 'Selesai Dinilai' || !!item.nilai_dari_dosen)
   );
 
@@ -449,15 +458,30 @@ export default function DosenPenilaianPage() {
                 Mahasiswa akan muncul jika dokumen wajibnya sudah lengkap.
               </p>
             </div>
-            <div className="w-full md:w-80">
-              <label className="app-label">Cari Mahasiswa</label>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="app-input"
-                placeholder="Cari nama, NPM, prodi, perusahaan..."
-              />
+            <div className="w-full md:w-auto flex flex-col md:flex-row gap-4">
+              <div className="w-full md:w-64">
+                <label className="app-label">Cari Mahasiswa</label>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="app-input"
+                  placeholder="Cari nama, NPM, prodi, perusahaan..."
+                />
+              </div>
+              <div className="w-full md:w-48">
+                <label className="app-label">Tahun Akademik</label>
+                <select
+                  value={tahunFilter}
+                  onChange={(e) => setTahunFilter(e.target.value)}
+                  className="app-input"
+                >
+                  <option value="Semua">Semua Tahun</option>
+                  {uniqueTahunAkademik.map((thn) => (
+                    <option key={thn} value={thn}>{thn}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 

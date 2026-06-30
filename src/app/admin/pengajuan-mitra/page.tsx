@@ -598,6 +598,10 @@ export default function AdminPengajuanMitraPage() {
                     label="Izin Usaha"
                     href={detailMitra.link_izin_usaha}
                   />
+                  <DocumentButton
+                    label="Logo Perusahaan"
+                    href={detailMitra.link_logo}
+                  />
                 </div>
               </div>
             </div>

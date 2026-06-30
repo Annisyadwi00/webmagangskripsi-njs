@@ -83,6 +83,7 @@ function formatDate(date?: string | null) {
 export default function DosenDashboardPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [pengajuans, setPengajuans] = useState<Pengajuan[]>([]);
+  const [tahunFilter, setTahunFilter] = useState('Semua');
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -120,22 +121,30 @@ export default function DosenDashboardPage() {
     fetchDashboard();
   }, []);
 
-  const mahasiswaAktif = pengajuans.filter(
+  const uniqueTahunAkademik = Array.from(
+    new Set(pengajuans.map((p) => p.tahun_akademik).filter(Boolean))
+  ).sort().reverse();
+
+  const filteredPengajuans = pengajuans.filter((item) => {
+    return tahunFilter === 'Semua' || item.tahun_akademik === tahunFilter;
+  });
+
+  const mahasiswaAktif = filteredPengajuans.filter(
     (item) => item.dosenId === user?.id && item.status === 'Aktif'
   );
-  const mahasiswaSelesai = pengajuans.filter(
+  const mahasiswaSelesai = filteredPengajuans.filter(
     (item) => item.dosenId === user?.id && item.status === 'Selesai'
   );
 
-  const laporanMasuk = pengajuans.filter(
+  const laporanMasuk = filteredPengajuans.filter(
     (item) => item.dosenId === user?.id && wajibLaporan(item.jenis_magang) && item.link_laporan_akhir
   );
 
-  const dokumenBelumLengkap = pengajuans.filter(
+  const dokumenBelumLengkap = filteredPengajuans.filter(
     (item) => item.dosenId === user?.id && item.status === 'Aktif' && !sudahLengkapDokumen(item)
   );
 
-  const belumDinilai = pengajuans.filter(
+  const belumDinilai = filteredPengajuans.filter(
     (item) =>
       item.dosenId === user?.id &&
       item.status === 'Aktif' &&
@@ -144,7 +153,7 @@ export default function DosenDashboardPage() {
   );
 
   const latestBimbingan = mahasiswaAktif.slice(0, 5);
-  const latestLaporan = pengajuans
+  const latestLaporan = filteredPengajuans
     .filter((item) => item.dosenId === user?.id && item.link_laporan_akhir)
     .slice(0, 5);
 
@@ -211,10 +220,30 @@ export default function DosenDashboardPage() {
             </Alert>
           )}
 
+          <section className="mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-xl font-black text-slate-950 dark:text-white">
+                Statistik Bimbingan
+              </h2>
+              <div className="mt-2 sm:mt-0 w-full sm:w-auto">
+                <select
+                  value={tahunFilter}
+                  onChange={(e) => setTahunFilter(e.target.value)}
+                  className="app-input w-full sm:w-48"
+                >
+                  <option value="Semua">Semua Tahun Akademik</option>
+                  {uniqueTahunAkademik.map((thn) => (
+                    <option key={thn} value={thn}>{thn}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </section>
+
           <section className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-4">
             <StatCard
               title="Total Bimbingan"
-              value={pengajuans.length}
+              value={filteredPengajuans.filter((item) => item.dosenId === user?.id).length}
               description="Mahasiswa yang ditetapkan sebagai bimbingan."
               icon="users"
             />

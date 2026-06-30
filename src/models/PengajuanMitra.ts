@@ -13,6 +13,7 @@ export type PengajuanMitraAttributes = {
   nama_narahubung_mitra: string;
   kontak_narahubung_mitra: string;
   email_perusahaan: string | null;
+  link_logo: string | null;
 
   lokasi: string | null;
   sistem_kerja: string | null;
@@ -49,6 +50,7 @@ export type PengajuanMitraCreationAttributes = Optional<
   | 'id'
   | 'url_mitra'
   | 'email_perusahaan'
+  | 'link_logo'
   | 'lokasi'
   | 'sistem_kerja'
   | 'kuota'
@@ -81,6 +83,7 @@ class PengajuanMitra
   declare nama_narahubung_mitra: string;
   declare kontak_narahubung_mitra: string;
   declare email_perusahaan: string | null;
+  declare link_logo: string | null;
 
   declare lokasi: string | null;
   declare sistem_kerja: string | null;
@@ -146,6 +149,10 @@ PengajuanMitra.init(
     },
     email_perusahaan: {
       type: DataTypes.STRING,
+      allowNull: true,
+    },
+    link_logo: {
+      type: DataTypes.TEXT,
       allowNull: true,
     },
 
