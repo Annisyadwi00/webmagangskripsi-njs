@@ -11,22 +11,15 @@ import { CurrentUser, getCurrentUserClient } from '@/lib/client-auth';
 import {
   Pengajuan,
   getPengajuanList,
-  beriNilaiPenguji, // fungsi API baru (harus dibuat)
+  beriNilaiPenguji,
 } from '@/lib/pengajuan-client';
-
-// ------------------------------------------------------------
-// KOMPONEN PENILAIAN DOSEN PENGAJI (sama dengan DOSEN_ITEMS)
-// Bisa diubah sesuai kebutuhan
-// ------------------------------------------------------------
-const EXAMINER_ITEMS = [
-  { id: 'kedisiplinan_bimbingan', label: 'Kedisiplinan bimbingan' },
-  { id: 'relevansi_bidang', label: 'Relevansi bidang keahlian' },
-  { id: 'penjelasan_isi', label: 'Penjelasan isi laporan' },
-  { id: 'analisis', label: 'Analisis dalam laporan' },
-  { id: 'kelengkapan_isi', label: 'Kelengkapan isi laporan' },
-  { id: 'aspek_kebahasaan', label: 'Aspek kebahasaan' },
-  { id: 'arahan_pembimbing', label: 'Kemampuan melaksanakan arahan pembimbing' },
-];
+import { getIndikatorList } from '@/lib/indikator-client';
+import {
+  getSidangCurriculum,
+  getAllSidangItems,
+  getSidangPredicate,
+  detectProdiAndSemester,
+} from '@/lib/sidang-curriculum';
 
 // ------------------------------------------------------------
 // FUNGSI BANTUAN (sama seperti di penilaian)
@@ -88,6 +81,14 @@ export default function DosenPengujiPage() {
 
   // State form nilai penguji
   const [nilaiPenguji, setNilaiPenguji] = useState<Record<string, string>>({});
+  const [modalProdi, setModalProdi] = useState<'Informatika' | 'Sistem Informasi'>('Informatika');
+  const [modalSemester, setModalSemester] = useState<'5' | '6' | '7'>('5');
+
+  const activeCurriculum = useMemo(
+    () => getSidangCurriculum(modalProdi, modalSemester),
+    [modalProdi, modalSemester]
+  );
+  const activeItems = useMemo(() => getAllSidangItems(activeCurriculum), [activeCurriculum]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -105,6 +106,7 @@ export default function DosenPengujiPage() {
       const [currentUser, pengajuanData] = await Promise.all([
         getCurrentUserClient(),
         getPengajuanList(1, 100),
+        getIndikatorList('penguji', true).catch(() => []), // Trigger sync database indikator cpl
       ]);
 
       if (currentUser.role !== 'Dosen') {
@@ -139,7 +141,7 @@ export default function DosenPengujiPage() {
   );
 
   const mahasiswaSudahDinilaiPenguji = pengajuans.filter(
-    (item) => item.dosenPengujiId === user?.id && (item.status === 'Selesai Dinilai' || !!item.nilai_sidang)
+    (item) => item.dosenPengujiId === user?.id && ((item.status as string) === 'Selesai Dinilai' || !!(item as any).nilai_sidang)
   );
 
   const filteredMahasiswaSiapUji = useMemo(() => {
@@ -179,9 +181,18 @@ export default function DosenPengujiPage() {
     setMessage('');
     setErrorMsg('');
 
-    // Inisialisasi form kosong
+    const { prodi, semester } = detectProdiAndSemester(item.program_studi, item.semester);
+    setModalProdi(prodi);
+    setModalSemester(semester);
+    const curr = getSidangCurriculum(prodi, semester);
+    const items = getAllSidangItems(curr);
+
+    // Inisialisasi form kosong / load dari detail sebelumnya
     const initial: Record<string, string> = {};
-    EXAMINER_ITEMS.forEach((it) => { initial[it.id] = ''; });
+    items.forEach((it) => {
+      const prevVal = item.nilai_penguji_detail ? item.nilai_penguji_detail[it.id] : undefined;
+      initial[it.id] = prevVal !== undefined && prevVal !== null ? String(prevVal) : '';
+    });
     setNilaiPenguji(initial);
     setShowModal(true);
   };
@@ -191,6 +202,30 @@ export default function DosenPengujiPage() {
     setSelectedPengajuan(null);
   };
 
+  const handleCurriculumChange = (newProdi: 'Informatika' | 'Sistem Informasi', newSem: '5' | '6' | '7') => {
+    setModalProdi(newProdi);
+    setModalSemester(newSem);
+    const curr = getSidangCurriculum(newProdi, newSem);
+    const items = getAllSidangItems(curr);
+    setNilaiPenguji((prev) => {
+      const updated: Record<string, string> = { ...prev };
+      items.forEach((it) => {
+        if (updated[it.id] === undefined) updated[it.id] = '';
+      });
+      return updated;
+    });
+  };
+
+  const handleQuickFill = (val: string) => {
+    setNilaiPenguji((prev) => {
+      const updated: Record<string, string> = { ...prev };
+      activeItems.forEach((it) => {
+        updated[it.id] = val;
+      });
+      return updated;
+    });
+  };
+
   // ------------------------------------------------------------
   // HANDLER SUBMIT
   // ------------------------------------------------------------
@@ -198,18 +233,18 @@ export default function DosenPengujiPage() {
     e.preventDefault();
 
     // Validasi semua nilai terisi
-    const allFilled = EXAMINER_ITEMS.every((item) => {
+    const allFilled = activeItems.every((item) => {
       const val = parseFloat(nilaiPenguji[item.id]);
       return !isNaN(val) && val >= 0 && val <= 100;
     });
 
     if (!allFilled) {
-      setErrorMsg('Semua komponen nilai wajib diisi dengan angka 0–100.');
+      setErrorMsg(`Semua komponen nilai (${activeItems.length} indikator ${activeCurriculum.prodi} Semester ${activeCurriculum.semester}) wajib diisi dengan angka 0–100.`);
       return;
     }
 
     // Hitung rata-rata nilai penguji
-    const values = EXAMINER_ITEMS.map((item) => parseFloat(nilaiPenguji[item.id]))
+    const values = activeItems.map((item) => parseFloat(nilaiPenguji[item.id]))
       .filter((v) => !isNaN(v) && v >= 0 && v <= 100);
     const nilaiRata = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
 
@@ -231,7 +266,11 @@ export default function DosenPengujiPage() {
         id_pengajuan: selectedPengajuan!.id,
         nilai_penguji_total: nilaiRata,
         nilai_penguji_grade: grade(nilaiRata),
-        nilai_penguji_detail: nilaiPenguji,
+        nilai_penguji_detail: {
+          ...nilaiPenguji,
+          _prodi: activeCurriculum.prodi,
+          _semester: activeCurriculum.semester,
+        },
       };
 
       // Panggil API yang sesuai (harus dibuat di server)
@@ -388,7 +427,9 @@ export default function DosenPengujiPage() {
                         </span>
                       </td>
                       <td className="px-5 py-4 font-black text-slate-950 dark:text-white">
-                        {item.nilai_penguji_grade || '-'}
+                        {item.nilai_penguji_total !== null && item.nilai_penguji_total !== undefined
+                          ? `${Number(item.nilai_penguji_total).toFixed(2)} (${item.nilai_penguji_grade || ''})`
+                          : item.nilai_penguji_grade || '-'}
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex flex-col gap-2">
@@ -432,53 +473,256 @@ export default function DosenPengujiPage() {
 
       {/* ===== MODAL PENILAIAN PENGAJI ===== */}
       {showModal && selectedPengajuan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 animate-in fade-in duration-200">
           <div
             className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
             onClick={closeModal}
           />
-          <div className="relative z-10 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
-            <div className="mb-6">
-              <h2 className="text-2xl font-black text-slate-950 dark:text-white">
-                Penilaian Dosen Penguji
-              </h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {selectedPengajuan.nama_mahasiswa} • {selectedPengajuan.perusahaan}
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmitNilai} className="space-y-5">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {EXAMINER_ITEMS.map((item) => (
-                  <div key={item.id}>
-                    <label className="app-label">{item.label}</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={nilaiPenguji[item.id] || ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setNilaiPenguji((prev) => ({ ...prev, [item.id]: val }));
-                      }}
-                      className="app-input"
-                      placeholder="0–100"
-                    />
-                  </div>
-                ))}
+          <div className="relative z-10 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900 md:p-8">
+            <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 dark:border-slate-800 md:flex-row md:items-center md:justify-between">
+              <div>
+                <span className="app-badge app-badge-blue mb-2 inline-block">
+                  Sidang & Evaluasi Akhir
+                </span>
+                <h2 className="text-2xl font-black text-slate-950 dark:text-white">
+                  Penilaian Dosen Penguji
+                </h2>
+                <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                  {selectedPengajuan.nama_mahasiswa} ({selectedPengajuan.npm || '-'}) • {selectedPengajuan.perusahaan}
+                </p>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                  Rata-rata Nilai Penguji
-                </p>
-                <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
-                  {(() => {
-                    const values = EXAMINER_ITEMS.map((item) => parseFloat(nilaiPenguji[item.id]))
-                      .filter((v) => !isNaN(v) && v >= 0 && v <= 100);
-                    return values.length ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(2) : '0.00';
-                  })()}
-                </p>
+              {/* Selector Kurikulum Prodi & Semester */}
+              <div className="flex flex-col gap-2 rounded-2xl bg-slate-50 p-3 dark:bg-slate-800/80">
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] font-bold text-slate-400 mr-2">Kurikulum:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleCurriculumChange('Informatika', modalSemester)}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                      modalProdi === 'Informatika'
+                        ? 'bg-[#1e3a8a] text-white shadow dark:bg-blue-600'
+                        : 'text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    S1 Informatika
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCurriculumChange('Sistem Informasi', modalSemester)}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                      modalProdi === 'Sistem Informasi'
+                        ? 'bg-[#1e3a8a] text-white shadow dark:bg-blue-600'
+                        : 'text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    S1 Sistem Informasi
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] font-bold text-slate-400 mr-2">Semester:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleCurriculumChange(modalProdi, '5')}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                      modalSemester === '5'
+                        ? 'bg-[#1e3a8a] text-white shadow dark:bg-blue-600'
+                        : 'text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    Semester 5
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCurriculumChange(modalProdi, '6')}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                      modalSemester === '6'
+                        ? 'bg-[#1e3a8a] text-white shadow dark:bg-blue-600'
+                        : 'text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    Semester 6
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCurriculumChange(modalProdi, '7')}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                      modalSemester === '7'
+                        ? 'bg-[#1e3a8a] text-white shadow dark:bg-blue-600'
+                        : 'text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    Semester 7
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Fill / Bantu Isi */}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50/50 p-3.5 dark:border-blue-900/40 dark:bg-blue-950/20">
+              <span className="text-xs font-bold text-[#1e3a8a] dark:text-blue-300">
+                ⚡ Bantu Isi Cepat ({activeItems.length} Indikator):
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleQuickFill('90')}
+                  className="rounded-lg bg-emerald-100 px-2.5 py-1 text-xs font-extrabold text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:bg-emerald-900"
+                >
+                  Sangat Baik (90)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickFill('75')}
+                  className="rounded-lg bg-blue-100 px-2.5 py-1 text-xs font-extrabold text-blue-800 hover:bg-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:hover:bg-blue-900"
+                >
+                  Baik (75)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickFill('55')}
+                  className="rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-extrabold text-amber-800 hover:bg-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
+                >
+                  Cukup (55)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickFill('')}
+                  className="rounded-lg bg-slate-200 px-2.5 py-1 text-xs font-extrabold text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+
+            {errorMsg && (
+              <div className="mt-4">
+                <Alert variant="error">{errorMsg}</Alert>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitNilai} className="mt-6 space-y-6">
+              {activeCurriculum.groups.map((group, gIdx) => (
+                <div
+                  key={gIdx}
+                  className="space-y-3 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-800/40"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-2.5 dark:border-slate-700">
+                    <h3 className="font-extrabold text-[#1e3a8a] dark:text-blue-400">
+                      {group.category}
+                    </h3>
+                    <span className="rounded-full bg-slate-200/80 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                      {group.items.length} Indikator
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 pt-1">
+                    {group.items.map((it) => {
+                      const valNum = parseFloat(nilaiPenguji[it.id] || '');
+                      const pred = getSidangPredicate(valNum);
+                      return (
+                        <div
+                          key={it.id}
+                          className="grid grid-cols-1 gap-3 rounded-xl border border-slate-100 bg-white p-3.5 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:grid-cols-[1fr_120px_130px] md:items-center"
+                        >
+                          <div>
+                            {it.code && (
+                              <span className="mr-2 inline-block rounded bg-blue-100 px-2 py-0.5 font-mono text-[11px] font-extrabold text-[#1e3a8a] dark:bg-blue-900/60 dark:text-blue-300">
+                                {it.code}
+                              </span>
+                            )}
+                            <span className="text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-200">
+                              {it.label}
+                            </span>
+                          </div>
+
+                          <div>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={nilaiPenguji[it.id] || ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setNilaiPenguji((prev) => ({ ...prev, [it.id]: val }));
+                              }}
+                              className="app-input text-center font-black"
+                              placeholder="0–100"
+                            />
+                          </div>
+
+                          <div className="text-center md:text-right">
+                            <span className={`inline-block w-full rounded-xl px-2.5 py-1.5 text-center text-xs font-extrabold ${pred.badgeClass}`}>
+                              {pred.label}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              {/* Rubrik Penjelasan */}
+              <div className="flex flex-wrap items-center justify-center gap-3 rounded-xl bg-slate-100 p-3 text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                <span>Rubrik:</span>
+                <span className="text-red-600 dark:text-red-400">1–20: Sangat Kurang</span> •
+                <span className="text-orange-600 dark:text-orange-400">21–40: Kurang</span> •
+                <span className="text-amber-600 dark:text-amber-400">41–60: Cukup</span> •
+                <span className="text-blue-600 dark:text-blue-400">61–80: Baik</span> •
+                <span className="text-emerald-600 dark:text-emerald-400">81–100: Sangat Baik</span>
+              </div>
+
+              {/* Rata-rata & Predikat */}
+              <div className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800/60 md:grid-cols-3">
+                <div>
+                  <p className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                    Rata-rata Nilai Sidang
+                  </p>
+                  <p className="mt-1 text-3xl font-black text-slate-950 dark:text-white">
+                    {(() => {
+                      const values = activeItems.map((item) => parseFloat(nilaiPenguji[item.id]))
+                        .filter((v) => !isNaN(v) && v >= 0 && v <= 100);
+                      return values.length ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(2) : '0.00';
+                    })()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                    Predikat Evaluasi
+                  </p>
+                  <div className="mt-2">
+                    {(() => {
+                      const values = activeItems.map((item) => parseFloat(nilaiPenguji[item.id]))
+                        .filter((v) => !isNaN(v) && v >= 0 && v <= 100);
+                      const nilaiRata = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+                      const pred = getSidangPredicate(nilaiRata);
+                      return (
+                        <span className={`inline-block rounded-xl px-4 py-1.5 text-sm font-black ${pred.badgeClass}`}>
+                          {pred.label}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                    Grade Huruf
+                  </p>
+                  <p className="mt-1 text-3xl font-black text-[#1e3a8a] dark:text-blue-400">
+                    {(() => {
+                      const values = activeItems.map((item) => parseFloat(nilaiPenguji[item.id]))
+                        .filter((v) => !isNaN(v) && v >= 0 && v <= 100);
+                      const nilaiRata = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+                      if (nilaiRata >= 85) return 'A';
+                      if (nilaiRata >= 75) return 'B';
+                      if (nilaiRata >= 65) return 'C';
+                      if (nilaiRata >= 50) return 'D';
+                      return 'E';
+                    })()}
+                  </p>
+                </div>
               </div>
 
               <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 dark:border-slate-800 sm:flex-row">

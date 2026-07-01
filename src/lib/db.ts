@@ -41,6 +41,7 @@ export const syncDatabase = async () => {
   await import('@/models/PengajuanMitra');
   await import('@/models/PengajuanLowongan');
   await import('@/models/Mitra');
+  await import('@/models/IndikatorPenilaian');
 
   await sequelize.sync({ alter: true });
 

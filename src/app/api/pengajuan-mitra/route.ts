@@ -29,7 +29,6 @@ function getDriveClient() {
   const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
   const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
   if (!clientId || !clientSecret || !refreshToken) {
-    throw new Error('Google Drive credentials tidak lengkap.');
     throw new Error('Google Drive credentials tidak lengkap (Service Account atau OAuth2 tidak ditemukan).');
   }
   const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);

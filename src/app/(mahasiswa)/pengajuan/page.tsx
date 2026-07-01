@@ -437,9 +437,11 @@ export default function PengajuanMahasiswaPage() {
           />
           {message && <Alert variant="success">{message}</Alert>}
           {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
-          <section className="mb-8">
-            <ProgressStepper steps={getMagangSteps(pengajuan?.status)} />
-          </section>
+          {!pengajuan && (
+            <section className="mb-8">
+              <ProgressStepper steps={getMagangSteps(pengajuan?.status)} />
+            </section>
+          )}
 
           {pengajuan ? (
             <section className="space-y-6">
@@ -500,6 +502,69 @@ export default function PengajuanMahasiswaPage() {
                     </Link>
                   )}
                 </div>
+              </div>
+
+              {/* Card Selamat & Transkrip Nilai Akhir */}
+              {(pengajuan.status === 'Selesai' || pengajuan.nilai_penguji_total != null || pengajuan.nilai_dosen_total != null || pengajuan.nilai_mitra_total != null || pengajuan.nilai_akhir_angka != null) && (
+                <div className="overflow-hidden rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50/90 via-white to-blue-50/50 p-6 shadow-xl dark:border-emerald-800/60 dark:from-emerald-950/40 dark:via-slate-900 dark:to-blue-950/20 md:p-8">
+                  <div className="flex flex-col gap-4 border-b border-emerald-100 pb-6 dark:border-emerald-900/40 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-2xl text-white shadow-lg shadow-emerald-600/30">
+                        🎉
+                      </div>
+                      <div>
+                        <span className="app-badge app-badge-green mb-1 inline-block">
+                          ✓ Evaluasi & Sidang Selesai
+                        </span>
+                        <h3 className="text-xl font-black text-slate-950 dark:text-white md:text-2xl">
+                          Selamat! Anda Telah Menyelesaikan Keseluruhan Program Magang
+                        </h3>
+                        <p className="mt-1 text-sm font-semibold leading-relaxed text-emerald-800 dark:text-emerald-300">
+                          Seluruh tahapan mulai dari pengajuan, pelaksanaan magang, bimbingan dospem, hingga sidang evaluasi akhir telah berhasil Anda lalui dengan sukses.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <h4 className="mb-4 text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Rincian Nilai Evaluasi Magang
+                    </h4>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+                      <div className="app-panel p-5 text-center bg-white/90 shadow-sm dark:bg-slate-800/90">
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Nilai Mitra</p>
+                        <p className="mt-2 text-3xl font-black text-slate-950 dark:text-white">{pengajuan.nilai_mitra_total || '-'}</p>
+                      </div>
+                      <div className="app-panel p-5 text-center bg-white/90 shadow-sm dark:bg-slate-800/90">
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Nilai Dospem</p>
+                        <p className="mt-2 text-3xl font-black text-slate-950 dark:text-white">{pengajuan.nilai_dosen_total || '-'}</p>
+                      </div>
+                      <div className="app-panel p-5 text-center bg-white/90 shadow-sm dark:bg-slate-800/90">
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Nilai Penguji</p>
+                        <p className="mt-2 text-3xl font-black text-slate-950 dark:text-white">{pengajuan.nilai_penguji_total || '-'}</p>
+                      </div>
+                      <div className="rounded-2xl bg-gradient-to-br from-[#1e3a8a] to-blue-600 p-5 text-center text-white shadow-lg shadow-blue-600/20">
+                        <p className="text-xs font-extrabold uppercase tracking-wider text-blue-200">Total & Grade Akhir</p>
+                        <p className="mt-2 text-3xl font-black text-white">
+                          {pengajuan.nilai_akhir_angka || '-'} ({pengajuan.nilai_akhir_grade || '-'})
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Alur Status Magang dipindah ke bawah saat sudah mengajukan */}
+              <div className="app-card p-6">
+                <div className="mb-5 border-b border-slate-100 pb-4 dark:border-slate-800">
+                  <h3 className="text-lg font-black text-slate-950 dark:text-white">
+                    Alur & Status Pelaksanaan Magang
+                  </h3>
+                  <p className="mt-0.5 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                    Pantau tahapan progres pengajuan dan pelaksanaan magang Anda di bawah ini.
+                  </p>
+                </div>
+                <ProgressStepper steps={getMagangSteps(pengajuan?.status)} />
               </div>
             </section>
           ) : (

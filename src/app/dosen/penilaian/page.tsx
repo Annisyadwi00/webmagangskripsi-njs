@@ -12,6 +12,7 @@ import {
   beriNilaiPengajuan,
   getPengajuanList,
 } from '@/lib/pengajuan-client';
+import { getIndikatorList } from '@/lib/indikator-client';
 
 // ------------------------------------------------------------
 // DATA STATIS UNTUK FORM PENILAIAN
@@ -107,9 +108,9 @@ function formatDate(date?: string | null) {
 // FUNGSI PERHITUNGAN NILAI
 // ------------------------------------------------------------
 
-function hitungNilaiMitra(nilai: Record<string, string>): number {
+function hitungNilaiMitra(nilai: Record<string, string>, items: Array<{ id: string; bobot: number }> = MITRA_ITEMS): number {
   let total = 0;
-  MITRA_ITEMS.forEach((item) => {
+  items.forEach((item) => {
     const val = parseFloat(nilai[item.id]);
     if (!isNaN(val) && val >= 0 && val <= 100) {
       total += val * (item.bobot / 100);
@@ -118,8 +119,8 @@ function hitungNilaiMitra(nilai: Record<string, string>): number {
   return total;
 }
 
-function hitungNilaiDosen(nilai: Record<string, string>): number {
-  const values = DOSEN_ITEMS.map((item) => parseFloat(nilai[item.id]))
+function hitungNilaiDosen(nilai: Record<string, string>, items: Array<{ id: string }> = DOSEN_ITEMS): number {
+  const values = items.map((item) => parseFloat(nilai[item.id]))
     .filter((v) => !isNaN(v) && v >= 0 && v <= 100);
   if (values.length === 0) return 0;
   return values.reduce((a, b) => a + b, 0) / values.length;
@@ -151,6 +152,8 @@ export default function DosenPenilaianPage() {
   // State form nilai
   const [nilaiMitra, setNilaiMitra] = useState<Record<string, string>>({});
   const [nilaiDosen, setNilaiDosen] = useState<Record<string, string>>({});
+  const [mitraItems, setMitraItems] = useState<Array<{ id: string; label: string; bobot: number }>>(MITRA_ITEMS);
+  const [dosenItems, setDosenItems] = useState<Array<{ id: string; label: string }>>(DOSEN_ITEMS);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -166,10 +169,19 @@ export default function DosenPenilaianPage() {
       setIsLoading(true);
       setErrorMsg('');
 
-      const [currentUser, pengajuanData] = await Promise.all([
+      const [currentUser, pengajuanData, indDospem, indMitra] = await Promise.all([
         getCurrentUserClient(),
         getPengajuanList(1, 100),
+        getIndikatorList('dospem', true).catch(() => []),
+        getIndikatorList('mitra', true).catch(() => []),
       ]);
+
+      if (indDospem && indDospem.length > 0) {
+        setDosenItems(indDospem.map(i => ({ id: i.kode, label: i.label })));
+      }
+      if (indMitra && indMitra.length > 0) {
+        setMitraItems(indMitra.map(i => ({ id: i.kode, label: i.label, bobot: i.bobot })));
+      }
 
       if (currentUser.role !== 'Dosen') {
         window.location.href = getDashboardPathByRole(currentUser.role);
@@ -196,7 +208,7 @@ export default function DosenPenilaianPage() {
   // ------------------------------------------------------------
 
   const uniqueTahunAkademik = Array.from(
-    new Set(pengajuans.map((p) => p.tahun_akademik).filter(Boolean))
+    new Set(pengajuans.map((p) => p.tahun_akademik).filter((t): t is string => Boolean(t)))
   ).sort().reverse();
 
   const filteredPengajuans = pengajuans.filter((item) => {
@@ -220,7 +232,7 @@ export default function DosenPenilaianPage() {
   );
 
   const mahasiswaSudahDinilai = filteredPengajuans.filter(
-    (item) => item.dosenId === user?.id && (item.status === 'Selesai Dinilai' || !!item.nilai_dari_dosen)
+    (item) => item.dosenId === user?.id && ((item.status as string) === 'Selesai Dinilai' || !!item.nilai_dari_dosen)
   );
 
   const filteredMahasiswaSiapDinilai = useMemo(() => {
@@ -263,9 +275,9 @@ export default function DosenPenilaianPage() {
 
     // Inisialisasi form kosong
     const initialMitra: Record<string, string> = {};
-    MITRA_ITEMS.forEach((it) => { initialMitra[it.id] = ''; });
+    mitraItems.forEach((it) => { initialMitra[it.id] = ''; });
     const initialDosen: Record<string, string> = {};
-    DOSEN_ITEMS.forEach((it) => { initialDosen[it.id] = ''; });
+    dosenItems.forEach((it) => { initialDosen[it.id] = ''; });
 
     // Jika ada nilai sebelumnya (misal dari edit), bisa diisi di sini
     // (opsional, bisa dikembangkan)
@@ -290,7 +302,7 @@ export default function DosenPenilaianPage() {
     e.preventDefault();
 
     // Validasi semua nilai mitra terisi (0–100)
-    const allFilled = MITRA_ITEMS.every((item) => {
+    const allFilled = mitraItems.every((item) => {
       const val = parseFloat(nilaiMitra[item.id]);
       return !isNaN(val) && val >= 0 && val <= 100;
     });
@@ -319,7 +331,7 @@ export default function DosenPenilaianPage() {
     e.preventDefault();
 
     // Validasi semua nilai dosen terisi
-    const allFilled = DOSEN_ITEMS.every((item) => {
+    const allFilled = dosenItems.every((item) => {
       const val = parseFloat(nilaiDosen[item.id]);
       return !isNaN(val) && val >= 0 && val <= 100;
     });
@@ -329,8 +341,8 @@ export default function DosenPenilaianPage() {
       return;
     }
 
-    const nilaiMitraTotal = hitungNilaiMitra(nilaiMitra);
-    const nilaiDosenTotal = hitungNilaiDosen(nilaiDosen);
+    const nilaiMitraTotal = hitungNilaiMitra(nilaiMitra, mitraItems);
+    const nilaiDosenTotal = hitungNilaiDosen(nilaiDosen, dosenItems);
     const nilaiAkhir = (nilaiMitraTotal + nilaiDosenTotal) / 2;
     const grade = getGradeFromNumber(nilaiAkhir);
 
@@ -635,7 +647,7 @@ export default function DosenPenilaianPage() {
 
             <form onSubmit={handleNextToDosen} className="space-y-5">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {MITRA_ITEMS.map((item) => (
+                {mitraItems.map((item) => (
                   <div key={item.id}>
                     <label className="app-label flex items-center justify-between">
                       <span>{item.label}</span>
@@ -661,10 +673,10 @@ export default function DosenPenilaianPage() {
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                  Rata-rata tertimbang nilai mitra
+                  Total Nilai Mitra Sementara
                 </p>
                 <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
-                  {hitungNilaiMitra(nilaiMitra).toFixed(2)}
+                  {hitungNilaiMitra(nilaiMitra, mitraItems).toFixed(2)}
                 </p>
               </div>
 
@@ -714,7 +726,7 @@ export default function DosenPenilaianPage() {
 
             <form onSubmit={handleSubmitNilai} className="space-y-5">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {DOSEN_ITEMS.map((item) => (
+                {dosenItems.map((item) => (
                   <div key={item.id}>
                     <label className="app-label">{item.label}</label>
                     <input
@@ -739,7 +751,7 @@ export default function DosenPenilaianPage() {
                     Nilai Mitra
                   </p>
                   <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
-                    {hitungNilaiMitra(nilaiMitra).toFixed(2)}
+                    {hitungNilaiMitra(nilaiMitra, mitraItems).toFixed(2)}
                   </p>
                 </div>
                 <div>
@@ -747,7 +759,7 @@ export default function DosenPenilaianPage() {
                     Nilai Dosen
                   </p>
                   <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
-                    {hitungNilaiDosen(nilaiDosen).toFixed(2)}
+                    {hitungNilaiDosen(nilaiDosen, dosenItems).toFixed(2)}
                   </p>
                 </div>
                 <div>
@@ -755,10 +767,10 @@ export default function DosenPenilaianPage() {
                     Nilai Akhir (Rata-rata)
                   </p>
                   <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">
-                    {((hitungNilaiMitra(nilaiMitra) + hitungNilaiDosen(nilaiDosen)) / 2).toFixed(2)}
+                    {((hitungNilaiMitra(nilaiMitra, mitraItems) + hitungNilaiDosen(nilaiDosen, dosenItems)) / 2).toFixed(2)}
                     {' '}
                     <span className="text-lg font-bold text-[#1e3a8a] dark:text-blue-300">
-                      {getGradeFromNumber((hitungNilaiMitra(nilaiMitra) + hitungNilaiDosen(nilaiDosen)) / 2)}
+                      {getGradeFromNumber((hitungNilaiMitra(nilaiMitra, mitraItems) + hitungNilaiDosen(nilaiDosen, dosenItems)) / 2)}
                     </span>
                   </p>
                 </div>
