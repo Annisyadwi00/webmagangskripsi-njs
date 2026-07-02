@@ -347,6 +347,7 @@ export default function AjukanLowonganPage() {
                       )
                     }
                     className="app-input"
+                  >
                     <option value="Konversi 20 SKS">Konversi Maksimal 20 SKS</option>
                     <option value="Tidak Konversi">Tidak Konversi</option>
                   </select>
