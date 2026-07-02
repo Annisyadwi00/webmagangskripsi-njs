@@ -15,7 +15,6 @@ function getTypeBadgeClass(type?: string | null) {
 
 function getTipeKonversiLabel(value?: string | null) {
   if (value === 'Konversi 20 SKS') return 'Konversi Maksimal 20 SKS';
-  if (value === 'Konversi 2 SKS') return 'Magang 2 SKS Khusus SI';
   if (value === 'Tidak Konversi') return 'Tidak Konversi';
   return value || '-';
 }
@@ -113,15 +112,18 @@ export default function LowonganPage() {
                   kerja, dan jenis magang. Detail lowongan dapat dilihat tanpa
                   meninggalkan halaman ini.
                 </p>
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                  <Link href="/" className="app-btn-secondary">
-                    Beranda
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link href="/ajukan-lowongan" className="app-btn-primary">
+                    + Ajukan Lowongan
+                  </Link>
+                  <Link href="/ajukan-mitra" className="app-btn-secondary">
+                    + Ajukan Mitra
                   </Link>
                   <Link href="/mitra" className="app-btn-secondary">
                     Cek Mitra
                   </Link>
-                  <Link href="/login" className="app-btn-primary">
-                    Masuk untuk Pengajuan
+                  <Link href="/login" className="app-btn-secondary">
+                    Masuk
                   </Link>
                 </div>
               </div>
@@ -193,7 +195,6 @@ export default function LowonganPage() {
                   <option value="Semua">Semua Jenis</option>
                   <option value="Konversi 20 SKS">Konversi Maksimal 20 SKS</option>
                   <option value="Tidak Konversi">Tidak Konversi</option>
-                  <option value="Konversi 2 SKS">Magang 2 SKS Khusus SI</option>
                 </select>
               </div>
 
@@ -229,8 +230,16 @@ export default function LowonganPage() {
                 Lowongan tidak ditemukan.
               </p>
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Coba ubah kata kunci pencarian atau filter yang dipilih.
+                Coba ubah kata kunci pencarian atau pasang iklan lowongan magang baru untuk perusahaan Anda.
               </p>
+              <div className="mt-5 flex justify-center gap-3">
+                <Link href="/ajukan-lowongan" className="app-btn-primary inline-flex">
+                  + Ajukan Lowongan Baru
+                </Link>
+                <Link href="/ajukan-mitra" className="app-btn-secondary inline-flex">
+                  + Ajukan Mitra
+                </Link>
+              </div>
             </section>
           ) : (
             <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -359,8 +368,8 @@ export default function LowonganPage() {
                     Email Perusahaan
                   </a>
                 )}
-                <Link href="/login" className="app-btn-secondary flex-1 text-center">
-                  Masuk ke Sistem
+                <Link href="/ajukan-mitra" className="app-btn-secondary flex-1 text-center">
+                  Ajukan Kerja Sama Mitra
                 </Link>
               </div>
             </div>

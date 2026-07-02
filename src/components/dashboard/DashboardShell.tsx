@@ -176,15 +176,15 @@ export default function DashboardShell({ role, children }: DashboardShellProps) 
       {/* Sidebar untuk desktop */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-slate-200 bg-white px-5 py-6 dark:border-slate-800 dark:bg-slate-900 lg:block">
         <Link href={getRoleHome(role)} className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-sm font-black text-[#1e3a8a] dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
-            SI
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-xs font-black text-[#1e3a8a] dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
+            HKR
           </div>
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
               {getRoleLabel(role)}
             </p>
-            <p className="truncate text-lg font-black text-slate-950 dark:text-white">
-              SI Magang
+            <p className="truncate text-lg font-black tracking-tight text-slate-950 dark:text-white">
+              HIKARI
             </p>
           </div>
         </Link>

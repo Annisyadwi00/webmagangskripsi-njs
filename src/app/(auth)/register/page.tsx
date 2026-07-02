@@ -324,7 +324,7 @@ export default function RegisterPage() {
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Lengkapi data berikut untuk membuat akun SI Magang.
+                Lengkapi data berikut untuk membuat akun HIKARI.
               </p>
             </div>
 

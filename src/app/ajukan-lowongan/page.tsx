@@ -130,7 +130,7 @@ export default function AjukanLowonganPage() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px] lg:items-center">
         <div>
           <p className="mt-8 text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a] dark:text-blue-300">
-            Mitra SI Magang
+            Mitra HIKARI
           </p>
 
           <h1 className="mt-3 text-4xl font-black leading-tight text-slate-950 dark:text-white md:text-5xl">
@@ -347,12 +347,8 @@ export default function AjukanLowonganPage() {
                       )
                     }
                     className="app-input"
-                  >
                     <option value="Konversi 20 SKS">Konversi Maksimal 20 SKS</option>
                     <option value="Tidak Konversi">Tidak Konversi</option>
-                    <option value="Konversi 2 SKS">
-                      Konversi 2 SKS khusus Sistem Informasi
-                    </option>
                   </select>
                 </div>
 

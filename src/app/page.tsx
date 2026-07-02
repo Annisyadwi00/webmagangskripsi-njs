@@ -65,7 +65,7 @@ const roles = [
 
 const faqs: FAQ[] = [
   {
-    tanya: 'Siapa saja yang bisa menggunakan SI Magang?',
+    tanya: 'Siapa saja yang bisa menggunakan HIKARI?',
     jawab:
       'Sistem ini digunakan oleh mahasiswa, dosen pembimbing, dan staff sesuai kebutuhan proses magang.',
   },
@@ -77,7 +77,7 @@ const faqs: FAQ[] = [
   {
     tanya: 'Apakah semua mahasiswa wajib mengunggah laporan akhir?',
     jawab:
-      'Kewajiban laporan menyesuaikan jenis magang. Konversi Maksimal 20 SKS wajib laporan akhir dan output magang, Magang 2 SKS Khusus SI wajib laporan magang, sedangkan Tidak Konversi tidak memakai fitur laporan akhir.',
+      'Kewajiban laporan menyesuaikan jenis magang. Konversi Maksimal 20 SKS wajib laporan akhir dan output magang, sedangkan Tidak Konversi tidak memakai fitur laporan akhir.',
   },
   {
     tanya: 'Bagaimana proses penilaian akhir?',
@@ -127,11 +127,11 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a] dark:text-blue-300">
-                  SI Magang FASILKOM UNSIKA
+                  HIKARI FASILKOM UNSIKA
                 </p>
 
                 <h1 className="mt-4 text-4xl font-black leading-tight tracking-tight text-slate-950 dark:text-white md:text-5xl lg:text-6xl">
-                  Sistem Informasi Magang Berbasis Web.
+                  Hubungan Industri, Karir, & Relasi Intern.
                 </h1>
 
                 <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300 md:text-lg">
@@ -159,7 +159,7 @@ export default function LandingPage() {
                     Satu portal untuk proses magang.
                   </h2>
                   <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                    SI Magang membantu proses pendataan, pengelolaan mitra,
+                    HIKARI membantu proses pendataan, pengelolaan mitra,
                     pelaporan akhir, dan evaluasi magang agar lebih terpusat.
                   </p>
                 </div>

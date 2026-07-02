@@ -592,7 +592,6 @@ export default function PengajuanMahasiswaPage() {
                   <div><label className="app-label">Jenis Magang</label><select name="jenis_magang" value={form.jenis_magang} onChange={(e) => handleJenisMagangChange(e.target.value)} className="app-input">
                     <option value="Konversi 20 SKS">Konversi Maksimal 20 SKS</option>
                     <option value="Tidak Konversi">Tidak Konversi</option>
-                    {userIsSistemInformasi && <option value="Konversi 2 SKS">Magang 2 SKS Khusus SI</option>}
                   </select></div>
                 </div>
               </section>
