@@ -179,6 +179,34 @@ select:focus-visible {
   box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.16);
 }
 
+.app-input {
+  color-scheme: light;
+}
+
+.dark .app-input {
+  color-scheme: dark;
+}
+
+.app-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.app-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.dark .app-input::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(100%);
+  opacity: 0.9;
+  cursor: pointer;
+}
+
 .app-label {
   display: block;
   margin-bottom: 0.5rem;
