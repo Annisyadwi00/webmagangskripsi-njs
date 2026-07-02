@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import PengajuanLowongan from '@/models/PengajuanLowongan';
 import Job from '@/models/Job';
-import { connectDB } from '@/lib/db';
+import { connectDB, syncDatabase } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 
 export async function GET(request: Request) {
   try {
     await connectDB();
+    await syncDatabase();
     const user = await getCurrentUser();
 
     if (!user || !['Super Admin', 'Admin', 'Dosen', 'Mahasiswa'].includes(user.role)) {
@@ -27,6 +28,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     await connectDB();
+    await syncDatabase();
     const body = await request.json();
 
     if (!body.nama_mitra || !body.nama_pic || !body.kontak_pic || !body.posisi || !body.deskripsi) {
@@ -54,6 +56,25 @@ export async function POST(request: Request) {
       status: 'Menunggu',
       catatan_super_admin: null,
     });
+
+    try {
+      await Job.create({
+        title: body.posisi.trim(),
+        company: body.nama_mitra.trim(),
+        description: body.deskripsi.trim() + (body.persyaratan ? `\n\nPersyaratan:\n${body.persyaratan.trim()}` : '') + `\n\n[Diajukan oleh PIC: ${body.nama_pic.trim()} - ${body.kontak_pic.trim()}]`,
+        location: body.lokasi?.trim() || 'Menyesuaikan',
+        type: body.sistem_kerja || 'Onsite',
+        tipeKonversi: body.tipe_konversi || 'Konversi 20 SKS',
+        kategori: 'Magang',
+        isPaid: false,
+        kuota: Number(body.kuota) || 1,
+        link_pendaftaran: body.link_pendaftaran?.trim() || null,
+        email_perusahaan: body.email_pic?.trim() || null,
+        status: 'Nonaktif',
+      });
+    } catch (errJob) {
+      console.error('Gagal membuat draft Job:', errJob);
+    }
 
     return NextResponse.json(
       {

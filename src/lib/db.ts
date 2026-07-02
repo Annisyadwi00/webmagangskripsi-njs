@@ -29,7 +29,12 @@ export const connectDB = async () => {
   if (isConnected) return;
 
   await sequelize.authenticate();
-  console.log('✅ Koneksi ke database berhasil.');
+  try {
+    await syncDatabase();
+  } catch (err) {
+    console.error('Gagal sync database:', err);
+  }
+  console.log('✅ Koneksi ke database dan sinkronisasi tabel berhasil.');
   isConnected = true;
 };
 
