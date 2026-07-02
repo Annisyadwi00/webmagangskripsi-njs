@@ -179,7 +179,7 @@ export default function SettingsPage() {
           <PageHeader
             eyebrow="Settings"
             title="Pengaturan Akun"
-            description="Lihat data akun dan ubah kata sandi untuk keamanan akses HIKARI."
+            description="Lihat data akun dan ubah kata sandi untuk keamanan akses AMIRAT."
             action={
               <Link href={dashboardPath} className="app-btn-secondary">
                 Kembali ke Dashboard

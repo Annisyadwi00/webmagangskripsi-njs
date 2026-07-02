@@ -28,12 +28,12 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-xs font-black text-[#1e3a8a] dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
-                HKR
+                AMR
               </div>
 
               <div>
                 <p className="text-lg font-black leading-none tracking-tight text-slate-950 dark:text-white">
-                  HIKARI
+                  AMIRAT
                 </p>
                 <p className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                   FASILKOM UNSIKA
@@ -42,7 +42,7 @@ export default function Footer() {
             </div>
 
             <p className="mt-5 max-w-md text-sm leading-7 text-slate-600 dark:text-slate-300">
-              HIKARI (Hubungan Industri, Karir, & Relasi Intern) - Sistem Informasi Magang berbasis web untuk membantu proses
+              AMIRAT (Aplikasi Manajemen Internship & Mitra Terintegrasi) - Sistem Informasi Magang berbasis web untuk membantu proses
               pendataan magang, pengajuan mitra, informasi lowongan, laporan,
               dan penilaian magang mahasiswa.
             </p>
@@ -71,7 +71,7 @@ export default function Footer() {
 
         <div className="mt-10 flex flex-col gap-3 border-t border-slate-100 pt-6 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400 md:flex-row md:items-center md:justify-between">
           <p>
-            © {new Date().getFullYear()} HIKARI FASILKOM UNSIKA. All rights reserved.
+            © {new Date().getFullYear()} AMIRAT FASILKOM UNSIKA. All rights reserved.
           </p>
 
           <p className="font-bold">

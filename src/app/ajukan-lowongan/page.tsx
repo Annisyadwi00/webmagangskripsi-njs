@@ -133,7 +133,7 @@ export default function AjukanLowonganPage() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px] lg:items-center">
         <div>
           <p className="mt-8 text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a] dark:text-blue-300">
-            Mitra HIKARI
+            Mitra AMIRAT
           </p>
 
           <h1 className="mt-3 text-4xl font-black leading-tight text-slate-950 dark:text-white md:text-5xl">

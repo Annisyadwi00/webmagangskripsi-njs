@@ -3,8 +3,8 @@ import SiteChrome from '@/components/SiteChrome'; // <-- TAMBAHKAN BARIS INI! Wa
 import { cookies } from 'next/headers';
 
 export const metadata = {
-  title: 'HIKARI Fasilkom UNSIKA | Hubungan Industri, Karir, & Relasi Intern',
-  description: 'HIKARI (Hubungan Industri, Karir, & Relasi Intern) - Sistem Informasi Magang Fakultas Ilmu Komputer UNSIKA',
+  title: 'AMIRAT Fasilkom UNSIKA | Aplikasi Manajemen Internship & Mitra Terintegrasi',
+  description: 'AMIRAT (Aplikasi Manajemen Internship & Mitra Terintegrasi) - Sistem Informasi Magang Fakultas Ilmu Komputer UNSIKA',
 };
 
 // 1. Tambahkan kata 'async' di sini

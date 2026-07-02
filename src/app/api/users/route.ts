@@ -15,7 +15,7 @@ import {
 const allowedRoles: UserRole[] = ['Admin', 'Super Admin', 'Dosen'];
 
 function generateDefaultPassword() {
-  return `Hikari${new Date().getFullYear()}`;
+  return `Amirat${new Date().getFullYear()}`;
 }
 
 function parseKuota(value: unknown) {

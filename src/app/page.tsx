@@ -65,7 +65,7 @@ const roles = [
 
 const faqs: FAQ[] = [
   {
-    tanya: 'Siapa saja yang bisa menggunakan HIKARI?',
+    tanya: 'Siapa saja yang bisa menggunakan AMIRAT?',
     jawab:
       'Sistem ini digunakan oleh mahasiswa, dosen pembimbing, dan staff sesuai kebutuhan proses magang.',
   },
@@ -127,11 +127,11 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a] dark:text-blue-300">
-                  HIKARI FASILKOM UNSIKA
+                  AMIRAT FASILKOM UNSIKA
                 </p>
 
                 <h1 className="mt-4 text-4xl font-black leading-tight tracking-tight text-slate-950 dark:text-white md:text-5xl lg:text-6xl">
-                  Hubungan Industri, Karir, & Relasi Intern.
+                  Aplikasi Manajemen Internship & Mitra Terintegrasi.
                 </h1>
 
                 <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300 md:text-lg">
@@ -159,7 +159,7 @@ export default function LandingPage() {
                     Satu portal untuk proses magang.
                   </h2>
                   <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                    HIKARI membantu proses pendataan, pengelolaan mitra,
+                    AMIRAT membantu proses pendataan, pengelolaan mitra,
                     pelaporan akhir, dan evaluasi magang agar lebih terpusat.
                   </p>
                 </div>

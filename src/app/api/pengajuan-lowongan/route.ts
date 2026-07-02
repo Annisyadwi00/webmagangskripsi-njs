@@ -80,7 +80,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        message: 'Pengajuan lowongan berhasil dikirim. Tim HIKARI akan memeriksa data lowongan terlebih dahulu.',
+        message: 'Pengajuan lowongan berhasil dikirim. Tim AMIRAT akan memeriksa data lowongan terlebih dahulu.',
         data: newPengajuan,
       },
       { status: 201 }

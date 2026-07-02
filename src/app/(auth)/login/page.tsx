@@ -56,7 +56,7 @@ export default function LoginPage() {
           <section className="hidden lg:block">
             <div className="max-w-xl">
               <p className="text-sm font-black uppercase tracking-[0.2em] text-[#1e3a8a] dark:text-blue-300">
-                HIKARI Fasilkom UNSIKA
+                AMIRAT Fasilkom UNSIKA
               </p>
 
               <h1 className="mt-4 text-5xl font-black leading-tight tracking-tight text-slate-950 dark:text-white">

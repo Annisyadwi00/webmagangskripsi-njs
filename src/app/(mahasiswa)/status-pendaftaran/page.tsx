@@ -33,7 +33,7 @@ export default function StatusPendaftaranPage() {
             </div>
             <div>
               <h1 className="font-bold text-lg leading-tight">UNSIKA</h1>
-              <p className="text-xs text-blue-200">HIKARI - Fasilkom UNSIKA</p>
+              <p className="text-xs text-blue-200">AMIRAT - Fasilkom UNSIKA</p>
             </div>
           </div>
           <div className="flex items-center gap-3">

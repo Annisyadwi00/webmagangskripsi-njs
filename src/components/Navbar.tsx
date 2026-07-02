@@ -127,12 +127,12 @@ export default function Navbar({ user: propUser }: { user?: NavbarUser | null })
         <nav className="flex h-20 items-center justify-between gap-6">
           <Link href="/" className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-xs font-black text-[#1e3a8a] dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-300">
-              HKR
+              AMR
             </div>
 
             <div>
               <p className="text-lg font-black leading-none tracking-tight text-slate-950 dark:text-white">
-                HIKARI
+                AMIRAT
               </p>
               <p className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 Fasilkom UNSIKA

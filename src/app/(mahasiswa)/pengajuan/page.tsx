@@ -255,8 +255,8 @@ export default function PengajuanMahasiswaPage() {
     ...prev,
     perusahaan: selected.nama_mitra,
     alamat_tempat_magang: selected.alamat_kantor_mitra || '',
-       nama_penanggung_jawab: '',
-    kontak_penanggung_jawab: '',
+    nama_penanggung_jawab: selected.nama_narahubung_mitra || '',
+    kontak_penanggung_jawab: selected.kontak_narahubung_mitra || '',
     email_perusahaan: selected.email_perusahaan || '',
   }));
 };
@@ -644,10 +644,10 @@ export default function PengajuanMahasiswaPage() {
                     <textarea name="alamat_tempat_magang" value={form.alamat_tempat_magang} onChange={handleChange} className="app-input min-h-20 read-only:bg-slate-100 read-only:text-slate-500 read-only:cursor-not-allowed dark:read-only:bg-slate-800 dark:read-only:text-slate-400" placeholder="Alamat lengkap tempat magang. cont: jl. HS Ronggowaluyo Desa Sinarbaya Kec. Teluk Jambe Kab. Karawang Prov. Jawa Barat. lattitude : -6.250, longitude : 107.450" readOnly={isMitraTerdaftar === 'ya'} required />
                   </div>
                   <div><label className="app-label">Nama Penanggung Jawab <span className="text-red-500">*</span></label>
-                    <input type="text" name="nama_penanggung_jawab" value={form.nama_penanggung_jawab} onChange={handleChange} className="app-input read-only:bg-slate-100 read-only:text-slate-500 read-only:cursor-not-allowed dark:read-only:bg-slate-800 dark:read-only:text-slate-400" readOnly={isMitraTerdaftar === 'ya'} required />
+                    <input type="text" name="nama_penanggung_jawab" value={form.nama_penanggung_jawab} onChange={handleChange} className="app-input" placeholder="Masukkan nama penanggung jawab / pembimbing lapangan" required />
                   </div>
                   <div><label className="app-label">Kontak Penanggung Jawab <span className="text-red-500">*</span></label>
-                    <input type="text" name="kontak_penanggung_jawab" value={form.kontak_penanggung_jawab} onChange={(e) => setForm((prev) => ({ ...prev, kontak_penanggung_jawab: e.target.value.replace(/[^0-9]/g, '') }))} className="app-input read-only:bg-slate-100 read-only:text-slate-500 read-only:cursor-not-allowed dark:read-only:bg-slate-800 dark:read-only:text-slate-400" placeholder="628xxxxxxxxxx" readOnly={isMitraTerdaftar === 'ya'} required />
+                    <input type="text" name="kontak_penanggung_jawab" value={form.kontak_penanggung_jawab} onChange={(e) => setForm((prev) => ({ ...prev, kontak_penanggung_jawab: e.target.value.replace(/[^0-9]/g, '') }))} className="app-input" placeholder="628xxxxxxxxxx" required />
                   </div>
                 </div>
               </section>

@@ -40,7 +40,7 @@ function parsePositiveNumber(value: string | null, fallback: number) {
   return parsed;
 }
 // ==================== GOOGLE DRIVE UPLOAD ====================
-async function uploadToGoogleDrive(file: File, folderId: string): Promise<string> {
+async function uploadToGoogleDrive(file: File, folderId: string, customFileName?: string): Promise<string> {
   if (!folderId) {
     throw new Error('Google Drive folder ID tidak lengkap di environment');
   }
@@ -79,7 +79,7 @@ async function uploadToGoogleDrive(file: File, folderId: string): Promise<string
   const stream = Readable.from(buffer);
   const response = await drive.files.create({
     requestBody: {
-      name: file.name,
+      name: customFileName || file.name,
       parents: [folderId],
     },
     media: {
@@ -101,6 +101,28 @@ async function uploadToGoogleDrive(file: File, folderId: string): Promise<string
   // Kembalikan webViewLink (bisa diakses semua orang)
   return response.data.webViewLink!;
 }
+
+function makeStudentFileName(nama: string, npm: string, label: string, originalName?: string): string {
+  const cleanNama = (nama || 'mahasiswa')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
+  const cleanNpm = (npm || 'npm')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
+  let ext = '.pdf';
+  if (originalName && originalName.includes('.')) {
+    const parts = originalName.split('.');
+    if (parts.length > 1) {
+      ext = `.${parts.pop()?.toLowerCase()}`;
+    }
+  }
+  return `${cleanNama}_${cleanNpm}_${label}${ext}`;
+}
+
 // ==================== PARSING FORM-DATA ====================
 async function parseFormData(request: Request): Promise<{
   fields: Record<string, string>;
@@ -312,8 +334,10 @@ export async function POST(request: Request) {
     // Upload ke Google Drive
     let buktiUrl: string, fotoUrl: string;
     try {
-      buktiUrl = await uploadToGoogleDrive(buktiFile, driveFolderId);
-      fotoUrl = await uploadToGoogleDrive(fotoFile, driveFolderId);
+      const buktiName = makeStudentFileName(nama_mahasiswa, npm, 'pengajuanmagang', buktiFile.name);
+      const fotoName = makeStudentFileName(nama_mahasiswa, npm, 'fotodiri', fotoFile.name);
+      buktiUrl = await uploadToGoogleDrive(buktiFile, driveFolderId, buktiName);
+      fotoUrl = await uploadToGoogleDrive(fotoFile, driveFolderId, fotoName);
     } catch (err) {
       console.error('Upload ke Google Drive gagal:', err);
       return NextResponse.json(
@@ -505,9 +529,13 @@ export async function PUT(request: Request) {
         }
         let laporanUrl: string, outputUrl: string | null = null;
         try {
-          laporanUrl = await uploadToGoogleDrive(laporanFile, driveFolderId);
+          const namaMhs = pengajuan.getDataValue('nama_mahasiswa') || user.name || 'mahasiswa';
+          const npmMhs = pengajuan.getDataValue('npm') || user.nim_nidn || 'npm';
+          const laporanName = makeStudentFileName(namaMhs, npmMhs, 'laporanmagang', laporanFile.name);
+          laporanUrl = await uploadToGoogleDrive(laporanFile, driveFolderId, laporanName);
           if (outputFile) {
-            outputUrl = await uploadToGoogleDrive(outputFile, driveFolderId);
+            const outputName = makeStudentFileName(namaMhs, npmMhs, 'outputmagang', outputFile.name);
+            outputUrl = await uploadToGoogleDrive(outputFile, driveFolderId, outputName);
           }
         } catch (err) {
           console.error('Upload laporan ke Drive gagal:', err);
