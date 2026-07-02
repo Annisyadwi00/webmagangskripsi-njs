@@ -144,12 +144,6 @@ export async function POST(request: Request) {
   try {
     await connectDB();
     const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ success: false, message: 'Akses ditolak. Silakan login.' }, { status: 401 });
-    }
-    if (user.role !== 'Mahasiswa') {
-      return NextResponse.json({ success: false, message: 'Hanya mahasiswa yang dapat mengajukan mitra.' }, { status: 403 });
-    }
     const { fields, files } = await parseFormData(request);
     // Ambil field yang diperlukan
     const nama_mitra = fields.nama_mitra?.trim();
@@ -164,7 +158,7 @@ export async function POST(request: Request) {
     const link_pendaftaran = fields.link_pendaftaran?.trim() || null;
     const deskripsi_lowongan = fields.deskripsi_lowongan?.trim();
     const persyaratan = fields.persyaratan?.trim();
-    const nama_mahasiswa_pengusul = fields.nama_mahasiswa_pengusul?.trim() || user.name;
+    const nama_mahasiswa_pengusul = fields.nama_mahasiswa_pengusul?.trim() || user?.name || 'Public / Mitra';
     const npm_mahasiswa_pengusul = fields.npm_mahasiswa_pengusul?.trim();
     const program_studi_mahasiswa = fields.program_studi_mahasiswa?.trim();
     const angkatan_mahasiswa = fields.angkatan_mahasiswa?.trim();
