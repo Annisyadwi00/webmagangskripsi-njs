@@ -22,6 +22,7 @@ type FormState = {
   tipe_konversi: 'Konversi 20 SKS' | 'Tidak Konversi' | 'Konversi 2 SKS';
   kuota: number;
   link_pendaftaran: string;
+  valid_until: string;
 };
 
 const initialForm: FormState = {
@@ -41,6 +42,7 @@ const initialForm: FormState = {
   tipe_konversi: 'Konversi 20 SKS',
   kuota: 1,
   link_pendaftaran: '',
+  valid_until: '',
 };
 
 export default function AjukanLowonganPage() {
@@ -99,6 +101,7 @@ export default function AjukanLowonganPage() {
         tipe_konversi: form.tipe_konversi,
         kuota: Number(form.kuota),
         link_pendaftaran: form.link_pendaftaran.trim() || null,
+        valid_until: form.valid_until || null,
       });
 
       setMessage(
@@ -367,7 +370,7 @@ export default function AjukanLowonganPage() {
                 </div>
 
                 <div>
-                  <label className="app-label">Link Pendaftaran</label>
+                  <label className="app-label">Link Pendaftaran (Opsional)</label>
                   <input
                     type="url"
                     value={form.link_pendaftaran}
@@ -377,6 +380,19 @@ export default function AjukanLowonganPage() {
                     className="app-input"
                     placeholder="https://..."
                   />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="app-label">Batas Waktu Pendaftaran (Deadline)</label>
+                  <input
+                    type="date"
+                    value={form.valid_until}
+                    onChange={(e) =>
+                      handleChange('valid_until', e.target.value)
+                    }
+                    className="app-input"
+                  />
+                  <p className="mt-1 text-xs text-slate-400">Kosongkan jika lowongan dibuka tanpa batas waktu tertentu.</p>
                 </div>
 
                 <div className="md:col-span-2">

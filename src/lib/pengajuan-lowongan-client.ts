@@ -28,6 +28,7 @@ export type PengajuanLowongan = {
   tipe_konversi: TipeKonversiLowongan;
   kuota: number;
   link_pendaftaran: string | null;
+  valid_until?: string | null;
 
   status: PengajuanLowonganStatus;
   catatan_super_admin: string | null;
@@ -53,6 +54,7 @@ export type CreatePengajuanLowonganPayload = {
   tipe_konversi: TipeKonversiLowongan;
   kuota: number;
   link_pendaftaran?: string | null;
+  valid_until?: string | null;
 };
 
 export async function getPengajuanLowonganList() {

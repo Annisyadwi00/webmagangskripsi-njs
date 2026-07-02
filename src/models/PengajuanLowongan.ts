@@ -34,6 +34,7 @@ dokumen_izin_usaha: string | null;
   tipe_konversi: 'Konversi 20 SKS' | 'Tidak Konversi' | 'Konversi 2 SKS';
   kuota: number;
   link_pendaftaran: string | null;
+  valid_until: Date | null;
 
   status: PengajuanLowonganStatus;
   catatan_super_admin: string | null;
@@ -51,6 +52,7 @@ export type PengajuanLowonganCreationAttributes = Optional<
   | 'persyaratan'
   | 'lokasi'
   | 'link_pendaftaran'
+  | 'valid_until'
   | 'status'
   | 'catatan_super_admin'
   | 'createdAt'
@@ -96,6 +98,7 @@ declare dokumen_izin_usaha: string | null;
   declare tipe_konversi: 'Konversi 20 SKS' | 'Tidak Konversi' | 'Konversi 2 SKS';
   declare kuota: number;
   declare link_pendaftaran: string | null;
+  declare valid_until: Date | null;
 
   declare status: PengajuanLowonganStatus;
   declare catatan_super_admin: string | null;
@@ -178,6 +181,10 @@ PengajuanLowongan.init(
     },
     link_pendaftaran: {
       type: DataTypes.STRING,
+      allowNull: true,
+    },
+    valid_until: {
+      type: DataTypes.DATE,
       allowNull: true,
     },
 dokumen_akta_pendirian: {

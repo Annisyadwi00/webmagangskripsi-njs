@@ -328,6 +328,7 @@ export default function PengajuanLowonganView({ role = 'Admin' }: { role?: strin
                 <DetailItem label="Tipe Konversi SKS" value={detailItem.tipe_konversi} />
                 <DetailItem label="Kuota Magang" value={`${detailItem.kuota} Mahasiswa`} />
                 <DetailItem label="Lokasi Kerja" value={detailItem.lokasi || 'Menyesuaikan'} />
+                <DetailItem label="Batas Pendaftaran (Deadline)" value={formatDate(detailItem.valid_until)} />
                 <DetailItem label="Alamat Kantor Mitra" value={detailItem.alamat_mitra} />
                 <DetailItem label="Website Mitra" value={detailItem.website_mitra} />
               </div>

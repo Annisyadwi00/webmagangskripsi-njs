@@ -53,6 +53,7 @@ export async function POST(request: Request) {
       tipe_konversi: body.tipe_konversi || 'Konversi 20 SKS',
       kuota: Number(body.kuota) || 1,
       link_pendaftaran: body.link_pendaftaran?.trim() || null,
+      valid_until: body.valid_until ? new Date(body.valid_until) : null,
       status: 'Menunggu',
       catatan_super_admin: null,
     });
@@ -70,6 +71,7 @@ export async function POST(request: Request) {
         kuota: Number(body.kuota) || 1,
         link_pendaftaran: body.link_pendaftaran?.trim() || null,
         email_perusahaan: body.email_pic?.trim() || null,
+        valid_until: body.valid_until ? new Date(body.valid_until) : null,
         status: 'Nonaktif',
       });
     } catch (errJob) {
@@ -133,6 +135,7 @@ export async function PUT(request: Request) {
           kuota: pengajuan.kuota,
           link_pendaftaran: pengajuan.link_pendaftaran,
           email_perusahaan: pengajuan.email_pic,
+          valid_until: pengajuan.valid_until || null,
           status: 'Aktif',
         });
       } catch (jobErr) {
